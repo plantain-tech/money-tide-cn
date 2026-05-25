@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-$basePath = getenv('APP_BASE_PATH') ?: dirname(__DIR__);
+$basePath = getenv('APP_BASE_PATH') ?: '';
+if ($basePath === '' || !is_dir(rtrim((string) $basePath, DIRECTORY_SEPARATOR) . '/src')) {
+    $basePath = is_dir(dirname(__DIR__) . '/src') ? dirname(__DIR__) : __DIR__;
+}
 define('APP_BASE_PATH', rtrim((string) $basePath, DIRECTORY_SEPARATOR));
 
 require_once APP_BASE_PATH . '/src/bootstrap.php';
