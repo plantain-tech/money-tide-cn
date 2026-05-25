@@ -6,7 +6,7 @@ if (!defined('APP_BASE_PATH')) {
     define('APP_BASE_PATH', dirname(__DIR__));
 }
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/app-config.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/repositories.php';
 require_once __DIR__ . '/newsletter.php';
