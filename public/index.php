@@ -127,7 +127,7 @@ if ($route === 'disclaimer') {
     exit;
 }
 
-if (str_starts_with($route, 'category/')) {
+if (strpos($route, 'category/') === 0) {
     $slug = basename($route);
     $category = find_category($slug);
     if ($category === null) {
@@ -145,7 +145,7 @@ if (str_starts_with($route, 'category/')) {
     exit;
 }
 
-if (str_starts_with($route, 'article/')) {
+if (strpos($route, 'article/') === 0) {
     $slug = basename($route);
     $article = find_article($slug);
     if ($article === null) {

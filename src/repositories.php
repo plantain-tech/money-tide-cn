@@ -12,7 +12,7 @@ function db_categories(): ?array
     try {
         $rows = $pdo->query('SELECT slug, name, summary FROM categories ORDER BY sort_order ASC, name ASC')->fetchAll();
         return $rows ?: null;
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         return null;
     }
 }
@@ -47,7 +47,7 @@ function db_articles(?string $categorySlug = null): ?array
         }
 
         return array_map('map_article_row', $rows);
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         return null;
     }
 }
@@ -70,7 +70,7 @@ function db_article(string $slug): ?array
         $row = $statement->fetch();
 
         return $row ? map_article_row($row) : null;
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         return null;
     }
 }

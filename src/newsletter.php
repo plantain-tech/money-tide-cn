@@ -14,7 +14,7 @@ function subscribe_email(string $email, array $topics = [], string $source = '')
         return ['ok' => false, 'message' => '订阅系统还没有连接数据库，请稍后再试。'];
     }
 
-    $topics = array_values(array_unique(array_filter(array_map(static function (mixed $topic): string {
+    $topics = array_values(array_unique(array_filter(array_map(static function ($topic): string {
         return preg_replace('/[^a-z0-9_-]/i', '', (string) $topic);
     }, $topics))));
 
@@ -42,7 +42,7 @@ function subscribe_email(string $email, array $topics = [], string $source = '')
         $pdo->commit();
 
         return ['ok' => true, 'message' => '订阅成功，明天早报见。'];
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }

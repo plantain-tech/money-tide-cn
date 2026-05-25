@@ -32,7 +32,7 @@ function db(): ?PDO
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         $pdo = null;
     }
 
@@ -49,7 +49,7 @@ function db_is_ready(): bool
     try {
         $pdo->query('SELECT 1');
         return true;
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         return false;
     }
 }
@@ -63,7 +63,7 @@ function db_count(string $table, string $where = '1=1'): int
 
     try {
         return (int) $pdo->query("SELECT COUNT(*) FROM {$table} WHERE {$where}")->fetchColumn();
-    } catch (Throwable) {
+    } catch (Throwable $exception) {
         return 0;
     }
 }

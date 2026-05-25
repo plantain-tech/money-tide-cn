@@ -46,7 +46,7 @@ function login_admin(string $email, string $password): bool
                 ];
                 return true;
             }
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
         }
     }
 
