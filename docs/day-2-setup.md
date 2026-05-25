@@ -31,10 +31,12 @@ HOSTINGER_DB_NAME        your Hostinger database name
 HOSTINGER_DB_USER        your Hostinger database username
 HOSTINGER_DB_PASSWORD    your Hostinger database password
 ADMIN_EMAIL              your editor login email
-ADMIN_PASSWORD_HASH      generated PHP password hash
+ADMIN_PASSWORD            your editor login password
 ```
 
 After these secrets are added, push any commit to `main`. The deploy workflow will create `config.php` in the subdomain root before uploading files.
+
+Advanced option: use `ADMIN_PASSWORD_HASH` instead of `ADMIN_PASSWORD` if you prefer to generate and store the hash yourself.
 
 ## Manual Production Config
 

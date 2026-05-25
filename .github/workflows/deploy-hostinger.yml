@@ -36,10 +36,15 @@ jobs:
           HOSTINGER_DB_USER: ${{ secrets.HOSTINGER_DB_USER }}
           HOSTINGER_DB_PASSWORD: ${{ secrets.HOSTINGER_DB_PASSWORD }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
         run: |
           if [ -n "$HOSTINGER_DB_NAME" ]; then
             php -r '
+            $adminPasswordHash = getenv("ADMIN_PASSWORD_HASH");
+            if (!$adminPasswordHash && getenv("ADMIN_PASSWORD")) {
+                $adminPasswordHash = password_hash(getenv("ADMIN_PASSWORD"), PASSWORD_DEFAULT);
+            }
             $config = [
                 "app_env" => "production",
                 "app_url" => getenv("PRODUCTION_URL") ?: "https://moneytidecn.avanturadeals.com",
@@ -52,7 +57,7 @@ jobs:
                 ],
                 "admin" => [
                     "email" => getenv("ADMIN_EMAIL"),
-                    "password_hash" => getenv("ADMIN_PASSWORD_HASH"),
+                    "password_hash" => $adminPasswordHash,
                 ],
             ];
             file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");
