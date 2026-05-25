@@ -38,6 +38,14 @@
             <strong>栏目</strong>
             <span>查看当前栏目和公开频道结构。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
+            <strong>AI 草稿</strong>
+            <span>查看栏目机器人生成的新闻草稿。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/ai-drafts/new')) ?>">
+            <strong>生成 AI 草稿</strong>
+            <span>输入来源链接，生成可审核的编辑草稿。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">
             <strong>数据库健康检查</strong>
             <span>查看当前生产数据库连接状态。</span>

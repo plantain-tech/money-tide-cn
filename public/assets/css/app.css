@@ -117,6 +117,11 @@ textarea {
     padding-inline: 14px;
 }
 
+.button-danger {
+    background: var(--red);
+    color: var(--white);
+}
+
 .text-link {
     font-weight: 900;
     border-bottom: 2px solid var(--ink);
@@ -786,6 +791,52 @@ main {
     min-height: 320px;
 }
 
+.ai-table-head,
+.ai-table-row {
+    grid-template-columns: minmax(300px, 1fr) 150px 110px 150px 90px;
+}
+
+.ai-draft-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+}
+
+.ai-draft-preview,
+.ai-draft-sidebar {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 22px;
+}
+
+.ai-draft-preview h2,
+.ai-draft-sidebar h2 {
+    margin: 0 0 10px;
+    font-size: 26px;
+}
+
+.ai-draft-preview p,
+.ai-draft-sidebar p {
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.ai-draft-sidebar {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+}
+
+.ai-draft-sidebar a {
+    overflow-wrap: anywhere;
+    color: var(--blue);
+    font-weight: 800;
+}
+
+.ai-draft-sidebar form {
+    margin-top: 4px;
+}
+
 @media (max-width: 980px) {
     .site-header {
         grid-template-columns: 1fr auto;
@@ -810,7 +861,10 @@ main {
     }
 
     .admin-filter-bar,
-    .admin-table-row {
+    .admin-table-row,
+    .ai-table-head,
+    .ai-table-row,
+    .ai-draft-layout {
         grid-template-columns: 1fr;
     }
 

@@ -38,6 +38,8 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: |
           if [ -n "$HOSTINGER_DB_NAME" ]; then
             php -r '
@@ -58,6 +60,11 @@ jobs:
                 "admin" => [
                     "email" => getenv("ADMIN_EMAIL"),
                     "password_hash" => $adminPasswordHash,
+                ],
+                "ai" => [
+                    "provider" => "openai",
+                    "api_key" => getenv("OPENAI_API_KEY"),
+                    "model" => getenv("OPENAI_MODEL") ?: "gpt-4.1-mini",
                 ],
             ];
             file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");

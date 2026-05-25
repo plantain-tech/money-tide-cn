@@ -179,6 +179,88 @@ if ($route === 'admin/seed-launch-articles' && ($_SERVER['REQUEST_METHOD'] ?? 'G
     exit;
 }
 
+if ($route === 'admin/ai-drafts') {
+    require_admin();
+    render_page('admin/ai-drafts', [
+        'site' => $site,
+        'categories' => $categories,
+        'drafts' => ai_drafts([
+            'status' => $_GET['status'] ?? '',
+            'section_slug' => $_GET['section_slug'] ?? '',
+        ]),
+        'templates' => editorial_bot_templates(),
+        'filters' => [
+            'status' => (string) ($_GET['status'] ?? ''),
+            'section_slug' => (string) ($_GET['section_slug'] ?? ''),
+        ],
+        'aiReady' => (string) app_config('ai.api_key', '') !== '',
+    ]);
+    exit;
+}
+
+if ($route === 'admin/ai-drafts/new') {
+    require_admin();
+    $errors = [];
+    $form = ai_draft_form_defaults();
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = generate_ai_draft($_POST);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/ai-drafts/' . $result['id']));
+            exit;
+        }
+        $errors = $result['errors'];
+        $form = array_replace($form, $_POST);
+    }
+
+    render_page('admin/ai-draft-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'templates' => editorial_bot_templates(),
+        'form' => $form,
+        'errors' => $errors,
+        'aiReady' => (string) app_config('ai.api_key', '') !== '',
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)$#', $route, $matches)) {
+    require_admin();
+    $draft = ai_draft_by_id((int) $matches[1]);
+    if (!$draft) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+
+    render_page('admin/ai-draft-detail', [
+        'site' => $site,
+        'categories' => $categories,
+        'draft' => $draft,
+        'templates' => editorial_bot_templates(),
+        'message' => (string) ($_GET['message'] ?? ''),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)/status$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    update_ai_draft_status((int) $matches[1], (string) ($_POST['status'] ?? 'reviewed'));
+    header('Location: ' . url('admin/ai-drafts/' . (int) $matches[1]));
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)/convert$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $result = convert_ai_draft_to_article((int) $matches[1]);
+    if ($result['ok']) {
+        header('Location: ' . url('admin/articles/' . $result['article_id'] . '/edit'));
+        exit;
+    }
+
+    header('Location: ' . url('admin/ai-drafts/' . (int) $matches[1] . '?message=' . rawurlencode($result['message'] ?? '转换失败。')));
+    exit;
+}
+
 if ($route === 'home') {
     render_page('home', [
         'site' => $site,

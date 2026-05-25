@@ -32,6 +32,8 @@ HOSTINGER_DB_USER        your Hostinger database username
 HOSTINGER_DB_PASSWORD    your Hostinger database password
 ADMIN_EMAIL              your editor login email
 ADMIN_PASSWORD            your editor login password
+OPENAI_API_KEY            your OpenAI API key for AI drafts
+OPENAI_MODEL              optional, defaults to gpt-4.1-mini
 ```
 
 After these secrets are added, push any commit to `main`. The deploy workflow will create `config.php` in the subdomain root before uploading files.

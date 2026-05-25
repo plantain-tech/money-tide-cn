@@ -19,6 +19,7 @@ return [
     'ai' => [
         'provider' => 'openai',
         'api_key' => '',
+        'model' => 'gpt-4.1-mini',
     ],
     'auth' => [
         'google_client_id' => '',
