@@ -19,19 +19,20 @@
             <button type="button">使用 Apple 继续</button>
         </div>
         <div class="divider"><span>或使用邮箱</span></div>
-        <form class="subscribe-form" data-newsletter-form>
+        <form class="subscribe-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>
             <label>
                 邮箱
                 <input type="email" name="email" placeholder="you@example.com" required>
             </label>
+            <input type="hidden" name="source" value="subscribe-page">
             <fieldset>
                 <legend>选择你关心的主题</legend>
-                <label><input type="checkbox" checked> 美股</label>
-                <label><input type="checkbox" checked> AI科技</label>
-                <label><input type="checkbox"> 港股/A股</label>
-                <label><input type="checkbox"> 加密</label>
-                <label><input type="checkbox"> 出海</label>
-                <label><input type="checkbox"> 理财</label>
+                <label><input type="checkbox" name="topics[]" value="us-markets" checked> 美股</label>
+                <label><input type="checkbox" name="topics[]" value="ai-tech" checked> AI科技</label>
+                <label><input type="checkbox" name="topics[]" value="hk-a-shares"> 港股/A股</label>
+                <label><input type="checkbox" name="topics[]" value="crypto"> 加密</label>
+                <label><input type="checkbox" name="topics[]" value="global-china"> 出海</label>
+                <label><input type="checkbox" name="topics[]" value="wealth"> 理财</label>
             </fieldset>
             <button class="button full-width" type="submit">开始免费订阅</button>
         </form>

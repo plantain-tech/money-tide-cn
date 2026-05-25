@@ -36,8 +36,9 @@
     <aside class="article-cta">
         <h2>免费收到《钱潮早报》</h2>
         <p>每天5分钟，读懂全球市场、科技、加密与中国公司出海。</p>
-        <form class="inline-form" data-newsletter-form>
+        <form class="inline-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>
             <input type="email" name="email" placeholder="你的邮箱" required>
+            <input type="hidden" name="source" value="article-<?= e($article['slug']) ?>">
             <button type="submit">订阅</button>
         </form>
     </aside>

@@ -51,8 +51,9 @@
         <p class="eyebrow">钱潮早报</p>
         <h2>你的全球市场信号，明早送达。</h2>
         <p>今日5件事、美股收盘、AI与科技、加密市场和中国公司出海。</p>
-        <form class="inline-form" data-newsletter-form>
+        <form class="inline-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>
             <input type="email" name="email" placeholder="你的邮箱" required>
+            <input type="hidden" name="source" value="home-briefing">
             <button type="submit">订阅</button>
         </form>
         <div class="social-login-row" aria-label="快捷登录">

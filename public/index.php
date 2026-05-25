@@ -10,10 +10,68 @@ require_once APP_BASE_PATH . '/src/bootstrap.php';
 $route = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
 $route = $route === '' ? 'home' : $route;
 
+if ($route === 'api/newsletter/subscribe' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $result = subscribe_email(
+        (string) ($_POST['email'] ?? ''),
+        (array) ($_POST['topics'] ?? []),
+        (string) ($_POST['source'] ?? ($_SERVER['HTTP_REFERER'] ?? ''))
+    );
+    http_response_code($result['ok'] ? 200 : 422);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 $site = site_meta();
 $categories = get_categories();
 $articles = get_articles();
 $featured = $articles[0] ?? null;
+
+if ($route === 'admin/login') {
+    $error = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (login_admin((string) ($_POST['email'] ?? ''), (string) ($_POST['password'] ?? ''))) {
+            header('Location: ' . url('admin'));
+            exit;
+        }
+        $error = '邮箱或密码不正确。';
+    }
+
+    render_page('admin/login', [
+        'site' => $site,
+        'categories' => $categories,
+        'error' => $error,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/logout') {
+    logout_admin();
+    header('Location: ' . url('admin/login'));
+    exit;
+}
+
+if ($route === 'admin') {
+    require_admin();
+    render_page('admin/dashboard', [
+        'site' => $site,
+        'categories' => $categories,
+        'user' => current_user(),
+        'stats' => admin_stats(),
+        'dbReady' => db_is_ready(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/db-health') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'database' => db_is_ready() ? 'connected' : 'not_configured_or_unavailable',
+        'checked_at' => gmdate('c'),
+    ], JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 if ($route === 'home') {
     render_page('home', [

@@ -13,6 +13,11 @@ function site_meta(): array
 
 function get_categories(): array
 {
+    $dbCategories = db_categories();
+    if ($dbCategories !== null) {
+        return $dbCategories;
+    }
+
     return [
         ['slug' => 'markets', 'name' => '市场', 'summary' => '股票、宏观、利率、外汇与大宗商品。'],
         ['slug' => 'business', 'name' => '商业', 'summary' => '公司、财报、消费品牌与商业模式。'],
@@ -27,6 +32,11 @@ function get_categories(): array
 
 function get_articles(): array
 {
+    $dbArticles = db_articles();
+    if ($dbArticles !== null) {
+        return $dbArticles;
+    }
+
     return [
         [
             'slug' => 'fed-rate-path-global-markets',
@@ -112,6 +122,11 @@ function find_category(string $slug): ?array
 
 function find_article(string $slug): ?array
 {
+    $dbArticle = db_article($slug);
+    if ($dbArticle !== null) {
+        return $dbArticle;
+    }
+
     foreach (get_articles() as $article) {
         if ($article['slug'] === $slug) {
             return $article;
@@ -122,6 +137,11 @@ function find_article(string $slug): ?array
 
 function filter_articles_by_category(string $slug): array
 {
+    $dbArticles = db_articles($slug);
+    if ($dbArticles !== null) {
+        return $dbArticles;
+    }
+
     return array_values(array_filter(get_articles(), static fn (array $article): bool => $article['category'] === $slug));
 }
 

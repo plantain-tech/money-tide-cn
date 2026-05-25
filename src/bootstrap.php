@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/content.php';
-
 if (!defined('APP_BASE_PATH')) {
     define('APP_BASE_PATH', dirname(__DIR__));
 }
+
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/repositories.php';
+require_once __DIR__ . '/newsletter.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/content.php';
 
 function e(string $value): string
 {

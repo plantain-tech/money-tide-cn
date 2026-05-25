@@ -28,7 +28,7 @@ Deploy the app so that only `public/` is web-accessible:
   config.php          <- production secrets, created manually on Hostinger later
 ```
 
-Do not put `config.php`, `database/`, or internal docs inside `public_html`.
+For the fast Day 2 launch, the dedicated FTP account is restricted to the subdomain folder, so `src/`, `views/`, and `config.php` live inside that folder. Later, we can move private PHP files outside `public_html` when we switch to SSH or a wider FTP scope.
 
 In Hostinger hPanel:
 
@@ -77,7 +77,7 @@ After the first push, open GitHub -> Actions -> Deploy to Hostinger to watch the
 
 ## Production Config
 
-Create `config.php` on Hostinger beside `src/` and `views/`, not inside `public_html`.
+Create `config.php` on Hostinger beside `src/` and `views/` inside the dedicated subdomain folder.
 
 Use `config.example.php` as the template and fill production credentials there.
 

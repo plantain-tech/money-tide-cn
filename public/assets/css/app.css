@@ -548,6 +548,137 @@ main {
     color: #d7d7d7;
 }
 
+.form-message {
+    margin: 10px 0 0;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.form-message-success {
+    color: #145c2a;
+}
+
+.form-message-error {
+    color: #b3261e;
+}
+
+.admin-auth,
+.admin-shell {
+    width: min(1120px, calc(100% - 32px));
+    margin: 56px auto;
+}
+
+.admin-auth {
+    display: grid;
+    min-height: 56vh;
+    place-items: center;
+}
+
+.admin-auth-panel {
+    width: min(520px, 100%);
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    padding: 32px;
+    box-shadow: 8px 8px 0 var(--ink);
+}
+
+.admin-auth-panel h1,
+.admin-topbar h1 {
+    margin: 0 0 12px;
+    font-size: 44px;
+    line-height: 0.95;
+}
+
+.admin-form {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.admin-form label {
+    display: grid;
+    gap: 8px;
+    font-weight: 900;
+}
+
+.admin-form input {
+    border: 2px solid var(--ink);
+    padding: 14px;
+    font: inherit;
+}
+
+.admin-topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.status-banner,
+.admin-stat-grid div,
+.admin-module {
+    border: 2px solid var(--ink);
+    background: var(--paper);
+}
+
+.status-banner {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.status-banner.is-ready {
+    background: #d6ff8f;
+}
+
+.status-banner.is-warning {
+    background: #ffe6a3;
+}
+
+.admin-stat-grid,
+.admin-module-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.admin-stat-grid div {
+    padding: 18px;
+}
+
+.admin-stat-grid span,
+.admin-module span {
+    display: block;
+    color: var(--muted);
+}
+
+.admin-stat-grid strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 40px;
+    line-height: 1;
+}
+
+.admin-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 20px;
+}
+
+.admin-module {
+    color: var(--ink);
+    padding: 20px;
+    text-decoration: none;
+}
+
+.admin-module strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 22px;
+}
+
 @media (max-width: 980px) {
     .site-header {
         grid-template-columns: 1fr auto;
@@ -564,7 +695,9 @@ main {
     }
 
     .story-grid,
-    .category-grid {
+    .category-grid,
+    .admin-stat-grid,
+    .admin-module-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -599,10 +732,17 @@ main {
 
     .story-grid,
     .category-grid,
+    .admin-stat-grid,
+    .admin-module-grid,
     .article-summary,
     .key-numbers,
     .subscribe-form fieldset {
         grid-template-columns: 1fr;
+    }
+
+    .admin-topbar,
+    .status-banner {
+        flex-direction: column;
     }
 
     .market-strip {
