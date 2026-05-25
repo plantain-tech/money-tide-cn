@@ -19,9 +19,26 @@ In Hostinger hPanel:
    - `database/schema.sql`
    - `database/seed.sql`
 
-## Production Config
+## Production Config Through GitHub Secrets
 
-Create this file on Hostinger:
+Preferred setup: let GitHub Actions generate `config.php` during deployment.
+
+Add these repository secrets:
+
+```text
+HOSTINGER_DB_HOST        localhost
+HOSTINGER_DB_NAME        your Hostinger database name
+HOSTINGER_DB_USER        your Hostinger database username
+HOSTINGER_DB_PASSWORD    your Hostinger database password
+ADMIN_EMAIL              your editor login email
+ADMIN_PASSWORD_HASH      generated PHP password hash
+```
+
+After these secrets are added, push any commit to `main`. The deploy workflow will create `config.php` in the subdomain root before uploading files.
+
+## Manual Production Config
+
+Alternative setup: create this file on Hostinger:
 
 ```text
 /home/u284368723/domains/avanturadeals.com/public_html/moneytidecn/config.php

@@ -28,6 +28,39 @@ jobs:
       - name: PHP syntax check
         run: find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
+      - name: Build production config
+        env:
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+          HOSTINGER_DB_HOST: ${{ secrets.HOSTINGER_DB_HOST }}
+          HOSTINGER_DB_NAME: ${{ secrets.HOSTINGER_DB_NAME }}
+          HOSTINGER_DB_USER: ${{ secrets.HOSTINGER_DB_USER }}
+          HOSTINGER_DB_PASSWORD: ${{ secrets.HOSTINGER_DB_PASSWORD }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
+        run: |
+          if [ -n "$HOSTINGER_DB_NAME" ]; then
+            php -r '
+            $config = [
+                "app_env" => "production",
+                "app_url" => getenv("PRODUCTION_URL") ?: "https://moneytidecn.avanturadeals.com",
+                "db" => [
+                    "host" => getenv("HOSTINGER_DB_HOST") ?: "localhost",
+                    "name" => getenv("HOSTINGER_DB_NAME"),
+                    "user" => getenv("HOSTINGER_DB_USER"),
+                    "pass" => getenv("HOSTINGER_DB_PASSWORD"),
+                    "charset" => "utf8mb4",
+                ],
+                "admin" => [
+                    "email" => getenv("ADMIN_EMAIL"),
+                    "password_hash" => getenv("ADMIN_PASSWORD_HASH"),
+                ],
+            ];
+            file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");
+            '
+          else
+            echo "Database secrets are not set; deploying without generated config.php."
+          fi
+
       - name: Deploy public web root
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
