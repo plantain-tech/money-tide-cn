@@ -1,0 +1,6 @@
+SetEnv APP_BASE_PATH /home/u284368723/domains/avanturadeals.com/moneytidecn_app
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
