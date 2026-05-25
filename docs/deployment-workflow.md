@@ -23,12 +23,9 @@ Deploy the app so that only `public/` is web-accessible:
 ```text
 /home/u284368723/domains/avanturadeals.com/public_html/moneytidecn/
   index.php, assets/  <- files from local public/
-
-/home/u284368723/domains/avanturadeals.com/
-  moneytidecn_app/
-    src/              <- files from local src/
-    views/            <- files from local views/
-    config.php        <- production secrets, created manually on Hostinger
+  src/                <- files from local src/
+  views/              <- files from local views/
+  config.php          <- production secrets, created manually on Hostinger later
 ```
 
 Do not put `config.php`, `database/`, or internal docs inside `public_html`.
@@ -52,8 +49,8 @@ Repository -> Settings -> Secrets and variables -> Actions -> New repository sec
 HOSTINGER_FTP_SERVER      Hostinger FTP/FTPS hostname
 HOSTINGER_FTP_USERNAME    Hostinger FTP username
 HOSTINGER_FTP_PASSWORD    Hostinger FTP password
-HOSTINGER_PUBLIC_DIR      /domains/avanturadeals.com/public_html/moneytidecn/
-HOSTINGER_APP_DIR         /domains/avanturadeals.com/moneytidecn_app/
+HOSTINGER_PUBLIC_DIR      /
+HOSTINGER_APP_DIR         /
 PRODUCTION_URL            https://moneytidecn.avanturadeals.com
 ```
 
