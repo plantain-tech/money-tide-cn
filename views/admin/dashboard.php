@@ -2,16 +2,16 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Day 2 工作台</p>
+            <p class="eyebrow">Day 3 工作台</p>
             <h1>钱潮编辑后台</h1>
-            <p>欢迎，<?= e($user['name'] ?? 'Editor') ?>。今天先把订阅、内容和 AI 编辑流程的骨架立起来。</p>
+            <p>欢迎，<?= e($user['name'] ?? 'Editor') ?>。今天可以创建、编辑和发布文章。</p>
         </div>
         <a class="ghost-link" href="<?= e(url('admin/logout')) ?>">退出</a>
     </div>
 
     <div class="status-banner <?= $dbReady ? 'is-ready' : 'is-warning' ?>">
         <strong><?= $dbReady ? '数据库已连接' : '数据库未连接' ?></strong>
-        <span><?= $dbReady ? '订阅和统计会写入 MySQL。' : '请在 Hostinger 创建 config.php 并导入 database/schema.sql。' ?></span>
+        <span><?= $dbReady ? '订阅、统计和文章会写入 MySQL。' : '请先连接 Hostinger MySQL。' ?></span>
     </div>
 
     <div class="admin-stat-grid">
@@ -22,21 +22,30 @@
     </div>
 
     <div class="admin-module-grid">
-        <a class="admin-module" href="<?= e(url('latest')) ?>">
-            <strong>文章</strong>
-            <span>Day 3 将加入创建、编辑、发布流程。</span>
+        <a class="admin-module" href="<?= e(url('admin/articles')) ?>">
+            <strong>文章管理</strong>
+            <span>查看、搜索、编辑和发布文章。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/articles/new')) ?>">
+            <strong>新建文章</strong>
+            <span>录入标题、摘要、正文和发布状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('subscribe')) ?>">
             <strong>Newsletter</strong>
-            <span>Day 2 已支持真实邮箱入库。</span>
+            <span>查看公开订阅入口，订阅数据已写入 MySQL。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/categories')) ?>">
+            <strong>栏目</strong>
+            <span>查看当前栏目和公开频道结构。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">
             <strong>数据库健康检查</strong>
             <span>查看当前生产数据库连接状态。</span>
         </a>
-        <a class="admin-module" href="<?= e(url('editorial-standards')) ?>">
-            <strong>AI 编辑任务</strong>
-            <span>Day 4 接入栏目机器人和草稿审核队列。</span>
-        </a>
+        <form class="admin-module admin-module-form" method="post" action="<?= e(url('admin/seed-launch-articles')) ?>">
+            <strong>启动文章</strong>
+            <span>一键创建 3 篇可编辑的发布示例。</span>
+            <button class="button button-small" type="submit">创建示例</button>
+        </form>
     </div>
 </section>

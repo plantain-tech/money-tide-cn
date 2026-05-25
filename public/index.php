@@ -76,6 +76,109 @@ if ($route === 'admin/db-health') {
     exit;
 }
 
+if ($route === 'admin/articles') {
+    require_admin();
+    render_page('admin/articles', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'articles' => admin_articles([
+            'status' => $_GET['status'] ?? '',
+            'category' => $_GET['category'] ?? '',
+            'q' => $_GET['q'] ?? '',
+        ]),
+        'filters' => [
+            'status' => (string) ($_GET['status'] ?? ''),
+            'category' => (string) ($_GET['category'] ?? ''),
+            'q' => (string) ($_GET['q'] ?? ''),
+        ],
+        'dbReady' => db_is_ready(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/articles/new') {
+    require_admin();
+    $errors = [];
+    $form = article_form_defaults();
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_article($_POST);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/articles'));
+            exit;
+        }
+        $errors = $result['errors'];
+        $form = array_replace($form, $_POST);
+    }
+
+    render_page('admin/article-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'form' => $form,
+        'errors' => $errors,
+        'mode' => 'create',
+        'action' => url('admin/articles/new'),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+
+    $errors = [];
+    $form = article_to_form($article);
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_article($_POST, $articleId);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/articles'));
+            exit;
+        }
+        $errors = $result['errors'];
+        $form = array_replace($form, $_POST);
+    }
+
+    render_page('admin/article-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'form' => $form,
+        'errors' => $errors,
+        'mode' => 'edit',
+        'action' => url('admin/articles/' . $articleId . '/edit'),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/categories') {
+    require_admin();
+    render_page('admin/categories', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'dbReady' => db_is_ready(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/seed-launch-articles' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $seedResult = seed_launch_articles();
+    render_page('admin/seed-result', [
+        'site' => $site,
+        'categories' => $categories,
+        'seedResult' => $seedResult,
+    ]);
+    exit;
+}
+
 if ($route === 'home') {
     render_page('home', [
         'site' => $site,
