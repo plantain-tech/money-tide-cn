@@ -189,7 +189,8 @@ function build_ai_draft_prompt(array $form, array $sources, array $template): st
         . "Urgency: {$form['urgency']}\n"
         . "Source links:\n- " . implode("\n- ", $sources) . "\n\n"
         . "Write in Simplified Chinese. Do not invent facts, numbers, quotes, or source details. "
-        . "Remind editors to verify sources. This is not investment advice. "
+        . "Keep editor verification reminders, source concerns, and risk notes in source_notes or risk_notes only. "
+        . "Do not add editor notes, AI-assisted labels, or disclaimers at the end of the article body. "
         . "Return fields that can become a CMS article draft.";
 }
 
@@ -428,8 +429,6 @@ function convert_ai_draft_to_article(int $id): array
     if (!is_array($body)) {
         $body = [(string) $body];
     }
-    $body[] = 'Editor note: This article was AI-assisted. Verify sources, facts, numbers, and tone before publishing.';
-    $body[] = (string) ($payload['disclaimer'] ?? 'This is for information only and is not investment advice.');
 
     $result = save_article([
         'category_id' => $categoryId,
