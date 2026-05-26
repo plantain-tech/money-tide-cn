@@ -225,7 +225,8 @@ function generate_ai_draft(array $input): array
 
     $draftId = save_ai_draft_record($sectionSlug, $template['name'], $sources, $response['payload']);
     if ($draftId <= 0) {
-        return ['ok' => false, 'errors' => ['AI draft was generated, but the database save failed. Please try once more; if it repeats, check the AI usage log for the save error.'], 'form' => $form];
+        $saveError = last_ai_draft_save_error();
+        return ['ok' => false, 'errors' => ['AI draft was generated, but the database save failed. ' . ($saveError !== '' ? $saveError : 'Please try once more; if it repeats, check the AI usage log for the save error.')], 'form' => $form];
     }
 
     return ['ok' => true, 'id' => $draftId];
@@ -431,19 +432,22 @@ function extract_response_text(array $response): string
 
 function save_ai_draft_record(string $sectionSlug, string $promptName, array $sources, array $payload): int
 {
+    set_last_ai_draft_save_error('');
     ensure_ai_drafts_table();
     $pdo = db();
     if (!$pdo instanceof PDO) {
+        set_last_ai_draft_save_error('Database is not connected.');
         return 0;
     }
 
-    try {
-        $sourceLinksJson = json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
-        $draftPayloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
-        if ($sourceLinksJson === false || $draftPayloadJson === false) {
-            return 0;
-        }
+    $sourceLinksJson = json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    $draftPayloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($sourceLinksJson === false || $draftPayloadJson === false) {
+        set_last_ai_draft_save_error('Generated draft could not be encoded as JSON.');
+        return 0;
+    }
 
+    $insert = static function () use ($pdo, $sectionSlug, $promptName, $sourceLinksJson, $draftPayloadJson): int {
         $statement = $pdo->prepare('INSERT INTO ai_drafts (section_slug, prompt_name, source_links, draft_payload, status)
             VALUES (:section_slug, :prompt_name, :source_links, :draft_payload, "generated")');
         $statement->execute([
@@ -453,10 +457,31 @@ function save_ai_draft_record(string $sectionSlug, string $promptName, array $so
             'draft_payload' => $draftPayloadJson,
         ]);
         return (int) $pdo->lastInsertId();
+    };
+
+    try {
+        return $insert();
     } catch (Throwable $exception) {
-        log_ai_usage('system', 'database', $sectionSlug, 0, 'error', 'AI draft save failed: ' . $exception->getMessage());
+        ensure_ai_drafts_table();
+        try {
+            return $insert();
+        } catch (Throwable $retryException) {
+            $message = 'AI draft save failed: ' . $retryException->getMessage();
+            set_last_ai_draft_save_error($message);
+            log_ai_usage('system', 'database', $sectionSlug, 0, 'error', $message . ' Schema: ' . ai_drafts_schema_summary());
+        }
         return 0;
     }
+}
+
+function set_last_ai_draft_save_error(string $message): void
+{
+    $GLOBALS['money_tide_last_ai_draft_save_error'] = substr($message, 0, 500);
+}
+
+function last_ai_draft_save_error(): string
+{
+    return (string) ($GLOBALS['money_tide_last_ai_draft_save_error'] ?? '');
 }
 
 function update_ai_draft_status(int $id, string $status): bool
@@ -568,9 +593,33 @@ function ensure_ai_drafts_table(): void
             status ENUM('generated', 'reviewed', 'accepted', 'rejected') NOT NULL DEFAULT 'generated',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+    }
+    try {
         $pdo->exec('ALTER TABLE ai_drafts MODIFY source_links LONGTEXT NULL');
+    } catch (Throwable $exception) {
+    }
+    try {
         $pdo->exec('ALTER TABLE ai_drafts MODIFY draft_payload LONGTEXT NOT NULL');
     } catch (Throwable $exception) {
+    }
+}
+
+function ai_drafts_schema_summary(): string
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return 'database unavailable';
+    }
+    try {
+        $statement = $pdo->query('SHOW COLUMNS FROM ai_drafts');
+        $columns = [];
+        foreach ($statement->fetchAll() as $column) {
+            $columns[] = (string) ($column['Field'] ?? '') . ':' . (string) ($column['Type'] ?? '');
+        }
+        return substr(implode(', ', $columns), 0, 500);
+    } catch (Throwable $exception) {
+        return 'schema unavailable: ' . $exception->getMessage();
     }
 }
 
