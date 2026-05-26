@@ -517,11 +517,6 @@ function publish_checklist(array $article): array
             'label' => '正文已包含合规免责声明',
             'passed' => strpos($bodyText, $disclaimer) !== false,
         ],
-        [
-            'key' => 'published_at',
-            'label' => '已设置发布时间',
-            'passed' => !empty($article['published_at']),
-        ],
     ];
 }
 
