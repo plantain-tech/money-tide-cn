@@ -24,6 +24,55 @@
         <div><span>全部文章</span><strong><?= e((string) $stats['articles']) ?></strong></div>
         <div><span>已发布</span><strong><?= e((string) $stats['published']) ?></strong></div>
         <div><span>草稿/审核</span><strong><?= e((string) $stats['drafts']) ?></strong></div>
+        <div><span>今日浏览</span><strong><?= e((string) $analytics['views']['today']) ?></strong></div>
+        <div><span>7 日浏览</span><strong><?= e((string) $analytics['views']['last_7d']) ?></strong></div>
+        <div><span>7 日订阅</span><strong><?= e((string) $analytics['subscribes']['last_7d']) ?></strong></div>
+        <div><span>累计浏览</span><strong><?= e((string) $analytics['views']['total']) ?></strong></div>
+    </div>
+
+    <div class="status-banner <?= ($externalAnalytics['ga_id'] !== '' || $externalAnalytics['plausible_domain'] !== '') ? 'is-ready' : 'is-warning' ?>">
+        <strong>外部分析</strong>
+        <span>
+            GA: <?= $externalAnalytics['ga_id'] !== '' ? '已配置 (' . e($externalAnalytics['ga_id']) . ')' : '未配置' ?> ·
+            Plausible: <?= $externalAnalytics['plausible_domain'] !== '' ? '已配置 (' . e($externalAnalytics['plausible_domain']) . ')' : '未配置' ?>
+        </span>
+    </div>
+
+    <div class="analytics-panels">
+        <section class="analytics-panel">
+            <div class="analytics-panel-head">
+                <h2>7 日热门文章</h2>
+                <a class="ghost-link" href="<?= e(url('admin/analytics')) ?>">查看详情</a>
+            </div>
+            <?php if ($analytics['top_articles_7d']): ?>
+                <ol class="analytics-list">
+                    <?php foreach ($analytics['top_articles_7d'] as $row): ?>
+                        <li>
+                            <a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) ($row['title'] ?: $row['slug'])) ?></a>
+                            <span><?= e((string) $row['views']) ?> 次</span>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php else: ?>
+                <p><small>还没有浏览数据。访问几篇文章后回来看看。</small></p>
+            <?php endif; ?>
+        </section>
+
+        <section class="analytics-panel">
+            <h2>30 日订阅来源</h2>
+            <?php if ($analytics['top_sources_30d']): ?>
+                <ol class="analytics-list">
+                    <?php foreach ($analytics['top_sources_30d'] as $row): ?>
+                        <li>
+                            <span><?= e((string) $row['source']) ?></span>
+                            <span><?= e((string) $row['total']) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php else: ?>
+                <p><small>还没有订阅事件。</small></p>
+            <?php endif; ?>
+        </section>
     </div>
 
     <div class="admin-module-grid">
@@ -58,6 +107,10 @@
         <a class="admin-module" href="<?= e(url('admin/ai-templates')) ?>">
             <strong>AI 提示词模板</strong>
             <span>按栏目编辑机器人提示词，无需上线发布。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/analytics')) ?>">
+            <strong>站内分析</strong>
+            <span>查看 14 天浏览趋势、热门文章、订阅来源。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">
             <strong>数据库健康检查</strong>

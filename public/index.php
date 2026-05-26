@@ -78,6 +78,19 @@ if ($route === 'admin') {
         'dbReady' => db_is_ready(),
         'aiProvider' => ai_provider_status(),
         'aiUsage' => ai_usage_summary(),
+        'analytics' => analytics_summary(),
+        'externalAnalytics' => external_analytics_status(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/analytics') {
+    require_admin();
+    render_page('admin/analytics', [
+        'site' => $site,
+        'categories' => $categories,
+        'analytics' => analytics_summary(),
+        'externalAnalytics' => external_analytics_status(),
     ]);
     exit;
 }
@@ -518,6 +531,7 @@ if (strpos($route, 'article/') === 0) {
         exit;
     }
 
+    record_event('article_view', ['slug' => $slug, 'path' => 'article/' . $slug]);
     render_page('article', [
         'site' => $site,
         'categories' => $categories,

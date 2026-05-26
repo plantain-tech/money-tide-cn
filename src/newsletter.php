@@ -52,6 +52,13 @@ function subscribe_email(string $email, array $topics = [], string $source = '')
 
         $subscriberReferral = (string) $pdo->query('SELECT referral_code FROM subscribers WHERE email = ' . $pdo->quote($email))->fetchColumn();
 
+        if (function_exists('record_event')) {
+            record_event('subscribe', [
+                'source' => $source,
+                'path' => $landingPath !== '' ? $landingPath : 'subscribe',
+            ]);
+        }
+
         return [
             'ok' => true,
             'message' => '订阅成功，明天早报见。',
