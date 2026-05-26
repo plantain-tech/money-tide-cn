@@ -10,6 +10,7 @@ require_once __DIR__ . '/app-config.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/repositories.php';
 require_once __DIR__ . '/newsletter.php';
+require_once __DIR__ . '/subscribers.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/ai.php';
 require_once __DIR__ . '/content.php';

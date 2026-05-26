@@ -12,16 +12,18 @@ Day 4 adds the first AI-assisted editorial workflow.
 
 ## Setup
 
-Add this GitHub Actions secret:
+Day 5 switched the preferred provider to Ollama Cloud. Add these GitHub Actions secrets:
 
 ```text
-OPENAI_API_KEY
+AI_PROVIDER=ollama_cloud
+OLLAMA_API_KEY
+OLLAMA_MODEL=gemma4:31b-cloud
 ```
 
 Optional:
 
 ```text
-OPENAI_MODEL=gpt-4.1-mini
+AI_DAILY_LIMIT=10
 ```
 
 After adding the secret, push any commit to regenerate production `config.php`.
@@ -53,6 +55,6 @@ Editors must verify:
 
 The generated article draft includes an internal reminder that must be removed or rewritten before publishing.
 
-## OpenAI API Note
+## Provider Note
 
-The implementation uses the OpenAI Responses API and requests structured JSON output with a JSON schema, so drafts return predictable article fields rather than unstructured prose.
+The implementation supports Ollama Cloud first and keeps OpenAI as an optional fallback provider.

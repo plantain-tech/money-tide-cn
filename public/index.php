@@ -62,6 +62,8 @@ if ($route === 'admin') {
         'user' => current_user(),
         'stats' => admin_stats(),
         'dbReady' => db_is_ready(),
+        'aiProvider' => ai_provider_status(),
+        'aiUsage' => ai_usage_summary(),
     ]);
     exit;
 }
@@ -193,7 +195,8 @@ if ($route === 'admin/ai-drafts') {
             'status' => (string) ($_GET['status'] ?? ''),
             'section_slug' => (string) ($_GET['section_slug'] ?? ''),
         ],
-        'aiReady' => (string) app_config('ai.api_key', '') !== '',
+        'aiProvider' => ai_provider_status(),
+        'aiUsage' => ai_usage_summary(),
     ]);
     exit;
 }
@@ -218,7 +221,34 @@ if ($route === 'admin/ai-drafts/new') {
         'templates' => editorial_bot_templates(),
         'form' => $form,
         'errors' => $errors,
-        'aiReady' => (string) app_config('ai.api_key', '') !== '',
+        'aiProvider' => ai_provider_status(),
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/subscribers') {
+    require_admin();
+    $filters = [
+        'q' => (string) ($_GET['q'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'source' => (string) ($_GET['source'] ?? ''),
+    ];
+    render_page('admin/subscribers', [
+        'site' => $site,
+        'categories' => $categories,
+        'subscribers' => admin_subscribers($filters),
+        'filters' => $filters,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/subscribers.csv') {
+    require_admin();
+    output_subscribers_csv([
+        'q' => (string) ($_GET['q'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'source' => (string) ($_GET['source'] ?? ''),
     ]);
     exit;
 }

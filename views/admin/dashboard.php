@@ -14,6 +14,11 @@
         <span><?= $dbReady ? '订阅、统计和文章会写入 MySQL。' : '请先连接 Hostinger MySQL。' ?></span>
     </div>
 
+    <div class="status-banner <?= $aiProvider['ready'] ? 'is-ready' : 'is-warning' ?>">
+        <strong><?= e($aiProvider['label']) ?> · <?= e($aiProvider['model']) ?></strong>
+        <span><?= e($aiProvider['message']) ?> 今日 AI：<?= e((string) $aiUsage['used_today']) ?>/<?= e((string) $aiUsage['daily_limit']) ?></span>
+    </div>
+
     <div class="admin-stat-grid">
         <div><span>订阅用户</span><strong><?= e((string) $stats['subscribers']) ?></strong></div>
         <div><span>全部文章</span><strong><?= e((string) $stats['articles']) ?></strong></div>
@@ -33,6 +38,10 @@
         <a class="admin-module" href="<?= e(url('subscribe')) ?>">
             <strong>Newsletter</strong>
             <span>查看公开订阅入口，订阅数据已写入 MySQL。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/subscribers')) ?>">
+            <strong>订阅用户</strong>
+            <span>搜索订阅者、查看偏好并导出 CSV。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/categories')) ?>">
             <strong>栏目</strong>

@@ -796,6 +796,11 @@ main {
     grid-template-columns: minmax(300px, 1fr) 150px 110px 150px 90px;
 }
 
+.subscriber-table-head,
+.subscriber-table-row {
+    grid-template-columns: minmax(260px, 1fr) 120px 170px minmax(180px, 1fr) 150px;
+}
+
 .ai-draft-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -864,6 +869,8 @@ main {
     .admin-table-row,
     .ai-table-head,
     .ai-table-row,
+    .subscriber-table-head,
+    .subscriber-table-row,
     .ai-draft-layout {
         grid-template-columns: 1fr;
     }

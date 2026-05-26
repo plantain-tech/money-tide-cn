@@ -12,9 +12,10 @@
         </div>
     </div>
 
-    <?php if (!$aiReady): ?>
-        <div class="status-banner is-warning"><strong>AI 未配置</strong><span>添加 GitHub Secret：OPENAI_API_KEY 后即可生成。</span></div>
-    <?php endif; ?>
+    <div class="status-banner <?= $aiProvider['ready'] ? 'is-ready' : 'is-warning' ?>">
+        <strong><?= e($aiProvider['label']) ?> · <?= e($aiProvider['model']) ?></strong>
+        <span><?= e($aiProvider['message']) ?> 今日额度：<?= e((string) $aiUsage['used_today']) ?>/<?= e((string) $aiUsage['daily_limit']) ?></span>
+    </div>
 
     <form class="admin-filter-bar" method="get" action="<?= e(url('admin/ai-drafts')) ?>">
         <select name="section_slug">

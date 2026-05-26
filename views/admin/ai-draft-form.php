@@ -11,9 +11,10 @@
         </div>
     </div>
 
-    <?php if (!$aiReady): ?>
-        <div class="status-banner is-warning"><strong>AI 未配置</strong><span>请先添加 GitHub Secret：OPENAI_API_KEY。</span></div>
-    <?php endif; ?>
+    <div class="status-banner <?= $aiProvider['ready'] ? 'is-ready' : 'is-warning' ?>">
+        <strong><?= e($aiProvider['label']) ?> · <?= e($aiProvider['model']) ?></strong>
+        <span><?= e($aiProvider['message']) ?> 今日剩余：<?= e((string) $aiUsage['remaining_today']) ?></span>
+    </div>
 
     <?php if ($errors): ?>
         <div class="form-message form-message-error">

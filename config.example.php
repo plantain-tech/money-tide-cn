@@ -17,9 +17,11 @@ return [
         'password_hash' => 'replace_with_password_hash',
     ],
     'ai' => [
-        'provider' => 'openai',
+        'provider' => 'ollama_cloud',
         'api_key' => '',
-        'model' => 'gpt-4.1-mini',
+        'ollama_api_key' => '',
+        'model' => 'gemma4:31b-cloud',
+        'daily_limit' => 10,
     ],
     'auth' => [
         'google_client_id' => '',

@@ -100,6 +100,19 @@ CREATE TABLE ai_drafts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE ai_usage_logs (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    provider VARCHAR(60) NOT NULL,
+    model VARCHAR(120) NOT NULL,
+    section_slug VARCHAR(120) NULL,
+    prompt_chars INT UNSIGNED NOT NULL DEFAULT 0,
+    status ENUM('ok', 'error') NOT NULL,
+    error_message VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ai_usage_created (created_at),
+    INDEX idx_ai_usage_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE editorial_tasks (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     article_id INT UNSIGNED NULL,
