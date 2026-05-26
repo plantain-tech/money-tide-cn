@@ -94,8 +94,8 @@ CREATE TABLE ai_drafts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     section_slug VARCHAR(120) NOT NULL,
     prompt_name VARCHAR(120) NOT NULL,
-    source_links JSON NULL,
-    draft_payload JSON NOT NULL,
+    source_links LONGTEXT NULL,
+    draft_payload LONGTEXT NOT NULL,
     status ENUM('generated', 'reviewed', 'accepted', 'rejected') NOT NULL DEFAULT 'generated',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

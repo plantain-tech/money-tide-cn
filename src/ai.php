@@ -65,6 +65,7 @@ function ai_provider_status(): array
 
 function ai_drafts(array $filters = []): array
 {
+    ensure_ai_drafts_table();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return [];
@@ -93,6 +94,7 @@ function ai_drafts(array $filters = []): array
 
 function ai_draft_by_id(int $id): ?array
 {
+    ensure_ai_drafts_table();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
@@ -159,7 +161,7 @@ function generate_ai_draft(array $input): array
 
     $draftId = save_ai_draft_record($sectionSlug, $template['name'], $sources, $response['payload']);
     if ($draftId <= 0) {
-        return ['ok' => false, 'errors' => ['AI draft was generated but could not be saved.'], 'form' => $form];
+        return ['ok' => false, 'errors' => ['AI draft was generated, but the database save failed. Please try once more; if it repeats, check the AI usage log for the save error.'], 'form' => $form];
     }
 
     return ['ok' => true, 'id' => $draftId];
@@ -364,22 +366,30 @@ function extract_response_text(array $response): string
 
 function save_ai_draft_record(string $sectionSlug, string $promptName, array $sources, array $payload): int
 {
+    ensure_ai_drafts_table();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return 0;
     }
 
     try {
+        $sourceLinksJson = json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        $draftPayloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($sourceLinksJson === false || $draftPayloadJson === false) {
+            return 0;
+        }
+
         $statement = $pdo->prepare('INSERT INTO ai_drafts (section_slug, prompt_name, source_links, draft_payload, status)
             VALUES (:section_slug, :prompt_name, :source_links, :draft_payload, "generated")');
         $statement->execute([
             'section_slug' => $sectionSlug,
             'prompt_name' => $promptName,
-            'source_links' => json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'draft_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'source_links' => $sourceLinksJson,
+            'draft_payload' => $draftPayloadJson,
         ]);
         return (int) $pdo->lastInsertId();
     } catch (Throwable $exception) {
+        log_ai_usage('system', 'database', $sectionSlug, 0, 'error', 'AI draft save failed: ' . $exception->getMessage());
         return 0;
     }
 }
@@ -475,6 +485,28 @@ function ensure_ai_usage_table(): void
             INDEX idx_ai_usage_created (created_at),
             INDEX idx_ai_usage_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+    }
+}
+
+function ensure_ai_drafts_table(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ai_drafts (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            section_slug VARCHAR(120) NOT NULL,
+            prompt_name VARCHAR(120) NOT NULL,
+            source_links LONGTEXT NULL,
+            draft_payload LONGTEXT NOT NULL,
+            status ENUM('generated', 'reviewed', 'accepted', 'rejected') NOT NULL DEFAULT 'generated',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $pdo->exec('ALTER TABLE ai_drafts MODIFY source_links LONGTEXT NULL');
+        $pdo->exec('ALTER TABLE ai_drafts MODIFY draft_payload LONGTEXT NOT NULL');
     } catch (Throwable $exception) {
     }
 }
