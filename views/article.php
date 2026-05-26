@@ -1,11 +1,12 @@
 <?php
-$pageTitle = $article['title'] . ' - 钱潮 Money Tide';
-$pageDescription = $article['dek'];
+$pageTitle = (($article['seo_title'] ?? '') ?: $article['title']) . ' - 钱潮 Money Tide';
+$pageDescription = ($article['seo_description'] ?? '') ?: $article['dek'];
 $canonicalPath = 'article/' . $article['slug'];
 $canonicalUrl = canonical_url($canonicalPath);
 $encodedUrl = rawurlencode($canonicalUrl);
 $encodedTitle = rawurlencode($article['title']);
 $ogType = 'article';
+$ogImage = $article['hero_image'] ?? default_og_image();
 $sameCategoryRelated = array_values(array_filter($related, static fn (array $item): bool => $item['category'] === $article['category']));
 $otherRelated = array_values(array_filter($related, static fn (array $item): bool => $item['category'] !== $article['category']));
 $relatedArticles = array_slice(array_merge($sameCategoryRelated, $otherRelated), 0, 3);
@@ -14,10 +15,11 @@ $schema = [
     '@context' => 'https://schema.org',
     '@type' => 'NewsArticle',
     'headline' => $article['title'],
-    'description' => $article['dek'],
+    'description' => $pageDescription,
     'datePublished' => $article['published_at'],
-    'author' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
+    'author' => ['@type' => 'Person', 'name' => $article['author_name'] ?? '钱潮编辑部'],
     'publisher' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
+    'image' => $ogImage,
     'mainEntityOfPage' => $canonicalUrl,
     'inLanguage' => 'zh-CN',
 ];
@@ -36,13 +38,16 @@ $schema = [
         <h1><?= e($article['title']) ?></h1>
         <p><?= e($article['dek']) ?></p>
         <div class="article-meta-row">
-            <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?></small>
+            <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?> · 作者：<?= e($article['author_name'] ?? '钱潮编辑部') ?></small>
             <div class="share-actions" aria-label="分享文章">
                 <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">X</a>
                 <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">in</a>
                 <button type="button" data-share-copy="<?= e($canonicalUrl) ?>">复制链接</button>
             </div>
         </div>
+        <figure class="article-hero-media">
+            <img src="<?= e($ogImage) ?>" alt="<?= e($article['hero_image_alt'] ?? $article['title']) ?>" loading="eager">
+        </figure>
     </header>
 
     <section class="article-summary article-reading-summary reveal-on-scroll">

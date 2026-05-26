@@ -17,17 +17,209 @@ function db_categories(): ?array
     }
 }
 
+function ensure_editorial_schema(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS authors (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            slug VARCHAR(120) NOT NULL UNIQUE,
+            bio TEXT NULL,
+            avatar_path VARCHAR(255) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        foreach ([
+            'author_id' => 'INT UNSIGNED NULL',
+            'editor_id' => 'INT UNSIGNED NULL',
+            'created_by_user_id' => 'INT UNSIGNED NULL',
+            'updated_by_user_id' => 'INT UNSIGNED NULL',
+            'seo_title' => 'VARCHAR(255) NULL',
+            'seo_description' => 'VARCHAR(500) NULL',
+            'hero_image_path' => 'VARCHAR(255) NULL',
+            'hero_image_alt' => 'VARCHAR(255) NULL',
+        ] as $column => $definition) {
+            if (!db_column_exists('articles', $column)) {
+                $pdo->exec('ALTER TABLE articles ADD COLUMN ' . $column . ' ' . $definition);
+            }
+        }
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS article_audit_logs (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            article_id INT UNSIGNED NOT NULL,
+            actor_user_id INT UNSIGNED NULL,
+            actor_email VARCHAR(255) NULL,
+            action VARCHAR(80) NOT NULL,
+            from_status VARCHAR(40) NULL,
+            to_status VARCHAR(40) NULL,
+            note VARCHAR(500) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_article_audit_article (article_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $statement = $pdo->prepare('INSERT IGNORE INTO authors (name, slug, bio) VALUES (:name, :slug, :bio)');
+        $statement->execute([
+            'name' => '钱潮编辑部',
+            'slug' => 'money-tide-editors',
+            'bio' => '钱潮 Money Tide 编辑团队。',
+        ]);
+    } catch (Throwable $exception) {
+    }
+}
+
+function db_column_exists(string $table, string $column): bool
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+
+    try {
+        $statement = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column');
+        $statement->execute(['table' => $table, 'column' => $column]);
+        return (int) $statement->fetchColumn() > 0;
+    } catch (Throwable $exception) {
+        return false;
+    }
+}
+
+function default_author_id(): ?int
+{
+    ensure_editorial_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return null;
+    }
+
+    try {
+        $statement = $pdo->prepare('SELECT id FROM authors WHERE slug = :slug LIMIT 1');
+        $statement->execute(['slug' => 'money-tide-editors']);
+        $id = $statement->fetchColumn();
+        return $id ? (int) $id : null;
+    } catch (Throwable $exception) {
+        return null;
+    }
+}
+
+function admin_authors(): array
+{
+    ensure_editorial_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+
+    try {
+        return $pdo->query('SELECT id, name, slug FROM authors ORDER BY name ASC')->fetchAll();
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function admin_editors(): array
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+
+    try {
+        return $pdo->query("SELECT id, email, display_name, role FROM users WHERE role IN ('editor', 'admin') ORDER BY role DESC, display_name ASC, email ASC")->fetchAll();
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function article_audit_logs(int $articleId): array
+{
+    ensure_editorial_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+
+    try {
+        $statement = $pdo->prepare('SELECT actor_email, action, from_status, to_status, note, created_at FROM article_audit_logs WHERE article_id = :id ORDER BY created_at DESC, id DESC LIMIT 20');
+        $statement->execute(['id' => $articleId]);
+        return $statement->fetchAll();
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function record_article_audit(int $articleId, string $action, ?string $fromStatus = null, ?string $toStatus = null, string $note = ''): void
+{
+    ensure_editorial_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+
+    $user = current_user();
+    try {
+        $statement = $pdo->prepare('INSERT INTO article_audit_logs (article_id, actor_user_id, actor_email, action, from_status, to_status, note)
+            VALUES (:article_id, :actor_user_id, :actor_email, :action, :from_status, :to_status, :note)');
+        $statement->execute([
+            'article_id' => $articleId,
+            'actor_user_id' => is_array($user) && (int) ($user['id'] ?? 0) > 0 ? (int) $user['id'] : null,
+            'actor_email' => is_array($user) ? (string) ($user['email'] ?? '') : '',
+            'action' => $action,
+            'from_status' => $fromStatus,
+            'to_status' => $toStatus,
+            'note' => $note,
+        ]);
+    } catch (Throwable $exception) {
+    }
+}
+
+function article_media_url(array $article): string
+{
+    $image = trim((string) ($article['hero_image_path'] ?? ''));
+    if ($image !== '') {
+        if (preg_match('#^https?://#i', $image)) {
+            return $image;
+        }
+        return canonical_url(ltrim($image, '/'));
+    }
+
+    return category_fallback_image((string) ($article['category'] ?? $article['category_slug'] ?? ''));
+}
+
+function category_fallback_image(string $categorySlug): string
+{
+    $map = [
+        'markets' => 'assets/img/hero-markets.svg',
+        'business' => 'assets/img/hero-business.svg',
+        'tech' => 'assets/img/hero-tech.svg',
+        'crypto' => 'assets/img/hero-crypto.svg',
+        'policy' => 'assets/img/hero-policy.svg',
+        'global-china' => 'assets/img/hero-global.svg',
+        'wealth' => 'assets/img/hero-wealth.svg',
+    ];
+
+    return canonical_url($map[$categorySlug] ?? 'assets/img/og-money-tide.svg');
+}
+
 function db_articles(?string $categorySlug = null): ?array
 {
+    ensure_editorial_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
     }
 
     $sql = "SELECT a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
-                a.read_time_minutes, a.published_at, c.slug AS category, c.name AS category_name
+                a.read_time_minutes, a.published_at, a.seo_title, a.seo_description,
+                a.hero_image_path, a.hero_image_alt, c.slug AS category, c.name AS category_name,
+                au.name AS author_name
             FROM articles a
             INNER JOIN categories c ON c.id = a.category_id
+            LEFT JOIN authors au ON au.id = a.author_id
             WHERE a.status = 'published'";
     $params = [];
 
@@ -54,6 +246,7 @@ function db_articles(?string $categorySlug = null): ?array
 
 function db_article(string $slug): ?array
 {
+    ensure_editorial_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
@@ -61,9 +254,12 @@ function db_article(string $slug): ?array
 
     try {
         $statement = $pdo->prepare("SELECT a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
-                a.read_time_minutes, a.published_at, c.slug AS category, c.name AS category_name
+                a.read_time_minutes, a.published_at, a.seo_title, a.seo_description,
+                a.hero_image_path, a.hero_image_alt, c.slug AS category, c.name AS category_name,
+                au.name AS author_name
             FROM articles a
             INNER JOIN categories c ON c.id = a.category_id
+            LEFT JOIN authors au ON au.id = a.author_id
             WHERE a.status = 'published' AND a.slug = :slug
             LIMIT 1");
         $statement->execute(['slug' => $slug]);
@@ -82,7 +278,7 @@ function map_article_row(array $row): array
         $body = preg_split('/\R{2,}/', trim((string) $row['body'])) ?: [];
     }
 
-    return [
+    $article = [
         'slug' => (string) $row['slug'],
         'category' => (string) $row['category'],
         'category_name' => (string) $row['category_name'],
@@ -94,7 +290,14 @@ function map_article_row(array $row): array
         'body' => array_values(array_filter(array_map('strval', $body))),
         'read_time' => (int) $row['read_time_minutes'] . ' min read',
         'published_at' => $row['published_at'] ? date('Y-m-d', strtotime((string) $row['published_at'])) : '',
+        'author_name' => (string) ($row['author_name'] ?? '钱潮编辑部'),
+        'seo_title' => (string) ($row['seo_title'] ?? ''),
+        'seo_description' => (string) ($row['seo_description'] ?? ''),
+        'hero_image_alt' => (string) (($row['hero_image_alt'] ?? '') ?: $row['title']),
     ];
+    $article['hero_image'] = article_media_url($article + ['hero_image_path' => $row['hero_image_path'] ?? '']);
+
+    return $article;
 }
 
 function admin_categories(): array
@@ -113,15 +316,21 @@ function admin_categories(): array
 
 function admin_articles(array $filters = []): array
 {
+    ensure_editorial_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return [];
     }
 
     $sql = "SELECT a.id, a.slug, a.status, a.title, a.dek, a.read_time_minutes, a.published_at,
-                a.updated_at, c.name AS category_name, c.slug AS category_slug
+                a.updated_at, a.created_by_user_id, a.hero_image_path,
+                c.name AS category_name, c.slug AS category_slug,
+                au.name AS author_name,
+                COALESCE(u.display_name, u.email) AS editor_name
             FROM articles a
             INNER JOIN categories c ON c.id = a.category_id
+            LEFT JOIN authors au ON au.id = a.author_id
+            LEFT JOIN users u ON u.id = a.editor_id
             WHERE 1 = 1";
     $params = [];
 
@@ -173,6 +382,7 @@ function admin_articles(array $filters = []): array
 
 function admin_article_status_counts(): array
 {
+    ensure_editorial_schema();
     $pdo = db();
     $counts = ['all' => 0, 'draft' => 0, 'review' => 0, 'published' => 0, 'archived' => 0];
     if (!$pdo instanceof PDO) {
@@ -197,6 +407,7 @@ function admin_article_status_counts(): array
 
 function admin_article_by_id(int $id): ?array
 {
+    ensure_editorial_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
@@ -215,12 +426,34 @@ function admin_article_by_id(int $id): ?array
 
 function save_article(array $input, ?int $id = null): array
 {
+    ensure_editorial_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return ['ok' => false, 'errors' => ['数据库未连接。'], 'id' => $id];
     }
 
     $data = normalize_article_input($input);
+    $existing = $id !== null ? admin_article_by_id($id) : null;
+    if ($id === null && !can_create_article()) {
+        return ['ok' => false, 'errors' => ['You do not have permission to create articles.'], 'id' => $id, 'data' => $data];
+    }
+    if ($id !== null) {
+        if (!$existing) {
+            return ['ok' => false, 'errors' => ['Article not found.'], 'id' => $id, 'data' => $data];
+        }
+        if (!can_edit_article($existing)) {
+            return ['ok' => false, 'errors' => ['You do not have permission to edit this article.'], 'id' => $id, 'data' => $data];
+        }
+        if ($data['status'] !== (string) ($existing['status'] ?? 'draft') && !can_transition_article($existing, $data['status'])) {
+            return ['ok' => false, 'errors' => ['You do not have permission to change this article status.'], 'id' => $id, 'data' => $data];
+        }
+    } elseif (in_array($data['status'], ['published', 'archived'], true) && !can_publish_article()) {
+        return ['ok' => false, 'errors' => ['Only editors and admins can create published or archived articles.'], 'id' => $id, 'data' => $data];
+    }
+    if (!can_assign_editor()) {
+        $data['editor_id'] = $existing['editor_id'] ?? null;
+    }
+
     $errors = validate_article_input($data, $id);
     if (!$errors && $data['status'] === 'published') {
         $errors = array_merge($errors, publish_checklist_errors($data));
@@ -230,13 +463,19 @@ function save_article(array $input, ?int $id = null): array
     }
 
     try {
+        $user = current_user();
+        $data['updated_by_user_id'] = is_array($user) && (int) ($user['id'] ?? 0) > 0 ? (int) $user['id'] : null;
         if ($id === null) {
+            $data['created_by_user_id'] = $data['updated_by_user_id'];
             $statement = $pdo->prepare('INSERT INTO articles
-                (category_id, slug, status, title, dek, brief, why_it_matters, body, read_time_minutes, published_at)
-                VALUES (:category_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :read_time_minutes, :published_at)');
+                (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, read_time_minutes, published_at)
+                VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :read_time_minutes, :published_at)');
         } else {
             $statement = $pdo->prepare('UPDATE articles SET
                 category_id = :category_id,
+                author_id = :author_id,
+                editor_id = :editor_id,
+                updated_by_user_id = :updated_by_user_id,
                 slug = :slug,
                 status = :status,
                 title = :title,
@@ -244,6 +483,10 @@ function save_article(array $input, ?int $id = null): array
                 brief = :brief,
                 why_it_matters = :why_it_matters,
                 body = :body,
+                seo_title = :seo_title,
+                seo_description = :seo_description,
+                hero_image_path = :hero_image_path,
+                hero_image_alt = :hero_image_alt,
                 read_time_minutes = :read_time_minutes,
                 published_at = :published_at
                 WHERE id = :id');
@@ -251,7 +494,13 @@ function save_article(array $input, ?int $id = null): array
         }
 
         $statement->execute($data);
-        return ['ok' => true, 'errors' => [], 'id' => $id ?? (int) $pdo->lastInsertId()];
+        $articleId = $id ?? (int) $pdo->lastInsertId();
+        if ($id === null) {
+            record_article_audit($articleId, 'created', null, $data['status'], 'Article created.');
+        } elseif ($existing && $data['status'] !== (string) ($existing['status'] ?? '')) {
+            record_article_audit($articleId, 'status_change', (string) $existing['status'], $data['status'], 'Status changed from article form.');
+        }
+        return ['ok' => true, 'errors' => [], 'id' => $articleId];
     } catch (Throwable $exception) {
         return ['ok' => false, 'errors' => ['保存失败：标题别名可能重复，或数据库暂时不可用。'], 'id' => $id, 'data' => $data];
     }
@@ -287,6 +536,8 @@ function normalize_article_input(array $input): array
 
     return [
         'category_id' => (int) ($input['category_id'] ?? 0),
+        'author_id' => (int) ($input['author_id'] ?? 0) > 0 ? (int) $input['author_id'] : default_author_id(),
+        'editor_id' => (int) ($input['editor_id'] ?? 0) > 0 ? (int) $input['editor_id'] : null,
         'slug' => $slug,
         'status' => $status,
         'title' => $title,
@@ -294,6 +545,10 @@ function normalize_article_input(array $input): array
         'brief' => trim((string) ($input['brief'] ?? '')),
         'why_it_matters' => trim((string) ($input['why_it_matters'] ?? '')),
         'body' => json_encode($paragraphs ?: [$body], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        'seo_title' => trim((string) ($input['seo_title'] ?? '')),
+        'seo_description' => trim((string) ($input['seo_description'] ?? '')),
+        'hero_image_path' => trim((string) ($input['hero_image_path'] ?? '')),
+        'hero_image_alt' => trim((string) ($input['hero_image_alt'] ?? '')),
         'read_time_minutes' => max(1, (int) ($input['read_time_minutes'] ?? 3)),
         'published_at' => $publishedAt,
     ];
@@ -365,8 +620,12 @@ function slugify(string $value): string
 
 function article_form_defaults(): array
 {
+    $defaultAuthorId = default_author_id();
+
     return [
         'category_id' => '',
+        'author_id' => $defaultAuthorId ? (string) $defaultAuthorId : '',
+        'editor_id' => '',
         'slug' => '',
         'status' => 'draft',
         'title' => '',
@@ -374,6 +633,11 @@ function article_form_defaults(): array
         'brief' => '',
         'why_it_matters' => '',
         'body' => '',
+        'seo_title' => '',
+        'seo_description' => '',
+        'hero_image_path' => '',
+        'hero_image_alt' => '',
+        'created_by_user_id' => '',
         'read_time_minutes' => 3,
         'published_at' => '',
     ];
@@ -390,6 +654,8 @@ function article_to_form(array $article): array
 
     return [
         'category_id' => (string) ($article['category_id'] ?? ''),
+        'author_id' => (string) ($article['author_id'] ?? ''),
+        'editor_id' => (string) ($article['editor_id'] ?? ''),
         'slug' => (string) ($article['slug'] ?? ''),
         'status' => (string) ($article['status'] ?? 'draft'),
         'title' => (string) ($article['title'] ?? ''),
@@ -397,6 +663,11 @@ function article_to_form(array $article): array
         'brief' => (string) ($article['brief'] ?? ''),
         'why_it_matters' => (string) ($article['why_it_matters'] ?? ''),
         'body' => $body,
+        'seo_title' => (string) ($article['seo_title'] ?? ''),
+        'seo_description' => (string) ($article['seo_description'] ?? ''),
+        'hero_image_path' => (string) ($article['hero_image_path'] ?? ''),
+        'hero_image_alt' => (string) ($article['hero_image_alt'] ?? ''),
+        'created_by_user_id' => (string) ($article['created_by_user_id'] ?? ''),
         'read_time_minutes' => (int) ($article['read_time_minutes'] ?? 3),
         'published_at' => !empty($article['published_at']) ? date('Y-m-d\TH:i', strtotime((string) $article['published_at'])) : '',
     ];
@@ -542,6 +813,12 @@ function transition_article_status(int $id, string $status): array
     if (!$article) {
         return ['ok' => false, 'errors' => ['文章不存在。']];
     }
+    if (!can_edit_article($article)) {
+        return ['ok' => false, 'errors' => ['You do not have permission to duplicate this article.']];
+    }
+    if (!can_transition_article($article, $status)) {
+        return ['ok' => false, 'errors' => ['You do not have permission to change this article status.']];
+    }
 
     if ($status === 'published') {
         $checklistData = $article;
@@ -568,6 +845,7 @@ function transition_article_status(int $id, string $status): array
                     'published_at' => $checklistData['published_at'],
                     'id' => $id,
                 ]);
+            record_article_audit($id, 'status_change', (string) $article['status'], 'published', 'Published through workflow.');
             return ['ok' => true, 'errors' => []];
         } catch (Throwable $exception) {
             return ['ok' => false, 'errors' => ['更新状态失败。']];
@@ -577,6 +855,7 @@ function transition_article_status(int $id, string $status): array
     try {
         $pdo->prepare('UPDATE articles SET status = :status WHERE id = :id')
             ->execute(['status' => $status, 'id' => $id]);
+        record_article_audit($id, 'status_change', (string) $article['status'], $status, 'Changed through workflow.');
         return ['ok' => true, 'errors' => []];
     } catch (Throwable $exception) {
         return ['ok' => false, 'errors' => ['更新状态失败。']];
@@ -635,10 +914,16 @@ function duplicate_article(int $id): array
 
     try {
         $statement = $pdo->prepare('INSERT INTO articles
-            (category_id, slug, status, title, dek, brief, why_it_matters, body, read_time_minutes, published_at)
-            VALUES (:category_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :read_time_minutes, :published_at)');
+            (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, read_time_minutes, published_at)
+            VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :read_time_minutes, :published_at)');
+        $user = current_user();
+        $userId = is_array($user) && (int) ($user['id'] ?? 0) > 0 ? (int) $user['id'] : null;
         $statement->execute([
             'category_id' => (int) $article['category_id'],
+            'author_id' => (int) ($article['author_id'] ?? 0) ?: default_author_id(),
+            'editor_id' => $article['editor_id'] ?? null,
+            'created_by_user_id' => $userId,
+            'updated_by_user_id' => $userId,
             'slug' => $newSlug,
             'status' => 'draft',
             'title' => $newTitle,
@@ -646,11 +931,17 @@ function duplicate_article(int $id): array
             'brief' => (string) $article['brief'],
             'why_it_matters' => (string) $article['why_it_matters'],
             'body' => (string) $article['body'],
+            'seo_title' => (string) ($article['seo_title'] ?? ''),
+            'seo_description' => (string) ($article['seo_description'] ?? ''),
+            'hero_image_path' => (string) ($article['hero_image_path'] ?? ''),
+            'hero_image_alt' => (string) ($article['hero_image_alt'] ?? ''),
             'read_time_minutes' => (int) $article['read_time_minutes'],
             'published_at' => null,
         ]);
 
-        return ['ok' => true, 'id' => (int) $pdo->lastInsertId()];
+        $newId = (int) $pdo->lastInsertId();
+        record_article_audit($newId, 'created', null, 'draft', 'Duplicated from article #' . $id . '.');
+        return ['ok' => true, 'id' => $newId];
     } catch (Throwable $exception) {
         return ['ok' => false, 'errors' => ['复制文章失败。']];
     }
@@ -666,6 +957,9 @@ function delete_article(int $id): array
     $article = admin_article_by_id($id);
     if (!$article) {
         return ['ok' => false, 'errors' => ['Article not found.']];
+    }
+    if (!can_delete_article()) {
+        return ['ok' => false, 'errors' => ['Only admins can delete articles.']];
     }
 
     $status = (string) ($article['status'] ?? '');
@@ -697,6 +991,7 @@ function admin_article_preview(int $id): ?array
     $pdo = db();
     $categoryName = '';
     $categorySlug = '';
+    $authorName = '钱潮编辑部';
     if ($pdo instanceof PDO) {
         try {
             $statement = $pdo->prepare('SELECT slug, name FROM categories WHERE id = :id LIMIT 1');
@@ -708,6 +1003,14 @@ function admin_article_preview(int $id): ?array
             }
         } catch (Throwable $exception) {
         }
+        try {
+            if (!empty($article['author_id'])) {
+                $statement = $pdo->prepare('SELECT name FROM authors WHERE id = :id LIMIT 1');
+                $statement->execute(['id' => (int) $article['author_id']]);
+                $authorName = (string) ($statement->fetchColumn() ?: $authorName);
+            }
+        } catch (Throwable $exception) {
+        }
     }
 
     $body = json_decode((string) $article['body'], true);
@@ -715,7 +1018,7 @@ function admin_article_preview(int $id): ?array
         $body = preg_split('/\R{2,}/', trim((string) $article['body'])) ?: [];
     }
 
-    return [
+    $preview = [
         'slug' => (string) $article['slug'],
         'category' => $categorySlug,
         'category_name' => $categoryName,
@@ -728,5 +1031,12 @@ function admin_article_preview(int $id): ?array
         'read_time' => (int) $article['read_time_minutes'] . ' min read',
         'published_at' => !empty($article['published_at']) ? date('Y-m-d', strtotime((string) $article['published_at'])) : date('Y-m-d'),
         'status' => (string) $article['status'],
+        'author_name' => $authorName,
+        'seo_title' => (string) ($article['seo_title'] ?? ''),
+        'seo_description' => (string) ($article['seo_description'] ?? ''),
+        'hero_image_alt' => (string) (($article['hero_image_alt'] ?? '') ?: $article['title']),
     ];
+    $preview['hero_image'] = article_media_url($preview + ['hero_image_path' => $article['hero_image_path'] ?? '']);
+
+    return $preview;
 }

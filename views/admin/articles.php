@@ -20,11 +20,13 @@ $tabHref = static function (string $status) use ($baseQuery): string {
         <div>
             <p class="eyebrow">CMS</p>
             <h1>文章管理</h1>
-            <p>创建、搜索、审核和发布钱潮文章。</p>
+            <p>创建、搜索、审核和发布钱潮文章。删除仅限管理员，发布和归档仅限编辑/管理员。</p>
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
-            <a class="button button-small" href="<?= e(url('admin/articles/new')) ?>">新建文章</a>
+            <?php if (can_create_article()): ?>
+                <a class="button button-small" href="<?= e(url('admin/articles/new')) ?>">新建文章</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -80,6 +82,7 @@ $tabHref = static function (string $status) use ($baseQuery): string {
                 <div>
                     <strong><?= e($article['title']) ?></strong>
                     <small><?= e($article['slug']) ?> · <?= e((string) $article['read_time_minutes']) ?> min</small>
+                    <small>作者：<?= e((string) ($article['author_name'] ?? '钱潮编辑部')) ?><?= !empty($article['editor_name']) ? ' · 责任编辑：' . e((string) $article['editor_name']) : '' ?></small>
                 </div>
                 <span><?= e($article['category_name']) ?></span>
                 <span><mark><?= e($statusLabels[$article['status']] ?? $article['status']) ?></mark></span>
@@ -93,7 +96,7 @@ $tabHref = static function (string $status) use ($baseQuery): string {
                     <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/duplicate')) ?>" class="inline-action">
                         <button type="submit" class="link-button" onclick="return confirm('复制这篇文章为新草稿？')">复制</button>
                     </form>
-                    <?php if (in_array($article['status'], ['draft', 'archived'], true)): ?>
+                    <?php if (can_delete_article() && in_array($article['status'], ['draft', 'archived'], true)): ?>
                         <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/delete')) ?>" class="inline-action">
                             <button type="submit" class="link-button is-danger" onclick="return confirm('永久删除这篇草稿/归档文章？')">删除</button>
                         </form>

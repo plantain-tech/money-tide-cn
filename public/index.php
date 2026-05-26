@@ -146,6 +146,7 @@ if ($route === 'admin/articles') {
         'statusCounts' => admin_article_status_counts(),
         'flash' => (string) ($_GET['flash'] ?? ''),
         'dbReady' => db_is_ready(),
+        'user' => current_user(),
     ]);
     exit;
 }
@@ -185,6 +186,12 @@ if (preg_match('#^admin/articles/(\d+)/delete$#', $route, $matches) && ($_SERVER
 if (preg_match('#^admin/articles/(\d+)/preview$#', $route, $matches)) {
     require_admin();
     $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article || !can_edit_article($article)) {
+        http_response_code($article ? 403 : 404);
+        render_page($article ? '403' : '404', compact('site', 'categories'));
+        exit;
+    }
     $preview = admin_article_preview($articleId);
     if (!$preview) {
         http_response_code(404);
@@ -202,6 +209,11 @@ if (preg_match('#^admin/articles/(\d+)/preview$#', $route, $matches)) {
 
 if ($route === 'admin/articles/new') {
     require_admin();
+    if (!can_create_article()) {
+        http_response_code(403);
+        render_page('403', compact('site', 'categories'));
+        exit;
+    }
     $errors = [];
     $form = article_form_defaults();
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -218,6 +230,8 @@ if ($route === 'admin/articles/new') {
         'site' => $site,
         'categories' => $categories,
         'adminCategories' => admin_categories(),
+        'authors' => admin_authors(),
+        'editors' => admin_editors(),
         'form' => $form,
         'errors' => $errors,
         'mode' => 'create',
@@ -225,6 +239,7 @@ if ($route === 'admin/articles/new') {
         'articleId' => 0,
         'currentStatus' => 'draft',
         'checklist' => [],
+        'auditLogs' => [],
         'flash' => '',
     ]);
     exit;
@@ -237,6 +252,11 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
     if (!$article) {
         http_response_code(404);
         render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    if (!can_edit_article($article)) {
+        http_response_code(403);
+        render_page('403', compact('site', 'categories'));
         exit;
     }
 
@@ -256,6 +276,8 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
         'site' => $site,
         'categories' => $categories,
         'adminCategories' => admin_categories(),
+        'authors' => admin_authors(),
+        'editors' => admin_editors(),
         'form' => $form,
         'errors' => $errors,
         'mode' => 'edit',
@@ -265,6 +287,7 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
         'checklist' => publish_checklist(array_merge($article, [
             'category_id' => $article['category_id'],
         ])),
+        'auditLogs' => article_audit_logs($articleId),
         'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
     exit;

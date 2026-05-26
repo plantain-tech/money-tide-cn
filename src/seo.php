@@ -70,6 +70,7 @@ function emit_robots(): void
 
 function qa_checks(): array
 {
+    ensure_editorial_schema();
     ensure_analytics_table();
     ensure_ai_prompt_templates_table();
     ensure_ai_draft_versions_table();

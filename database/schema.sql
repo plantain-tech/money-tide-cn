@@ -20,6 +20,9 @@ CREATE TABLE articles (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     category_id INT UNSIGNED NOT NULL,
     author_id INT UNSIGNED NULL,
+    editor_id INT UNSIGNED NULL,
+    created_by_user_id INT UNSIGNED NULL,
+    updated_by_user_id INT UNSIGNED NULL,
     slug VARCHAR(180) NOT NULL UNIQUE,
     status ENUM('draft', 'review', 'published', 'archived') NOT NULL DEFAULT 'draft',
     title VARCHAR(255) NOT NULL,
@@ -30,6 +33,7 @@ CREATE TABLE articles (
     seo_title VARCHAR(255) NULL,
     seo_description VARCHAR(500) NULL,
     hero_image_path VARCHAR(255) NULL,
+    hero_image_alt VARCHAR(255) NULL,
     read_time_minutes INT UNSIGNED NOT NULL DEFAULT 3,
     published_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -51,6 +55,19 @@ CREATE TABLE article_tags (
     PRIMARY KEY (article_id, tag_id),
     CONSTRAINT fk_article_tags_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
     CONSTRAINT fk_article_tags_tag FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE article_audit_logs (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    article_id INT UNSIGNED NOT NULL,
+    actor_user_id INT UNSIGNED NULL,
+    actor_email VARCHAR(255) NULL,
+    action VARCHAR(80) NOT NULL,
+    from_status VARCHAR(40) NULL,
+    to_status VARCHAR(40) NULL,
+    note VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_article_audit_article (article_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE subscribers (
