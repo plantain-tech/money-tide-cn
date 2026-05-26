@@ -2015,3 +2015,130 @@ main {
     margin-right: 6px;
 }
 
+.ai-rewrite-block {
+    border-top: 2px solid var(--ink);
+    padding: 18px 0;
+}
+
+.ai-rewrite-block:first-of-type {
+    border-top: 0;
+}
+
+.ai-rewrite-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.ai-rewrite-head h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.ai-rewrite-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0;
+}
+
+.ai-rewrite-form input[type="text"] {
+    border: 2px solid var(--ink);
+    padding: 6px 10px;
+    min-width: 220px;
+    background: var(--paper);
+}
+
+.fact-check-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: grid;
+    gap: 6px;
+}
+
+.fact-check-list li form {
+    margin: 0;
+}
+
+.fact-check-list .link-button {
+    color: var(--muted);
+    border-bottom: 0;
+    font-weight: 700;
+}
+
+.fact-check-list li.is-pass .link-button {
+    color: var(--ink);
+}
+
+.fact-check-list li.is-pass span {
+    color: #1f8a3b;
+}
+
+.version-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: grid;
+    gap: 8px;
+}
+
+.version-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+}
+
+.version-list li small {
+    display: block;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.version-list li form {
+    margin: 0;
+}
+
+.ai-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 18px;
+}
+
+.ai-template-card {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 16px 18px;
+    display: grid;
+    gap: 12px;
+}
+
+.ai-template-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.ai-template-card header strong {
+    display: block;
+    font-size: 20px;
+}
+
+.ai-template-card .pill {
+    background: var(--lime);
+}
+
+.ai-template-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+

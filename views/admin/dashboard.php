@@ -55,6 +55,10 @@
             <strong>生成 AI 草稿</strong>
             <span>输入来源链接，生成可审核的编辑草稿。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/ai-templates')) ?>">
+            <strong>AI 提示词模板</strong>
+            <span>按栏目编辑机器人提示词，无需上线发布。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">
             <strong>数据库健康检查</strong>
             <span>查看当前生产数据库连接状态。</span>

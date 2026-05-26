@@ -346,7 +346,8 @@ if ($route === 'admin/subscribers.csv') {
 
 if (preg_match('#^admin/ai-drafts/(\d+)$#', $route, $matches)) {
     require_admin();
-    $draft = ai_draft_by_id((int) $matches[1]);
+    $draftId = (int) $matches[1];
+    $draft = ai_draft_by_id($draftId);
     if (!$draft) {
         http_response_code(404);
         render_page('404', compact('site', 'categories'));
@@ -358,6 +359,9 @@ if (preg_match('#^admin/ai-drafts/(\d+)$#', $route, $matches)) {
         'categories' => $categories,
         'draft' => $draft,
         'templates' => editorial_bot_templates(),
+        'rewriteTargets' => ai_rewrite_targets(),
+        'factChecks' => ai_draft_checks($draftId),
+        'versions' => ai_draft_versions($draftId),
         'message' => (string) ($_GET['message'] ?? ''),
     ]);
     exit;
@@ -367,6 +371,60 @@ if (preg_match('#^admin/ai-drafts/(\d+)/status$#', $route, $matches) && ($_SERVE
     require_admin();
     update_ai_draft_status((int) $matches[1], (string) ($_POST['status'] ?? 'reviewed'));
     header('Location: ' . url('admin/ai-drafts/' . (int) $matches[1]));
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)/rewrite$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $draftId = (int) $matches[1];
+    $result = ai_rewrite_section($draftId, (string) ($_POST['target'] ?? ''), (string) ($_POST['instruction'] ?? ''));
+    $flash = $result['ok'] ? '已重写。' : ($result['message'] ?? '改写失败。');
+    header('Location: ' . url('admin/ai-drafts/' . $draftId) . '?message=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)/check$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $draftId = (int) $matches[1];
+    update_ai_draft_check($draftId, (string) ($_POST['key'] ?? ''), !empty($_POST['passed']));
+    header('Location: ' . url('admin/ai-drafts/' . $draftId));
+    exit;
+}
+
+if (preg_match('#^admin/ai-drafts/(\d+)/restore/(\d+)$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $draftId = (int) $matches[1];
+    $versionId = (int) $matches[2];
+    $result = restore_ai_draft_version($versionId);
+    $flash = $result['ok'] ? '已恢复到该版本。' : ($result['message'] ?? '恢复失败。');
+    header('Location: ' . url('admin/ai-drafts/' . $draftId) . '?message=' . rawurlencode($flash));
+    exit;
+}
+
+if ($route === 'admin/ai-templates') {
+    require_admin();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (($_POST['action'] ?? '') === 'reset') {
+            reset_editorial_template((string) ($_POST['section_slug'] ?? ''));
+            $flash = '已重置为默认提示词。';
+        } else {
+            $result = save_editorial_template(
+                (string) ($_POST['section_slug'] ?? ''),
+                (string) ($_POST['name'] ?? ''),
+                (string) ($_POST['prompt'] ?? '')
+            );
+            $flash = $result['ok'] ? '已保存。' : implode(' ', $result['errors']);
+        }
+    }
+
+    render_page('admin/ai-templates', [
+        'site' => $site,
+        'categories' => $categories,
+        'templates' => editorial_bot_templates(),
+        'defaults' => editorial_bot_template_defaults(),
+        'flash' => $flash,
+    ]);
     exit;
 }
 

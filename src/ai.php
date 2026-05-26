@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-function editorial_bot_templates(): array
+function editorial_bot_template_defaults(): array
 {
     return [
         'markets' => ['name' => 'Markets Bot', 'prompt' => 'Focus on price action, macro data, rates, USD, risk appetite, and asset allocation impact.'],
@@ -14,6 +14,70 @@ function editorial_bot_templates(): array
         'wealth' => ['name' => 'Wealth Bot', 'prompt' => 'Focus on savings, funds, insurance, pensions, consumption, and household cash flow.'],
         'global-china' => ['name' => 'Global China Bot', 'prompt' => 'Focus on Chinese companies going global, cross-border commerce, EVs, brands, channels, compliance, and pricing power.'],
     ];
+}
+
+function editorial_bot_templates(): array
+{
+    $defaults = editorial_bot_template_defaults();
+    ensure_ai_prompt_templates_table();
+    $pdo = db();
+    if ($pdo instanceof PDO) {
+        try {
+            $rows = $pdo->query('SELECT section_slug, name, prompt FROM ai_prompt_templates')->fetchAll();
+            foreach ($rows as $row) {
+                $slug = (string) $row['section_slug'];
+                $defaults[$slug] = [
+                    'name' => (string) ($row['name'] ?: $defaults[$slug]['name'] ?? $slug),
+                    'prompt' => (string) ($row['prompt'] ?: $defaults[$slug]['prompt'] ?? ''),
+                ];
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+    return $defaults;
+}
+
+function save_editorial_template(string $sectionSlug, string $name, string $prompt): array
+{
+    $sectionSlug = trim($sectionSlug);
+    $name = trim($name);
+    $prompt = trim($prompt);
+    if ($sectionSlug === '' || $name === '' || $prompt === '') {
+        return ['ok' => false, 'errors' => ['栏目、名称、提示词都不能为空。']];
+    }
+    ensure_ai_prompt_templates_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'errors' => ['数据库未连接。']];
+    }
+    try {
+        $statement = $pdo->prepare('INSERT INTO ai_prompt_templates (section_slug, name, prompt)
+            VALUES (:section_slug, :name, :prompt)
+            ON DUPLICATE KEY UPDATE name = VALUES(name), prompt = VALUES(prompt)');
+        $statement->execute([
+            'section_slug' => $sectionSlug,
+            'name' => $name,
+            'prompt' => $prompt,
+        ]);
+        return ['ok' => true];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'errors' => ['保存失败：' . $exception->getMessage()]];
+    }
+}
+
+function reset_editorial_template(string $sectionSlug): bool
+{
+    ensure_ai_prompt_templates_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $statement = $pdo->prepare('DELETE FROM ai_prompt_templates WHERE section_slug = :slug');
+        return $statement->execute(['slug' => $sectionSlug]);
+    } catch (Throwable $exception) {
+        return false;
+    }
 }
 
 function ai_draft_form_defaults(): array
@@ -561,4 +625,369 @@ function ai_usage_summary(): array
         }
     }
     return ['used_today' => $used, 'daily_limit' => $limit, 'remaining_today' => max(0, $limit - $used)];
+}
+
+function ai_rewrite_targets(): array
+{
+    return [
+        'title' => ['label' => '标题 / Headline', 'scalar' => true, 'hint' => '中文标题，10-22 字，钩子明确，不夸大。'],
+        'dek' => ['label' => '副标题 / Dek', 'scalar' => true, 'hint' => '一句副标题，补充关键背景。'],
+        'brief' => ['label' => '一句话看懂', 'scalar' => true, 'hint' => '一句话告诉读者本文核心结论。'],
+        'why_it_matters' => ['label' => '为什么重要', 'scalar' => true, 'hint' => '解释这件事的影响和读者关切。'],
+        'social_headline' => ['label' => '社交标题', 'scalar' => true, 'hint' => '微博/X 等社交平台标题，吸引点击但不标题党。'],
+        'newsletter_blurb' => ['label' => 'Newsletter blurb', 'scalar' => true, 'hint' => '邮件 newsletter 推荐语，2-3 句。'],
+        'body' => ['label' => '正文', 'scalar' => false, 'hint' => '完整正文，3-6 段，每段一个观点。'],
+    ];
+}
+
+function ai_rewrite_section(int $draftId, string $target, string $instruction = ''): array
+{
+    $targets = ai_rewrite_targets();
+    if (!isset($targets[$target])) {
+        return ['ok' => false, 'message' => '未知改写目标。'];
+    }
+
+    $draft = ai_draft_by_id($draftId);
+    if (!$draft) {
+        return ['ok' => false, 'message' => 'AI 草稿不存在。'];
+    }
+
+    $provider = ai_provider_status();
+    if (!$provider['ready']) {
+        return ['ok' => false, 'message' => $provider['message']];
+    }
+    if (!ai_usage_allowed()) {
+        return ['ok' => false, 'message' => '今日 AI 额度已用完。'];
+    }
+
+    $payload = $draft['draft_payload'];
+    $original = $payload[$target] ?? '';
+    $isArray = !$targets[$target]['scalar'];
+    if ($isArray && is_array($original)) {
+        $originalText = implode("\n\n", array_map('strval', $original));
+    } else {
+        $originalText = is_array($original) ? implode(' ', $original) : (string) $original;
+    }
+
+    $sectionSlug = (string) $draft['section_slug'];
+    $template = editorial_bot_templates()[$sectionSlug] ?? ['name' => $sectionSlug, 'prompt' => ''];
+    $prompt = build_ai_rewrite_prompt($template, $target, $targets[$target], $payload, $originalText, $instruction);
+    $response = call_ai_rewrite_api($prompt, $target, $isArray);
+    log_ai_usage($provider['provider'], $provider['model'], $sectionSlug, strlen($prompt), $response['ok'] ? 'ok' : 'error', $response['ok'] ? '' : ($response['message'] ?? ''));
+    if (!$response['ok']) {
+        return ['ok' => false, 'message' => $response['message'] ?? 'AI 改写失败。'];
+    }
+
+    $newValue = $response['value'];
+    if ($isArray && !is_array($newValue)) {
+        $newValue = preg_split('/\R{2,}/', trim((string) $newValue)) ?: [];
+    }
+    if (!$isArray && is_array($newValue)) {
+        $newValue = implode(' ', array_map('strval', $newValue));
+    }
+
+    $newPayload = $payload;
+    $newPayload[$target] = $newValue;
+    record_draft_version($draftId, $payload, 'rewrite:' . $target . ($instruction !== '' ? ':' . substr($instruction, 0, 80) : ''));
+    persist_ai_draft_payload($draftId, $newPayload);
+
+    return ['ok' => true, 'value' => $newValue];
+}
+
+function build_ai_rewrite_prompt(array $template, string $target, array $targetMeta, array $payload, string $originalText, string $instruction): string
+{
+    $context = "Article context:\n"
+        . "- title: " . (string) ($payload['title'] ?? '') . "\n"
+        . "- dek: " . (string) ($payload['dek'] ?? '') . "\n"
+        . "- brief: " . (string) ($payload['brief'] ?? '') . "\n";
+
+    $extra = $instruction !== '' ? "\nEditor instruction: " . $instruction . "\n" : "";
+
+    return "You are {$template['name']} for Money Tide, a Chinese financial news product.\n"
+        . "Section mission: {$template['prompt']}\n"
+        . $context
+        . "\nRewrite ONLY the {$target} field in Simplified Chinese.\n"
+        . "Style guide: {$targetMeta['hint']}\n"
+        . "Do not invent facts, numbers, or quotes. Do not add editor notes or AI-assisted disclaimers."
+        . $extra
+        . "\n\nOriginal {$target}:\n" . $originalText . "\n";
+}
+
+function call_ai_rewrite_api(string $prompt, string $target, bool $isArray): array
+{
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'message' => 'Server cURL is not enabled.'];
+    }
+    $provider = (string) app_config('ai.provider', 'ollama_cloud');
+    $apiKey = $provider === 'openai'
+        ? (string) app_config('ai.api_key', '')
+        : (string) app_config('ai.ollama_api_key', '');
+    $model = (string) app_config('ai.model', 'gemma4:31b-cloud');
+
+    $jsonInstruction = $isArray
+        ? "\n\nReturn strict JSON only. No Markdown. Required shape: {\"value\": [\"paragraph one\", \"paragraph two\"]}."
+        : "\n\nReturn strict JSON only. No Markdown. Required shape: {\"value\": \"...\"}.";
+
+    $payload = [
+        'model' => $model,
+        'stream' => false,
+        'format' => 'json',
+        'messages' => [
+            ['role' => 'system', 'content' => 'You are a careful Chinese financial news editorial assistant. Return strict JSON only.'],
+            ['role' => 'user', 'content' => $prompt . $jsonInstruction],
+        ],
+    ];
+
+    $endpoint = $provider === 'openai' ? 'https://api.openai.com/v1/responses' : 'https://ollama.com/api/chat';
+
+    if ($provider === 'openai') {
+        $payload = [
+            'model' => $model,
+            'input' => $prompt . $jsonInstruction,
+            'text' => [
+                'format' => [
+                    'type' => 'json_schema',
+                    'name' => 'money_tide_rewrite',
+                    'strict' => true,
+                    'schema' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['value'],
+                        'properties' => [
+                            'value' => $isArray
+                                ? ['type' => 'array', 'items' => ['type' => 'string']]
+                                : ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    $ch = curl_init($endpoint);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey,
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_TIMEOUT => 90,
+    ]);
+    $raw = curl_exec($ch);
+    $error = curl_error($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($raw === false || $status >= 400) {
+        return ['ok' => false, 'message' => 'AI rewrite API failed: ' . ($error ?: 'HTTP ' . $status)];
+    }
+
+    $decoded = json_decode((string) $raw, true);
+    if ($provider === 'openai') {
+        $text = extract_response_text(is_array($decoded) ? $decoded : []);
+    } else {
+        $text = (string) ($decoded['message']['content'] ?? '');
+    }
+    $parsed = json_decode((string) $text, true);
+    if (!is_array($parsed) || !array_key_exists('value', $parsed)) {
+        return ['ok' => false, 'message' => 'AI 返回的 JSON 无效。'];
+    }
+    return ['ok' => true, 'value' => $parsed['value']];
+}
+
+function persist_ai_draft_payload(int $draftId, array $payload): bool
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        $statement = $pdo->prepare('UPDATE ai_drafts SET draft_payload = :payload WHERE id = :id');
+        return $statement->execute(['payload' => $json, 'id' => $draftId]);
+    } catch (Throwable $exception) {
+        return false;
+    }
+}
+
+function record_draft_version(int $draftId, array $payload, string $source): int
+{
+    ensure_ai_draft_versions_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return 0;
+    }
+    try {
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        $statement = $pdo->prepare('INSERT INTO ai_draft_versions (draft_id, payload, source) VALUES (:draft_id, :payload, :source)');
+        $statement->execute(['draft_id' => $draftId, 'payload' => $json, 'source' => $source]);
+        return (int) $pdo->lastInsertId();
+    } catch (Throwable $exception) {
+        return 0;
+    }
+}
+
+function ai_draft_versions(int $draftId): array
+{
+    ensure_ai_draft_versions_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        $statement = $pdo->prepare('SELECT id, draft_id, source, created_at FROM ai_draft_versions WHERE draft_id = :id ORDER BY created_at DESC, id DESC LIMIT 30');
+        $statement->execute(['id' => $draftId]);
+        return $statement->fetchAll();
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function restore_ai_draft_version(int $versionId): array
+{
+    ensure_ai_draft_versions_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => '数据库未连接。'];
+    }
+    try {
+        $statement = $pdo->prepare('SELECT draft_id, payload FROM ai_draft_versions WHERE id = :id LIMIT 1');
+        $statement->execute(['id' => $versionId]);
+        $row = $statement->fetch();
+        if (!$row) {
+            return ['ok' => false, 'message' => '版本不存在。'];
+        }
+        $draftId = (int) $row['draft_id'];
+        $current = ai_draft_by_id($draftId);
+        if ($current) {
+            record_draft_version($draftId, $current['draft_payload'], 'restore-from:' . $versionId);
+        }
+        $payload = json_decode((string) $row['payload'], true);
+        if (!is_array($payload)) {
+            return ['ok' => false, 'message' => '版本数据已损坏。'];
+        }
+        persist_ai_draft_payload($draftId, $payload);
+        return ['ok' => true, 'draft_id' => $draftId];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => '恢复失败：' . $exception->getMessage()];
+    }
+}
+
+function ai_draft_check_keys(): array
+{
+    return [
+        'source_links_open' => '来源链接已逐一打开',
+        'numbers_verified' => '数字与日期与来源一致',
+        'quotes_attributed' => '引语已注明出处',
+        'facts_verified' => '关键事实已交叉核查',
+        'tone_appropriate' => '口吻克制，未夸大或预测',
+        'no_unsupported_speculation' => '没有无来源的推测',
+        'disclaimer_present' => '免责声明会随发布添加',
+    ];
+}
+
+function ai_draft_checks(int $draftId): array
+{
+    ensure_ai_draft_checks_table();
+    $pdo = db();
+    $state = [];
+    foreach (ai_draft_check_keys() as $key => $label) {
+        $state[$key] = ['key' => $key, 'label' => $label, 'passed' => false, 'updated_at' => null];
+    }
+    if (!$pdo instanceof PDO) {
+        return array_values($state);
+    }
+    try {
+        $statement = $pdo->prepare('SELECT check_key, passed, updated_at FROM ai_draft_checks WHERE draft_id = :id');
+        $statement->execute(['id' => $draftId]);
+        foreach ($statement->fetchAll() as $row) {
+            $key = (string) $row['check_key'];
+            if (isset($state[$key])) {
+                $state[$key]['passed'] = (bool) (int) $row['passed'];
+                $state[$key]['updated_at'] = (string) $row['updated_at'];
+            }
+        }
+    } catch (Throwable $exception) {
+    }
+    return array_values($state);
+}
+
+function update_ai_draft_check(int $draftId, string $key, bool $passed): bool
+{
+    if (!array_key_exists($key, ai_draft_check_keys())) {
+        return false;
+    }
+    ensure_ai_draft_checks_table();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $statement = $pdo->prepare('INSERT INTO ai_draft_checks (draft_id, check_key, passed)
+            VALUES (:draft_id, :check_key, :passed)
+            ON DUPLICATE KEY UPDATE passed = VALUES(passed), updated_at = CURRENT_TIMESTAMP');
+        return $statement->execute([
+            'draft_id' => $draftId,
+            'check_key' => $key,
+            'passed' => $passed ? 1 : 0,
+        ]);
+    } catch (Throwable $exception) {
+        return false;
+    }
+}
+
+function ensure_ai_draft_versions_table(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ai_draft_versions (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            draft_id INT UNSIGNED NOT NULL,
+            payload LONGTEXT NOT NULL,
+            source VARCHAR(255) NOT NULL DEFAULT 'edit',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_ai_draft_versions_draft (draft_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+    }
+}
+
+function ensure_ai_draft_checks_table(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ai_draft_checks (
+            draft_id INT UNSIGNED NOT NULL,
+            check_key VARCHAR(64) NOT NULL,
+            passed TINYINT(1) NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (draft_id, check_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+    }
+}
+
+function ensure_ai_prompt_templates_table(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ai_prompt_templates (
+            section_slug VARCHAR(120) NOT NULL PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            prompt TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+    }
 }
