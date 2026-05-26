@@ -512,11 +512,6 @@ function publish_checklist(array $article): array
             'label' => '正文不少于 120 字',
             'passed' => $wordCount >= 120,
         ],
-        [
-            'key' => 'disclaimer',
-            'label' => '正文已包含合规免责声明',
-            'passed' => strpos($bodyText, $disclaimer) !== false,
-        ],
     ];
 }
 
