@@ -128,6 +128,26 @@
             <strong>站内分析</strong>
             <span>查看 14 天浏览趋势、热门文章、订阅来源。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
+            <strong>系统诊断</strong>
+            <span>数据库表行数、AI 额度、PHP 错误日志。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/smoke')) ?>">
+            <strong>Smoke 检查</strong>
+            <span>一键自检关键模块状态。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/audit')) ?>">
+            <strong>审计日志</strong>
+            <span>所有状态变更和删除操作记录。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/exports')) ?>">
+            <strong>数据导出</strong>
+            <span>把订阅者、文章、发送记录等导出 CSV。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/qa-checklist')) ?>">
+            <strong>Week 3 QA</strong>
+            <span>整周新功能上线前的检查清单。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">
             <strong>数据库健康检查</strong>
             <span>查看当前生产数据库连接状态。</span>

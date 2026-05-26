@@ -112,6 +112,15 @@ $schema = [
             <a class="button button-small" href="<?= e(url('article/' . $readNext['slug'])) ?>">继续阅读</a>
         </aside>
     <?php endif; ?>
+
+    <?php $tags = $tags ?? []; if ($tags): ?>
+        <aside class="article-tag-bar">
+            <span class="eyebrow">Tags</span>
+            <?php foreach ($tags as $tag): ?>
+                <a class="topic-chip" href="<?= e(url('tag/' . $tag['slug'])) ?>">#<?= e($tag['name']) ?></a>
+            <?php endforeach; ?>
+        </aside>
+    <?php endif; ?>
 </article>
 
 <section class="related-section reveal-on-scroll">

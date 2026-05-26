@@ -12,7 +12,7 @@ function default_og_image(): string
     return app_url('assets/img/og-money-tide.svg');
 }
 
-function emit_sitemap(array $categories, array $articles): void
+function emit_sitemap(array $categories, array $articles, array $tags = []): void
 {
     header('Content-Type: application/xml; charset=utf-8');
 
@@ -20,6 +20,7 @@ function emit_sitemap(array $categories, array $articles): void
         ['loc' => canonical_url(), 'priority' => '1.0'],
         ['loc' => canonical_url('latest'), 'priority' => '0.8'],
         ['loc' => canonical_url('subscribe'), 'priority' => '0.8'],
+        ['loc' => canonical_url('topics'), 'priority' => '0.7'],
         ['loc' => canonical_url('about'), 'priority' => '0.4'],
         ['loc' => canonical_url('editorial-standards'), 'priority' => '0.4'],
         ['loc' => canonical_url('disclaimer'), 'priority' => '0.3'],
@@ -27,6 +28,9 @@ function emit_sitemap(array $categories, array $articles): void
 
     foreach ($categories as $category) {
         $urls[] = ['loc' => canonical_url('category/' . $category['slug']), 'priority' => '0.7'];
+    }
+    foreach ($tags as $tag) {
+        $urls[] = ['loc' => canonical_url('tag/' . $tag['slug']), 'priority' => '0.6'];
     }
     foreach ($articles as $article) {
         $urls[] = [

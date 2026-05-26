@@ -35,7 +35,7 @@ $articles = get_articles();
 $featured = $articles[0] ?? null;
 
 if ($route === 'sitemap.xml') {
-    emit_sitemap($categories, $articles);
+    emit_sitemap($categories, $articles, all_tags());
     exit;
 }
 
@@ -819,12 +819,240 @@ if (preg_match('#^admin/ai-drafts/(\d+)/convert$#', $route, $matches) && ($_SERV
     exit;
 }
 
+// ===== Reader account routes =====
+if ($route === 'account/signup') {
+    $error = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = reader_signup(
+            (string) ($_POST['email'] ?? ''),
+            (string) ($_POST['password'] ?? ''),
+            (string) ($_POST['display_name'] ?? '')
+        );
+        if ($result['ok']) {
+            header('Location: ' . url('account/referral'));
+            exit;
+        }
+        $error = $result['message'];
+    }
+    render_page('account/signup', [
+        'site' => $site,
+        'categories' => $categories,
+        'error' => $error,
+        'oauth' => oauth_provider_status(),
+    ]);
+    exit;
+}
+
+if ($route === 'account/login') {
+    $error = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = reader_login((string) ($_POST['email'] ?? ''), (string) ($_POST['password'] ?? ''));
+        if ($result['ok']) {
+            header('Location: ' . url('account'));
+            exit;
+        }
+        $error = $result['message'];
+    }
+    render_page('account/login', [
+        'site' => $site,
+        'categories' => $categories,
+        'error' => $error,
+        'oauth' => oauth_provider_status(),
+    ]);
+    exit;
+}
+
+if ($route === 'account/logout') {
+    reader_logout();
+    header('Location: ' . url());
+    exit;
+}
+
+if ($route === 'account') {
+    require_reader();
+    $reader = reader_session();
+    render_page('account/dashboard', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'data' => reader_account_data((int) $reader['id']),
+        'referral' => reader_referral_data((int) $reader['id']),
+    ]);
+    exit;
+}
+
+if ($route === 'account/preferences') {
+    require_reader();
+    $reader = reader_session();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_reader_preferences(
+            (int) $reader['id'],
+            (array) ($_POST['topics'] ?? []),
+            (string) ($_POST['digest_frequency'] ?? 'daily')
+        );
+        $flash = $result['ok'] ? '已保存偏好。' : ('保存失败：' . ($result['message'] ?? ''));
+    }
+    render_page('account/preferences', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'data' => reader_account_data((int) $reader['id']),
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
+if ($route === 'account/unsubscribe') {
+    require_reader();
+    $reader = reader_session();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (($_POST['action'] ?? '') === 'resubscribe') {
+            resubscribe_reader((int) $reader['id']);
+            $flash = '已重新订阅。';
+        } else {
+            unsubscribe_reader((int) $reader['id']);
+            $flash = '已退订邮件订阅。可以随时回来重新订阅。';
+        }
+    }
+    render_page('account/unsubscribe', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'data' => reader_account_data((int) $reader['id']),
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
+if ($route === 'account/referral') {
+    require_reader();
+    $reader = reader_session();
+    render_page('account/referral', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'referral' => reader_referral_data((int) $reader['id']),
+    ]);
+    exit;
+}
+
+// ===== Tags / topic pages =====
+if (strpos($route, 'tag/') === 0) {
+    $slug = basename($route);
+    $tag = find_tag($slug);
+    if ($tag === null) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    render_page('tag', [
+        'site' => $site,
+        'categories' => $categories,
+        'tag' => $tag,
+        'articles' => articles_by_tag($slug),
+    ]);
+    exit;
+}
+
+if ($route === 'topics') {
+    render_page('topics', [
+        'site' => $site,
+        'categories' => $categories,
+        'tags' => all_tags(),
+    ]);
+    exit;
+}
+
+// ===== W3D7 admin diagnostics, exports, smoke, audit, QA =====
+if ($route === 'admin/diagnostics') {
+    require_admin();
+    render_page('admin/diagnostics', [
+        'site' => $site,
+        'categories' => $categories,
+        'diagnostics' => database_diagnostics(),
+        'errorLog' => diagnostics_error_log_tail(80),
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/smoke') {
+    require_admin();
+    if (($_GET['format'] ?? '') === 'json') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['checks' => admin_smoke_checks()], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        exit;
+    }
+    render_page('admin/smoke', [
+        'site' => $site,
+        'categories' => $categories,
+        'checks' => admin_smoke_checks(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/exports') {
+    require_admin();
+    render_page('admin/exports', [
+        'site' => $site,
+        'categories' => $categories,
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/exports/([a-z_]+)\.csv$#', $route, $matches)) {
+    require_admin();
+    if (!diagnostics_export_csv($matches[1])) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    exit;
+}
+
+if ($route === 'admin/audit') {
+    require_admin();
+    $pdo = db();
+    $entries = [];
+    if ($pdo instanceof PDO) {
+        try {
+            $statement = $pdo->query('SELECT l.id, l.article_id, l.action, l.from_status, l.to_status, l.note, l.created_at,
+                    a.title, a.slug
+                FROM article_audit_logs l
+                LEFT JOIN articles a ON a.id = l.article_id
+                ORDER BY l.created_at DESC LIMIT 200');
+            $entries = $statement->fetchAll() ?: [];
+        } catch (Throwable $exception) {
+        }
+    }
+    render_page('admin/audit', [
+        'site' => $site,
+        'categories' => $categories,
+        'entries' => $entries,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/qa-checklist') {
+    require_admin();
+    render_page('admin/qa-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'items' => week_three_qa_checklist(),
+    ]);
+    exit;
+}
+
 if ($route === 'home') {
     render_page('home', [
         'site' => $site,
         'categories' => $categories,
         'articles' => $articles,
         'featured' => $featured,
+        'mostRead' => most_read_articles(5, 7),
+        'popularTags' => array_slice(all_tags(), 0, 12),
     ]);
     exit;
 }
@@ -903,6 +1131,7 @@ if (strpos($route, 'article/') === 0) {
         'categories' => $categories,
         'article' => $article,
         'related' => related_articles($article),
+        'tags' => article_tags_by_slug($slug),
     ]);
     exit;
 }

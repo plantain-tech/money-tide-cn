@@ -1,0 +1,178 @@
+<?php
+
+declare(strict_types=1);
+
+function database_diagnostics(): array
+{
+    $pdo = db();
+    $out = ['ready' => $pdo instanceof PDO, 'tables' => [], 'version' => '', 'errors' => []];
+    if (!$pdo instanceof PDO) {
+        $out['errors'][] = 'PDO not connected.';
+        return $out;
+    }
+    try {
+        $out['version'] = (string) $pdo->query('SELECT VERSION()')->fetchColumn();
+    } catch (Throwable $exception) {
+        $out['errors'][] = 'version: ' . $exception->getMessage();
+    }
+    $tables = [
+        'articles', 'categories', 'subscribers', 'newsletter_preferences', 'users', 'authors',
+        'analytics_events', 'ai_drafts', 'ai_draft_versions', 'ai_draft_checks', 'ai_prompt_templates',
+        'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
+        'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
+        'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
+    ];
+    foreach ($tables as $table) {
+        if (!preg_match('/^[a-z_]+$/', $table)) {
+            continue;
+        }
+        $row = ['table' => $table, 'rows' => null, 'error' => null];
+        try {
+            $count = $pdo->query("SELECT COUNT(*) FROM {$table}")->fetchColumn();
+            $row['rows'] = (int) $count;
+        } catch (Throwable $exception) {
+            $row['error'] = $exception->getMessage();
+        }
+        $out['tables'][] = $row;
+    }
+    return $out;
+}
+
+function diagnostics_error_log_tail(int $lines = 80): array
+{
+    $candidates = array_filter([
+        (string) ini_get('error_log'),
+        APP_BASE_PATH . '/error_log',
+        APP_BASE_PATH . '/public/error_log',
+        APP_BASE_PATH . '/logs/error.log',
+    ]);
+    foreach ($candidates as $path) {
+        if ($path !== '' && is_readable($path)) {
+            $tail = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (is_array($tail)) {
+                return ['path' => $path, 'lines' => array_slice($tail, -$lines)];
+            }
+        }
+    }
+    return ['path' => '', 'lines' => []];
+}
+
+function admin_smoke_checks(): array
+{
+    ensure_editorial_schema();
+    ensure_analytics_table();
+    ensure_ai_drafts_table();
+    ensure_ai_draft_versions_table();
+    ensure_ai_draft_checks_table();
+    ensure_ai_prompt_templates_table();
+    if (function_exists('ensure_newsletter_issues_schema')) {
+        ensure_newsletter_issues_schema();
+    }
+    if (function_exists('ensure_ai_sources_schema')) {
+        ensure_ai_sources_schema();
+    }
+    if (function_exists('ensure_reader_accounts_schema')) {
+        ensure_reader_accounts_schema();
+    }
+    if (function_exists('ensure_tags_schema')) {
+        ensure_tags_schema();
+    }
+
+    $checks = [];
+
+    $checks[] = ['name' => 'Database connection', 'ok' => db_is_ready(), 'detail' => db_is_ready() ? 'connected' : 'not connected'];
+
+    $cats = get_categories();
+    $checks[] = ['name' => 'Categories loaded', 'ok' => count($cats) > 0, 'detail' => count($cats) . ' categories'];
+
+    $articleCount = db_count('articles', "status = 'published'");
+    $checks[] = ['name' => 'Published articles', 'ok' => $articleCount > 0, 'detail' => $articleCount . ' published'];
+
+    $subs = db_count('subscribers', "status = 'active'");
+    $checks[] = ['name' => 'Active subscribers', 'ok' => $subs >= 0, 'detail' => $subs . ' active'];
+
+    $views = db_count('analytics_events', "event_type = 'article_view'");
+    $checks[] = ['name' => 'Analytics view events', 'ok' => $views >= 0, 'detail' => $views . ' events'];
+
+    $aiUsage = ai_usage_summary();
+    $checks[] = [
+        'name' => 'AI usage today',
+        'ok' => $aiUsage['used_today'] < $aiUsage['daily_limit'],
+        'detail' => $aiUsage['used_today'] . '/' . $aiUsage['daily_limit'] . ' used',
+    ];
+
+    $aiProvider = ai_provider_status();
+    $checks[] = ['name' => 'AI provider ready', 'ok' => $aiProvider['ready'], 'detail' => $aiProvider['label'] . ' · ' . $aiProvider['model']];
+
+    if (function_exists('email_provider_status')) {
+        $email = email_provider_status();
+        $checks[] = ['name' => 'Email provider', 'ok' => $email['ready'], 'detail' => $email['provider'] . ' · ' . ($email['from_address'] ?: 'no from')];
+    }
+
+    if (function_exists('reader_account_data')) {
+        $readerCount = db_count('users', "role = 'reader'");
+        $checks[] = ['name' => 'Reader accounts', 'ok' => $readerCount >= 0, 'detail' => $readerCount . ' readers'];
+    }
+
+    if (function_exists('all_tags')) {
+        $tagCount = count(all_tags());
+        $checks[] = ['name' => 'Tags with published articles', 'ok' => true, 'detail' => $tagCount . ' tags'];
+    }
+
+    return $checks;
+}
+
+function diagnostics_export_csv(string $table): bool
+{
+    if (!preg_match('/^[a-z_]+$/', $table)) {
+        return false;
+    }
+    $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
+        'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
+        'article_audit_logs', 'ai_usage_logs'];
+    if (!in_array($table, $allowed, true)) {
+        return false;
+    }
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $statement = $pdo->query("SELECT * FROM {$table} ORDER BY id DESC LIMIT 5000");
+        $rows = $statement->fetchAll();
+    } catch (Throwable $exception) {
+        return false;
+    }
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $table . '-' . date('Ymd-His') . '.csv"');
+    $output = fopen('php://output', 'w');
+    if ($output === false) {
+        return false;
+    }
+    fwrite($output, "\xEF\xBB\xBF");
+    if (!$rows) {
+        fputcsv($output, ['(empty)']);
+        fclose($output);
+        return true;
+    }
+    fputcsv($output, array_keys($rows[0]));
+    foreach ($rows as $row) {
+        fputcsv($output, array_map(static fn ($v) => is_scalar($v) || $v === null ? (string) $v : json_encode($v, JSON_UNESCAPED_UNICODE), $row));
+    }
+    fclose($output);
+    return true;
+}
+
+function week_three_qa_checklist(): array
+{
+    return [
+        ['label' => 'D1 编辑角色与权限：writer/editor/admin 已就位', 'tip' => '试用 writer 账号能否创建草稿但不能发布'],
+        ['label' => 'D2 图片系统：英雄图与 og:image 都正确渲染', 'tip' => '查看任意已发布文章页面的 og:image'],
+        ['label' => 'D3 Newsletter：可以创建一期、添加文章、预览、广播', 'tip' => '/admin/newsletter 走完整流程'],
+        ['label' => 'D4 研究台：可以保存来源、模板、生成研究简报', 'tip' => '/admin/research-desk 走 AI 流程（注意 AI 额度）'],
+        ['label' => 'D5 读者账号：注册、登录、偏好、退订、推荐链接', 'tip' => '/account/signup 后访问 /account/preferences 和 /account/referral'],
+        ['label' => 'D6 标签与 Most Read：标签页和首页 Most Read 渲染', 'tip' => '/tag/{slug} 与首页底部'],
+        ['label' => 'D7 诊断：数据库、错误日志、smoke、导出工作', 'tip' => '/admin/diagnostics 与 /admin/smoke 与 /admin/exports'],
+        ['label' => '部署：health.php 返回 week-3-day-5-6-7 marker', 'tip' => '/health.php'],
+    ];
+}

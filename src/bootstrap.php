@@ -18,6 +18,9 @@ require_once __DIR__ . '/launch.php';
 require_once __DIR__ . '/analytics.php';
 require_once __DIR__ . '/newsletter_issues.php';
 require_once __DIR__ . '/ai_sources.php';
+require_once __DIR__ . '/reader_accounts.php';
+require_once __DIR__ . '/tags.php';
+require_once __DIR__ . '/diagnostics.php';
 require_once __DIR__ . '/content.php';
 
 function e(string $value): string

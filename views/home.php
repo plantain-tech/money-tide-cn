@@ -175,3 +175,42 @@ foreach ($focusSlugs as $slug) {
         <?php endforeach; ?>
     </div>
 </section>
+
+<?php $mostRead = $mostRead ?? []; if ($mostRead): ?>
+<section class="most-read-band reveal-on-scroll">
+    <div class="section-heading">
+        <p class="eyebrow">Most Read</p>
+        <h2>读者本周最常打开</h2>
+    </div>
+    <ol class="most-read-list">
+        <?php foreach ($mostRead as $row): ?>
+            <li>
+                <span class="most-read-rank"></span>
+                <div>
+                    <a class="pill" href="<?= e(url('category/' . $row['category'])) ?>"><?= e($row['category_name']) ?></a>
+                    <h3><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e($row['title']) ?></a></h3>
+                    <small><?= e((string) $row['views']) ?> 次阅读 · <?= e($row['published_at']) ?></small>
+                </div>
+            </li>
+        <?php endforeach; ?>
+    </ol>
+</section>
+<?php endif; ?>
+
+<?php $popularTags = $popularTags ?? []; if ($popularTags): ?>
+<section class="topic-band reveal-on-scroll">
+    <div class="section-heading">
+        <p class="eyebrow">Topics</p>
+        <h2>热门话题</h2>
+        <a class="ghost-link" href="<?= e(url('topics')) ?>">查看全部</a>
+    </div>
+    <div class="topic-cloud">
+        <?php foreach ($popularTags as $tag): ?>
+            <a class="topic-chip" href="<?= e(url('tag/' . $tag['slug'])) ?>">
+                <strong>#<?= e($tag['name']) ?></strong>
+                <small><?= e((string) $tag['article_count']) ?></small>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
