@@ -19,11 +19,14 @@ html {
     color: var(--ink);
     background: var(--paper);
     font-family: Arial, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    line-break: loose;
+    scroll-behavior: smooth;
 }
 
 body {
     margin: 0;
     min-width: 320px;
+    overflow-x: hidden;
 }
 
 a {
@@ -36,6 +39,19 @@ input,
 select,
 textarea {
     font: inherit;
+    min-width: 0;
+}
+
+p,
+li,
+h1,
+h2,
+h3,
+h4,
+strong,
+a,
+span {
+    overflow-wrap: anywhere;
 }
 
 .site-header {
@@ -1664,7 +1680,22 @@ main {
     }
 
     .top-nav {
+        display: flex;
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+
+    .top-nav::-webkit-scrollbar {
         display: none;
+    }
+
+    .top-nav a {
+        flex: 0 0 auto;
+        white-space: nowrap;
     }
 
     .hero,
@@ -1722,6 +1753,14 @@ main {
         grid-template-columns: 1fr;
     }
 
+    .admin-table-row > *,
+    .latest-item > *,
+    .list-card > *,
+    .story-card > *,
+    .category-tile > * {
+        min-width: 0;
+    }
+
     .market-strip {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1738,11 +1777,18 @@ main {
 @media (max-width: 620px) {
     .site-header {
         gap: 12px;
+        padding-inline: 12px;
     }
 
     .brand-name,
     .ghost-link {
         display: none;
+    }
+
+    .header-actions .button-small {
+        min-height: 34px;
+        padding-inline: 10px;
+        font-size: 13px;
     }
 
     .hero-copy h1,
@@ -1756,6 +1802,10 @@ main {
     .reader-dashboard,
     .quick-read-section,
     .briefing-band,
+    .subscribe-hero,
+    .subscribe-growth-band,
+    .article-shell,
+    .page-hero,
     .category-band {
         padding-right: 14px;
         padding-left: 14px;
@@ -2238,5 +2288,4 @@ main {
     transform: rotate(-30deg);
     transform-origin: top left;
 }
-
 
