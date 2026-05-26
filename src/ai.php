@@ -433,6 +433,7 @@ function extract_response_text(array $response): string
 function save_ai_draft_record(string $sectionSlug, string $promptName, array $sources, array $payload): int
 {
     set_last_ai_draft_save_error('');
+    db(true);
     ensure_ai_drafts_table();
     $pdo = db();
     if (!$pdo instanceof PDO) {

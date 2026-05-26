@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-function db(): ?PDO
+function db(bool $reset = false): ?PDO
 {
     static $pdo = false;
+
+    if ($reset) {
+        $pdo = false;
+    }
 
     if ($pdo instanceof PDO) {
         return $pdo;
