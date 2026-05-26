@@ -1,5 +1,18 @@
 <?php
 $pageTitle = $pageTitle ?? ($site['name'] ?? '钱潮 Money Tide');
+$pageDescription = $pageDescription ?? ($site['description'] ?? '');
+$canonicalPath = $canonicalPath ?? trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
+$canonicalUrl = $canonicalUrl ?? canonical_url($canonicalPath);
+$ogType = $ogType ?? 'website';
+$ogImage = $ogImage ?? default_og_image();
+$schema = $schema ?? [
+    '@context' => 'https://schema.org',
+    '@type' => 'NewsMediaOrganization',
+    'name' => 'Money Tide',
+    'alternateName' => '钱潮',
+    'url' => canonical_url(),
+    'inLanguage' => 'zh-CN',
+];
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -7,8 +20,21 @@ $pageTitle = $pageTitle ?? ($site['name'] ?? '钱潮 Money Tide');
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?></title>
-    <meta name="description" content="<?= e($site['description'] ?? '') ?>">
+    <meta name="description" content="<?= e($pageDescription) ?>">
+    <link rel="canonical" href="<?= e($canonicalUrl) ?>">
+    <meta property="og:site_name" content="钱潮 Money Tide">
+    <meta property="og:type" content="<?= e($ogType) ?>">
+    <meta property="og:title" content="<?= e($pageTitle) ?>">
+    <meta property="og:description" content="<?= e($pageDescription) ?>">
+    <meta property="og:url" content="<?= e($canonicalUrl) ?>">
+    <meta property="og:image" content="<?= e($ogImage) ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= e($pageTitle) ?>">
+    <meta name="twitter:description" content="<?= e($pageDescription) ?>">
+    <meta name="twitter:image" content="<?= e($ogImage) ?>">
+    <meta name="theme-color" content="#dcff00">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
+    <script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
 </head>
 <body>
     <header class="site-header">

@@ -801,6 +801,11 @@ main {
     grid-template-columns: minmax(260px, 1fr) 120px 170px minmax(180px, 1fr) 150px;
 }
 
+.qa-table-head,
+.qa-table-row {
+    grid-template-columns: minmax(260px, 1fr) 120px minmax(220px, 1fr);
+}
+
 .ai-draft-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -871,6 +876,8 @@ main {
     .ai-table-row,
     .subscriber-table-head,
     .subscriber-table-row,
+    .qa-table-head,
+    .qa-table-row,
     .ai-draft-layout {
         grid-template-columns: 1fr;
     }

@@ -1,4 +1,20 @@
-<?php $pageTitle = $article['title'] . ' - 钱潮 Money Tide'; ?>
+<?php
+$pageTitle = $article['title'] . ' - 钱潮 Money Tide';
+$pageDescription = $article['dek'];
+$canonicalPath = 'article/' . $article['slug'];
+$ogType = 'article';
+$schema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'NewsArticle',
+    'headline' => $article['title'],
+    'description' => $article['dek'],
+    'datePublished' => $article['published_at'],
+    'author' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
+    'publisher' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
+    'mainEntityOfPage' => canonical_url($canonicalPath),
+    'inLanguage' => 'zh-CN',
+];
+?>
 <article class="article-shell">
     <header class="article-header">
         <a class="pill" href="<?= e(url('category/' . $article['category'])) ?>"><?= e($article['category_name']) ?></a>
@@ -18,14 +34,16 @@
         </div>
     </section>
 
-    <section class="key-numbers">
-        <?php foreach ($article['numbers'] as $number => $label): ?>
-            <div>
-                <strong><?= e((string) $number) ?></strong>
-                <span><?= e((string) $label) ?></span>
-            </div>
-        <?php endforeach; ?>
-    </section>
+    <?php if (!empty($article['numbers'])): ?>
+        <section class="key-numbers">
+            <?php foreach ($article['numbers'] as $number => $label): ?>
+                <div>
+                    <strong><?= e((string) $number) ?></strong>
+                    <span><?= e((string) $label) ?></span>
+                </div>
+            <?php endforeach; ?>
+        </section>
+    <?php endif; ?>
 
     <div class="article-body">
         <?php foreach ($article['body'] as $paragraph): ?>

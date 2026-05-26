@@ -59,6 +59,10 @@
             <strong>数据库健康检查</strong>
             <span>查看当前生产数据库连接状态。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/qa')) ?>">
+            <strong>生产 QA</strong>
+            <span>检查上线前的内容、AI、订阅和数据库状态。</span>
+        </a>
         <form class="admin-module admin-module-form" method="post" action="<?= e(url('admin/seed-launch-articles')) ?>">
             <strong>启动文章</strong>
             <span>一键创建 3 篇可编辑的发布示例。</span>

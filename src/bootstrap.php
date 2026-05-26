@@ -13,6 +13,7 @@ require_once __DIR__ . '/newsletter.php';
 require_once __DIR__ . '/subscribers.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/ai.php';
+require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/content.php';
 
 function e(string $value): string

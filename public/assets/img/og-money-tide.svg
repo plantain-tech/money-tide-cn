@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">钱潮 Money Tide</title>
+  <desc id="desc">Chinese financial news briefing share card</desc>
+  <rect width="1200" height="630" fill="#f7f1e7"/>
+  <rect x="44" y="44" width="1112" height="542" fill="#dcff00" stroke="#111" stroke-width="8"/>
+  <rect x="80" y="82" width="1040" height="466" fill="#f7f1e7" stroke="#111" stroke-width="6"/>
+  <text x="110" y="200" font-family="Arial, 'Noto Sans SC', sans-serif" font-size="92" font-weight="900" fill="#111">钱潮</text>
+  <text x="110" y="292" font-family="Arial, sans-serif" font-size="78" font-weight="900" fill="#111">Money Tide</text>
+  <text x="110" y="382" font-family="Arial, 'Noto Sans SC', sans-serif" font-size="42" font-weight="800" fill="#2554ff">每天5分钟，看懂全球市场。</text>
+  <g transform="translate(830 152)">
+    <rect x="0" y="190" width="42" height="150" fill="#2554ff" stroke="#111" stroke-width="5"/>
+    <rect x="70" y="110" width="42" height="230" fill="#dcff00" stroke="#111" stroke-width="5"/>
+    <rect x="140" y="62" width="42" height="278" fill="#f04f3d" stroke="#111" stroke-width="5"/>
+    <rect x="210" y="145" width="42" height="195" fill="#fff" stroke="#111" stroke-width="5"/>
+  </g>
+</svg>

@@ -30,6 +30,16 @@ $categories = get_categories();
 $articles = get_articles();
 $featured = $articles[0] ?? null;
 
+if ($route === 'sitemap.xml') {
+    emit_sitemap($categories, $articles);
+    exit;
+}
+
+if ($route === 'robots.txt') {
+    emit_robots();
+    exit;
+}
+
 if ($route === 'admin/login') {
     $error = null;
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -75,6 +85,16 @@ if ($route === 'admin/db-health') {
         'database' => db_is_ready() ? 'connected' : 'not_configured_or_unavailable',
         'checked_at' => gmdate('c'),
     ], JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($route === 'admin/qa') {
+    require_admin();
+    render_page('admin/qa', [
+        'site' => $site,
+        'categories' => $categories,
+        'checks' => qa_checks(),
+    ]);
     exit;
 }
 
