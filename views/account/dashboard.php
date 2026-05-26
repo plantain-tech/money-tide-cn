@@ -8,11 +8,11 @@
         <div class="account-stats">
             <div>
                 <span>订阅频率</span>
-                <strong><?= e((string) $data['preferences']['digest_frequency']) ?></strong>
+                <strong><?= e((string) $account['preferences']['digest_frequency']) ?></strong>
             </div>
             <div>
                 <span>关注栏目</span>
-                <strong><?= e((string) count($data['topics'])) ?></strong>
+                <strong><?= e((string) count($account['topics'])) ?></strong>
             </div>
             <div>
                 <span>已邀请</span>

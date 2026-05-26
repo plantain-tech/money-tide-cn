@@ -1,6 +1,6 @@
 <?php
 $pageTitle = '订阅管理 - 钱潮 Money Tide';
-$status = (string) ($data['subscriber']['status'] ?? 'active');
+$status = (string) ($account['subscriber']['status'] ?? 'active');
 ?>
 <section class="account-shell">
     <div class="account-card">

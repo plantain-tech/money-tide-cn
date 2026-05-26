@@ -875,7 +875,7 @@ if ($route === 'account') {
         'site' => $site,
         'categories' => $categories,
         'reader' => $reader,
-        'data' => reader_account_data((int) $reader['id']),
+        'account' => reader_account_data((int) $reader['id']),
         'referral' => reader_referral_data((int) $reader['id']),
     ]);
     exit;
@@ -897,7 +897,7 @@ if ($route === 'account/preferences') {
         'site' => $site,
         'categories' => $categories,
         'reader' => $reader,
-        'data' => reader_account_data((int) $reader['id']),
+        'account' => reader_account_data((int) $reader['id']),
         'flash' => $flash,
     ]);
     exit;
@@ -920,7 +920,7 @@ if ($route === 'account/unsubscribe') {
         'site' => $site,
         'categories' => $categories,
         'reader' => $reader,
-        'data' => reader_account_data((int) $reader['id']),
+        'account' => reader_account_data((int) $reader['id']),
         'flash' => $flash,
     ]);
     exit;

@@ -10,7 +10,7 @@
                 邮件频率
                 <select name="digest_frequency">
                     <?php foreach (['daily' => '每天', 'weekly' => '每周', 'off' => '暂停'] as $value => $label): ?>
-                        <option value="<?= e($value) ?>" <?= ($data['preferences']['digest_frequency'] === $value) ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <option value="<?= e($value) ?>" <?= ($account['preferences']['digest_frequency'] === $value) ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -19,7 +19,7 @@
                 <legend>感兴趣的栏目</legend>
                 <?php foreach ($categories as $cat): ?>
                     <label class="account-topic">
-                        <input type="checkbox" name="topics[]" value="<?= e($cat['slug']) ?>" <?= in_array($cat['slug'], $data['topics'], true) ? 'checked' : '' ?>>
+                        <input type="checkbox" name="topics[]" value="<?= e($cat['slug']) ?>" <?= in_array($cat['slug'], $account['topics'], true) ? 'checked' : '' ?>>
                         <span><?= e($cat['name']) ?></span>
                     </label>
                 <?php endforeach; ?>
