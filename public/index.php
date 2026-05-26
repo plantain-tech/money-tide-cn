@@ -86,20 +86,32 @@ if ($route === 'admin/charset-debug') {
     require_admin();
     header('Content-Type: application/json; charset=utf-8');
     $pdo = db();
-    $out = ['db_ready' => $pdo instanceof PDO];
+    $q = (string) ($_GET['q'] ?? '西班牙');
+    $out = [
+        'db_ready' => $pdo instanceof PDO,
+        'q_raw' => $q,
+        'q_hex' => bin2hex($q),
+        'q_len_bytes' => strlen($q),
+        'q_len_chars' => mb_strlen($q, 'UTF-8'),
+        'query_string' => $_SERVER['QUERY_STRING'] ?? '',
+        'mb_internal' => mb_internal_encoding(),
+    ];
     if ($pdo instanceof PDO) {
         try {
-            $out['session_vars'] = $pdo->query("SHOW VARIABLES LIKE 'character_set%'")->fetchAll();
-            $out['collations'] = $pdo->query("SHOW VARIABLES LIKE 'collation%'")->fetchAll();
-            $out['articles_table'] = $pdo->query("SHOW CREATE TABLE articles")->fetch();
-            $out['sample'] = $pdo->query("SELECT id, title, HEX(title) AS title_hex FROM articles WHERE title LIKE '%西班牙%' OR title LIKE '%加密%' OR title LIKE '%Polymarket%' LIMIT 5")->fetchAll();
             $stmt = $pdo->prepare("SELECT id, title FROM articles WHERE title LIKE :q LIMIT 5");
-            $stmt->execute(['q' => '%西班牙%']);
-            $out['like_bind_cjk'] = $stmt->fetchAll();
-            $stmt2 = $pdo->prepare("SELECT id, title FROM articles WHERE title LIKE :q LIMIT 5");
-            $stmt2->execute(['q' => '%Polymarket%']);
-            $out['like_bind_latin'] = $stmt2->fetchAll();
-            $out['like_literal_cjk'] = $pdo->query("SELECT id, title FROM articles WHERE title LIKE '%西班牙%' LIMIT 5")->fetchAll();
+            $stmt->execute(['q' => '%' . $q . '%']);
+            $out['like_simple'] = $stmt->fetchAll();
+
+            $sql = "SELECT a.id, a.slug, a.title FROM articles a INNER JOIN categories c ON c.id = a.category_id WHERE 1 = 1 AND (a.title LIKE :q_title OR a.slug LIKE :q_slug OR a.dek LIKE :q_dek) ORDER BY a.updated_at DESC LIMIT 100";
+            $stmt2 = $pdo->prepare($sql);
+            $stmt2->execute([
+                'q_title' => '%' . $q . '%',
+                'q_slug' => '%' . $q . '%',
+                'q_dek' => '%' . $q . '%',
+            ]);
+            $out['like_admin_articles_query'] = $stmt2->fetchAll();
+
+            $out['admin_articles_call'] = admin_articles(['q' => $q]);
         } catch (Throwable $e) {
             $out['error'] = $e->getMessage();
         }
