@@ -524,7 +524,7 @@ function convert_ai_draft_to_article(int $id): array
         'category_id' => $categoryId,
         'status' => 'draft',
         'title' => (string) ($payload['title'] ?? 'AI Draft'),
-        'slug' => '',
+        'slug' => unique_article_slug(slugify((string) ($payload['title'] ?? 'AI Draft'))),
         'dek' => (string) ($payload['dek'] ?? ''),
         'brief' => (string) ($payload['brief'] ?? ''),
         'why_it_matters' => (string) ($payload['why_it_matters'] ?? ''),
