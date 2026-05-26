@@ -136,8 +136,10 @@ function admin_articles(array $filters = []): array
     }
 
     if (!empty($filters['q'])) {
-        $sql .= ' AND (a.title LIKE :query OR a.slug LIKE :query OR a.dek LIKE :query)';
-        $params['query'] = '%' . $filters['q'] . '%';
+        $sql .= ' AND (a.title LIKE :q_title OR a.slug LIKE :q_slug OR a.dek LIKE :q_dek)';
+        $params['q_title'] = '%' . $filters['q'] . '%';
+        $params['q_slug'] = '%' . $filters['q'] . '%';
+        $params['q_dek'] = '%' . $filters['q'] . '%';
     }
 
     if (!empty($filters['from'])) {
