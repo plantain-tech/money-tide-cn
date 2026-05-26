@@ -13,6 +13,8 @@ $schema = $schema ?? [
     'url' => canonical_url(),
     'inLanguage' => 'zh-CN',
 ];
+$gaMeasurementId = (string) app_config('analytics.ga_measurement_id', '');
+$plausibleDomain = (string) app_config('analytics.plausible_domain', '');
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -35,6 +37,18 @@ $schema = $schema ?? [
     <meta name="theme-color" content="#dcff00">
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
     <script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+    <?php if ($plausibleDomain !== ''): ?>
+        <script defer data-domain="<?= e($plausibleDomain) ?>" src="https://plausible.io/js/script.js"></script>
+    <?php endif; ?>
+    <?php if ($gaMeasurementId !== ''): ?>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($gaMeasurementId) ?>"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '<?= e($gaMeasurementId) ?>');
+        </script>
+    <?php endif; ?>
 </head>
 <body>
     <header class="site-header">

@@ -63,6 +63,10 @@
             <strong>生产 QA</strong>
             <span>检查上线前的内容、AI、订阅和数据库状态。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/launch-checklist')) ?>">
+            <strong>Launch Checklist</strong>
+            <span>最终确认第一周 MVP 是否可以公开试运营。</span>
+        </a>
         <form class="admin-module admin-module-form" method="post" action="<?= e(url('admin/seed-launch-articles')) ?>">
             <strong>启动文章</strong>
             <span>一键创建 3 篇可编辑的发布示例。</span>

@@ -44,6 +44,8 @@ jobs:
           AI_DAILY_LIMIT: ${{ secrets.AI_DAILY_LIMIT }}
           OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
           OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
+          GA_MEASUREMENT_ID: ${{ secrets.GA_MEASUREMENT_ID }}
+          PLAUSIBLE_DOMAIN: ${{ secrets.PLAUSIBLE_DOMAIN }}
         run: |
           if [ -n "$HOSTINGER_DB_NAME" ]; then
             php -r '
@@ -71,6 +73,10 @@ jobs:
                     "ollama_api_key" => getenv("OLLAMA_API_KEY"),
                     "model" => getenv("OLLAMA_MODEL") ?: getenv("OPENAI_MODEL") ?: "gemma4:31b-cloud",
                     "daily_limit" => getenv("AI_DAILY_LIMIT") ?: 10,
+                ],
+                "analytics" => [
+                    "ga_measurement_id" => getenv("GA_MEASUREMENT_ID"),
+                    "plausible_domain" => getenv("PLAUSIBLE_DOMAIN"),
                 ],
             ];
             file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");

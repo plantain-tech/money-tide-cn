@@ -13,6 +13,10 @@ require_once APP_BASE_PATH . '/src/bootstrap.php';
 $route = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
 $route = $route === '' ? 'home' : $route;
 
+if (strpos($route, 'admin') === 0) {
+    header('X-Robots-Tag: noindex, nofollow', false);
+}
+
 if ($route === 'api/newsletter/subscribe' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
     $result = subscribe_email(
@@ -94,6 +98,18 @@ if ($route === 'admin/qa') {
         'site' => $site,
         'categories' => $categories,
         'checks' => qa_checks(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/launch-checklist') {
+    require_admin();
+    $items = launch_checklist();
+    render_page('admin/launch-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'items' => $items,
+        'ready' => launch_ready($items),
     ]);
     exit;
 }

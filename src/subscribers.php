@@ -51,6 +51,7 @@ function output_subscribers_csv(array $filters = []): void
         return;
     }
 
+    fwrite($output, "\xEF\xBB\xBF");
     fputcsv($output, ['email', 'status', 'source', 'topics', 'created_at']);
     foreach ($subscribers as $subscriber) {
         fputcsv($output, [

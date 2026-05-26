@@ -36,4 +36,8 @@ return [
         'from_email' => 'hello@avanturadeals.com',
         'from_name' => '钱潮 Money Tide',
     ],
+    'analytics' => [
+        'ga_measurement_id' => '',
+        'plausible_domain' => '',
+    ],
 ];

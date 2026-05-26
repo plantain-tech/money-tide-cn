@@ -752,6 +752,26 @@ main {
     font-weight: 900;
 }
 
+.status-badge {
+    display: inline-flex;
+    width: max-content;
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    font-weight: 900;
+}
+
+.status-ok {
+    background: var(--lime);
+}
+
+.status-warn {
+    background: #ffe6a3;
+}
+
+.not-found-page .hero-actions {
+    margin-top: 24px;
+}
+
 .admin-row-actions a {
     font-weight: 900;
     border-bottom: 2px solid var(--ink);

@@ -6,7 +6,10 @@
             <h1>生产检查</h1>
             <p>上线前快速确认数据库、内容、AI 和订阅基础设施。</p>
         </div>
-        <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
+        <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
+            <a class="button button-small" href="<?= e(url('admin/launch-checklist')) ?>">Launch Checklist</a>
+        </div>
     </div>
 
     <div class="admin-table">
@@ -16,7 +19,7 @@
         <?php foreach ($checks as $check): ?>
             <div class="admin-table-row qa-table-row">
                 <strong><?= e($check['name']) ?></strong>
-                <span><mark><?= $check['ok'] ? 'OK' : 'Check' ?></mark></span>
+                <span class="status-badge <?= $check['ok'] ? 'status-ok' : 'status-warn' ?>"><?= $check['ok'] ? 'OK' : 'Check' ?></span>
                 <span><?= e($check['detail']) ?></span>
             </div>
         <?php endforeach; ?>
