@@ -274,6 +274,7 @@ if ($route === 'admin/subscribers') {
         'site' => $site,
         'categories' => $categories,
         'subscribers' => admin_subscribers($filters),
+        'analytics' => subscriber_growth_analytics(),
         'filters' => $filters,
     ]);
     exit;

@@ -58,7 +58,9 @@ CREATE TABLE subscribers (
     email VARCHAR(255) NOT NULL UNIQUE,
     status ENUM('pending', 'active', 'unsubscribed') NOT NULL DEFAULT 'active',
     referral_code VARCHAR(40) NULL UNIQUE,
+    referred_by_code VARCHAR(40) NULL,
     source VARCHAR(120) NULL,
+    landing_path VARCHAR(180) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -85,6 +85,24 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
             <a href="<?= e(url('subscribe')) ?>">订阅</a>
         </nav>
     </footer>
+    <?php if (strpos($currentPath, 'admin') !== 0 && $currentPath !== 'subscribe'): ?>
+        <aside class="newsletter-slidein" data-newsletter-slidein hidden aria-live="polite">
+            <button class="slidein-close" type="button" data-newsletter-slidein-close aria-label="关闭订阅提示">×</button>
+            <p class="eyebrow">钱潮早报</p>
+            <h2>每天 5 分钟，看懂全球市场。</h2>
+            <form class="slidein-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>
+                <input type="email" name="email" placeholder="你的邮箱" required>
+                <input type="hidden" name="source" value="slidein">
+                <input type="hidden" name="ref" value="" data-referral-input>
+                <div class="slidein-topics">
+                    <label><input type="checkbox" name="topics[]" value="markets" checked> 市场</label>
+                    <label><input type="checkbox" name="topics[]" value="tech" checked> 科技</label>
+                    <label><input type="checkbox" name="topics[]" value="wealth"> 理财</label>
+                </div>
+                <button class="button button-small" type="submit">订阅</button>
+            </form>
+        </aside>
+    <?php endif; ?>
     <button class="back-to-top" type="button" data-back-to-top aria-label="返回顶部">↑</button>
     <script src="<?= e(asset('js/app.js')) ?>"></script>
 </body>

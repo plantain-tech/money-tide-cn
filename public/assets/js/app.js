@@ -26,11 +26,54 @@ document.querySelectorAll('[data-newsletter-form]').forEach((form) => {
             button.textContent = result.ok ? '已加入' : originalText;
             button.disabled = result.ok;
             form.setAttribute('data-submitted', result.ok ? 'true' : 'false');
+            if (result.ok) {
+                window.localStorage.setItem('moneyTideSubscribed', 'true');
+                window.localStorage.setItem('moneyTideReferralUrl', result.referral_url || '');
+                document.querySelectorAll('[data-newsletter-slidein]').forEach((panel) => {
+                    panel.hidden = true;
+                    panel.classList.remove('is-visible');
+                });
+            }
             showFormMessage(form, result.message || (result.ok ? '订阅成功。' : '订阅失败。'), result.ok);
         } catch (error) {
             button.textContent = originalText;
             button.disabled = false;
             showFormMessage(form, '网络暂时不可用，请稍后再试。', false);
+        }
+    });
+});
+
+const referralCode = new URLSearchParams(window.location.search).get('ref') || window.localStorage.getItem('moneyTideReferralCode') || '';
+if (referralCode) {
+    window.localStorage.setItem('moneyTideReferralCode', referralCode);
+    document.querySelectorAll('[data-referral-input]').forEach((input) => {
+        input.value = referralCode;
+    });
+}
+
+const newsletterSlidein = document.querySelector('[data-newsletter-slidein]');
+if (newsletterSlidein && window.localStorage.getItem('moneyTideSubscribed') !== 'true' && window.localStorage.getItem('moneyTideSlideinDismissed') !== 'true') {
+    const showSlidein = () => {
+        newsletterSlidein.hidden = false;
+        window.setTimeout(() => newsletterSlidein.classList.add('is-visible'), 40);
+    };
+    window.setTimeout(showSlidein, 5200);
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 820 && newsletterSlidein.hidden) {
+            showSlidein();
+        }
+    }, { passive: true });
+}
+
+document.querySelectorAll('[data-newsletter-slidein-close]').forEach((button) => {
+    button.addEventListener('click', () => {
+        window.localStorage.setItem('moneyTideSlideinDismissed', 'true');
+        const panel = button.closest('[data-newsletter-slidein]');
+        if (panel) {
+            panel.classList.remove('is-visible');
+            window.setTimeout(() => {
+                panel.hidden = true;
+            }, 220);
         }
     });
 });
