@@ -53,6 +53,35 @@ document.querySelectorAll('[data-ai-draft-form]').forEach((form) => {
     });
 });
 
+const revealElements = document.querySelectorAll('.reveal-on-scroll');
+if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12 });
+
+    revealElements.forEach((element) => revealObserver.observe(element));
+} else {
+    revealElements.forEach((element) => element.classList.add('is-visible'));
+}
+
+const backToTopButton = document.querySelector('[data-back-to-top]');
+if (backToTopButton) {
+    const updateBackToTop = () => {
+        backToTopButton.classList.toggle('is-visible', window.scrollY > 520);
+    };
+
+    backToTopButton.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    window.addEventListener('scroll', updateBackToTop, { passive: true });
+    updateBackToTop();
+}
+
 function startAiGenerationProgress(form) {
     const panel = form.querySelector('[data-ai-generation-panel]');
     const bar = form.querySelector('[data-ai-generation-bar]');

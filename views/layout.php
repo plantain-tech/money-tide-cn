@@ -15,6 +15,7 @@ $schema = $schema ?? [
 ];
 $gaMeasurementId = (string) app_config('analytics.ga_measurement_id', '');
 $plausibleDomain = (string) app_config('analytics.plausible_domain', '');
+$currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
 ?>
 <!doctype html>
 <html lang="zh-CN">
@@ -58,7 +59,8 @@ $plausibleDomain = (string) app_config('analytics.plausible_domain', '');
         </a>
         <nav class="top-nav" aria-label="主导航">
             <?php foreach (array_slice($categories, 0, 7) as $navCategory): ?>
-                <a href="<?= e(url('category/' . $navCategory['slug'])) ?>"><?= e($navCategory['name']) ?></a>
+                <?php $navPath = 'category/' . $navCategory['slug']; ?>
+                <a class="<?= $currentPath === $navPath ? 'is-active' : '' ?>" href="<?= e(url($navPath)) ?>"><?= e($navCategory['name']) ?></a>
             <?php endforeach; ?>
         </nav>
         <div class="header-actions">
@@ -83,6 +85,7 @@ $plausibleDomain = (string) app_config('analytics.plausible_domain', '');
             <a href="<?= e(url('subscribe')) ?>">订阅</a>
         </nav>
     </footer>
+    <button class="back-to-top" type="button" data-back-to-top aria-label="返回顶部">↑</button>
     <script src="<?= e(asset('js/app.js')) ?>"></script>
 </body>
 </html>
