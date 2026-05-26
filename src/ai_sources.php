@@ -480,11 +480,40 @@ function call_research_brief_api(string $prompt): array
     } else {
         $text = (string) ($decoded['message']['content'] ?? '');
     }
-    $payload = json_decode((string) $text, true);
+    $payload = robust_json_decode($text);
     if (!is_array($payload)) {
-        return ['ok' => false, 'message' => 'AI 返回的 JSON 无效。'];
+        return ['ok' => false, 'message' => 'AI 返回的 JSON 无效。Raw: ' . substr($text, 0, 200)];
     }
     return ['ok' => true, 'payload' => $payload];
+}
+
+function robust_json_decode(string $text): ?array
+{
+    $text = trim($text);
+    if ($text === '') {
+        return null;
+    }
+    $payload = json_decode($text, true);
+    if (is_array($payload)) {
+        return $payload;
+    }
+    // Strip ``` and ```json fences
+    if (preg_match('/```(?:json)?\s*(.+?)```/s', $text, $m)) {
+        $payload = json_decode(trim($m[1]), true);
+        if (is_array($payload)) {
+            return $payload;
+        }
+    }
+    // Extract first { ... last }
+    $start = strpos($text, '{');
+    $end = strrpos($text, '}');
+    if ($start !== false && $end !== false && $end > $start) {
+        $payload = json_decode(substr($text, $start, $end - $start + 1), true);
+        if (is_array($payload)) {
+            return $payload;
+        }
+    }
+    return null;
 }
 
 function research_brief_json_schema(): array
