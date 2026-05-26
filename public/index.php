@@ -116,21 +116,65 @@ if ($route === 'admin/launch-checklist') {
 
 if ($route === 'admin/articles') {
     require_admin();
+    $filters = [
+        'status' => (string) ($_GET['status'] ?? ''),
+        'category' => (string) ($_GET['category'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+        'from' => (string) ($_GET['from'] ?? ''),
+        'to' => (string) ($_GET['to'] ?? ''),
+        'sort' => (string) ($_GET['sort'] ?? 'updated_desc'),
+    ];
     render_page('admin/articles', [
         'site' => $site,
         'categories' => $categories,
         'adminCategories' => admin_categories(),
-        'articles' => admin_articles([
-            'status' => $_GET['status'] ?? '',
-            'category' => $_GET['category'] ?? '',
-            'q' => $_GET['q'] ?? '',
-        ]),
-        'filters' => [
-            'status' => (string) ($_GET['status'] ?? ''),
-            'category' => (string) ($_GET['category'] ?? ''),
-            'q' => (string) ($_GET['q'] ?? ''),
-        ],
+        'articles' => admin_articles($filters),
+        'filters' => $filters,
+        'statusCounts' => admin_article_status_counts(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
         'dbReady' => db_is_ready(),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/status$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $result = transition_article_status($articleId, (string) ($_POST['status'] ?? ''));
+    $target = (string) ($_POST['return'] ?? 'list') === 'edit'
+        ? url('admin/articles/' . $articleId . '/edit')
+        : url('admin/articles');
+    $flash = $result['ok'] ? '状态已更新。' : ('无法发布：' . implode(' ', $result['errors']));
+    $sep = strpos($target, '?') === false ? '?' : '&';
+    header('Location: ' . $target . $sep . 'flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/duplicate$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $result = duplicate_article((int) $matches[1]);
+    if ($result['ok']) {
+        header('Location: ' . url('admin/articles/' . $result['id'] . '/edit') . '?flash=' . rawurlencode('已创建副本。'));
+        exit;
+    }
+    header('Location: ' . url('admin/articles') . '?flash=' . rawurlencode('复制失败：' . implode(' ', $result['errors'])));
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/preview$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $preview = admin_article_preview($articleId);
+    if (!$preview) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    render_page('admin/article-preview', [
+        'site' => $site,
+        'categories' => $categories,
+        'article' => $preview,
+        'related' => [],
     ]);
     exit;
 }
@@ -157,6 +201,10 @@ if ($route === 'admin/articles/new') {
         'errors' => $errors,
         'mode' => 'create',
         'action' => url('admin/articles/new'),
+        'articleId' => 0,
+        'currentStatus' => 'draft',
+        'checklist' => [],
+        'flash' => '',
     ]);
     exit;
 }
@@ -176,7 +224,7 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $result = save_article($_POST, $articleId);
         if ($result['ok']) {
-            header('Location: ' . url('admin/articles'));
+            header('Location: ' . url('admin/articles/' . $articleId . '/edit') . '?flash=' . rawurlencode('已保存。'));
             exit;
         }
         $errors = $result['errors'];
@@ -191,6 +239,12 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
         'errors' => $errors,
         'mode' => 'edit',
         'action' => url('admin/articles/' . $articleId . '/edit'),
+        'articleId' => $articleId,
+        'currentStatus' => (string) $article['status'],
+        'checklist' => publish_checklist(array_merge($article, [
+            'category_id' => $article['category_id'],
+        ])),
+        'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
     exit;
 }

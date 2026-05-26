@@ -1858,3 +1858,160 @@ main {
         justify-content: flex-start;
     }
 }
+
+.admin-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 18px;
+}
+
+.admin-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 800;
+}
+
+.admin-tab small {
+    padding: 2px 8px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-weight: 900;
+}
+
+.admin-tab.is-active {
+    background: var(--ink);
+    color: var(--white);
+}
+
+.admin-tab.is-active small {
+    background: var(--lime);
+    color: var(--ink);
+}
+
+.admin-filter-bar {
+    grid-template-columns: minmax(220px, 1fr) 140px 140px 140px 160px auto;
+}
+
+.inline-action {
+    display: inline;
+    margin: 0;
+}
+
+.link-button {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--ink);
+    font-weight: 900;
+    border-bottom: 2px solid var(--ink);
+    cursor: pointer;
+}
+
+.workflow-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    margin-bottom: 16px;
+}
+
+.workflow-panel .eyebrow {
+    margin: 0;
+}
+
+.workflow-panel strong {
+    font-size: 22px;
+}
+
+.workflow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.workflow-actions form {
+    margin: 0;
+}
+
+.workflow-actions .is-primary {
+    background: var(--lime);
+}
+
+.workflow-actions button[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.button-ghost {
+    background: var(--paper);
+}
+
+.publish-checklist {
+    border: 2px dashed var(--ink);
+    padding: 16px 18px;
+    background: var(--paper);
+    margin-bottom: 18px;
+}
+
+.publish-checklist ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px 18px;
+}
+
+.publish-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.publish-checklist li.is-pass span {
+    color: #1f8a3b;
+}
+
+.publish-checklist li.is-fail {
+    color: var(--muted);
+}
+
+.publish-checklist li.is-fail span {
+    color: #c63b3b;
+}
+
+.publish-checklist small {
+    display: block;
+    margin-top: 10px;
+    color: var(--muted);
+}
+
+.preview-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 18px;
+    background: #fff3b0;
+    border-bottom: 2px solid var(--ink);
+    font-weight: 700;
+}
+
+.preview-banner strong {
+    margin-right: 6px;
+}
+

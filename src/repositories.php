@@ -136,11 +136,29 @@ function admin_articles(array $filters = []): array
     }
 
     if (!empty($filters['q'])) {
-        $sql .= ' AND (a.title LIKE :query OR a.slug LIKE :query)';
+        $sql .= ' AND (a.title LIKE :query OR a.slug LIKE :query OR a.dek LIKE :query)';
         $params['query'] = '%' . $filters['q'] . '%';
     }
 
-    $sql .= ' ORDER BY a.updated_at DESC, a.id DESC LIMIT 100';
+    if (!empty($filters['from'])) {
+        $sql .= ' AND a.updated_at >= :from';
+        $params['from'] = $filters['from'] . ' 00:00:00';
+    }
+
+    if (!empty($filters['to'])) {
+        $sql .= ' AND a.updated_at <= :to';
+        $params['to'] = $filters['to'] . ' 23:59:59';
+    }
+
+    $sort = (string) ($filters['sort'] ?? 'updated_desc');
+    $orderBy = match ($sort) {
+        'updated_asc' => 'a.updated_at ASC, a.id ASC',
+        'published_desc' => 'a.published_at DESC, a.id DESC',
+        'published_asc' => 'a.published_at ASC, a.id ASC',
+        'title_asc' => 'a.title ASC, a.id DESC',
+        default => 'a.updated_at DESC, a.id DESC',
+    };
+    $sql .= ' ORDER BY ' . $orderBy . ' LIMIT 100';
 
     try {
         $statement = $pdo->prepare($sql);
@@ -149,6 +167,30 @@ function admin_articles(array $filters = []): array
     } catch (Throwable $exception) {
         return [];
     }
+}
+
+function admin_article_status_counts(): array
+{
+    $pdo = db();
+    $counts = ['all' => 0, 'draft' => 0, 'review' => 0, 'published' => 0, 'archived' => 0];
+    if (!$pdo instanceof PDO) {
+        return $counts;
+    }
+
+    try {
+        $rows = $pdo->query('SELECT status, COUNT(*) AS total FROM articles GROUP BY status')->fetchAll();
+        foreach ($rows as $row) {
+            $status = (string) $row['status'];
+            $total = (int) $row['total'];
+            if (isset($counts[$status])) {
+                $counts[$status] = $total;
+            }
+            $counts['all'] += $total;
+        }
+    } catch (Throwable $exception) {
+    }
+
+    return $counts;
 }
 
 function admin_article_by_id(int $id): ?array
@@ -178,6 +220,9 @@ function save_article(array $input, ?int $id = null): array
 
     $data = normalize_article_input($input);
     $errors = validate_article_input($data, $id);
+    if (!$errors && $data['status'] === 'published') {
+        $errors = array_merge($errors, publish_checklist_errors($data));
+    }
     if ($errors) {
         return ['ok' => false, 'errors' => $errors, 'id' => $id, 'data' => $data];
     }
@@ -415,4 +460,250 @@ function seed_launch_articles(): array
     }
 
     return ['ok' => true, 'message' => "已尝试创建 {$created} 篇启动文章。"];
+}
+
+function publish_checklist(array $article): array
+{
+    $body = $article['body'] ?? '';
+    $paragraphs = is_array($body) ? $body : json_decode((string) $body, true);
+    if (!is_array($paragraphs)) {
+        $paragraphs = preg_split('/\R{2,}/', trim((string) $body)) ?: [];
+    }
+    $paragraphs = array_values(array_filter(array_map('strval', $paragraphs)));
+    $bodyText = implode("\n\n", $paragraphs);
+    $wordCount = mb_strlen(strip_tags($bodyText), 'UTF-8');
+    $disclaimer = '本文内容仅供参考，不构成投资建议。';
+
+    return [
+        [
+            'key' => 'title',
+            'label' => '标题已填写',
+            'passed' => trim((string) ($article['title'] ?? '')) !== '',
+        ],
+        [
+            'key' => 'category',
+            'label' => '已选择栏目',
+            'passed' => (int) ($article['category_id'] ?? 0) > 0,
+        ],
+        [
+            'key' => 'slug',
+            'label' => 'URL slug 合法',
+            'passed' => (bool) preg_match('/^[a-z0-9-]+$/', (string) ($article['slug'] ?? '')),
+        ],
+        [
+            'key' => 'dek',
+            'label' => '副标题已填写',
+            'passed' => trim((string) ($article['dek'] ?? '')) !== '',
+        ],
+        [
+            'key' => 'brief',
+            'label' => '一句话看懂已填写',
+            'passed' => trim((string) ($article['brief'] ?? '')) !== '',
+        ],
+        [
+            'key' => 'why',
+            'label' => '为什么重要已填写',
+            'passed' => trim((string) ($article['why_it_matters'] ?? '')) !== '',
+        ],
+        [
+            'key' => 'body_length',
+            'label' => '正文不少于 120 字',
+            'passed' => $wordCount >= 120,
+        ],
+        [
+            'key' => 'disclaimer',
+            'label' => '正文已包含合规免责声明',
+            'passed' => strpos($bodyText, $disclaimer) !== false,
+        ],
+        [
+            'key' => 'published_at',
+            'label' => '已设置发布时间',
+            'passed' => !empty($article['published_at']),
+        ],
+    ];
+}
+
+function publish_checklist_errors(array $data): array
+{
+    $errors = [];
+    foreach (publish_checklist($data) as $item) {
+        if (!$item['passed']) {
+            $errors[] = '发布前检查未通过：' . $item['label'];
+        }
+    }
+    return $errors;
+}
+
+function transition_article_status(int $id, string $status): array
+{
+    $allowed = ['draft', 'review', 'published', 'archived'];
+    if (!in_array($status, $allowed, true)) {
+        return ['ok' => false, 'errors' => ['未知状态。']];
+    }
+
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'errors' => ['数据库未连接。']];
+    }
+
+    $article = admin_article_by_id($id);
+    if (!$article) {
+        return ['ok' => false, 'errors' => ['文章不存在。']];
+    }
+
+    if ($status === 'published') {
+        $checklistData = $article;
+        $checklistData['status'] = 'published';
+        if (empty($checklistData['published_at'])) {
+            $checklistData['published_at'] = date('Y-m-d H:i:s');
+        }
+        $bodyParagraphs = json_decode((string) ($article['body'] ?? '[]'), true);
+        if (!is_array($bodyParagraphs)) {
+            $bodyParagraphs = preg_split('/\R{2,}/', trim((string) ($article['body'] ?? ''))) ?: [];
+        }
+        $bodyParagraphs = append_article_publish_disclaimer($bodyParagraphs);
+        $checklistData['body'] = json_encode($bodyParagraphs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $errors = publish_checklist_errors($checklistData);
+        if ($errors) {
+            return ['ok' => false, 'errors' => $errors];
+        }
+
+        try {
+            $pdo->prepare('UPDATE articles SET status = :status, body = :body, published_at = :published_at WHERE id = :id')
+                ->execute([
+                    'status' => 'published',
+                    'body' => $checklistData['body'],
+                    'published_at' => $checklistData['published_at'],
+                    'id' => $id,
+                ]);
+            return ['ok' => true, 'errors' => []];
+        } catch (Throwable $exception) {
+            return ['ok' => false, 'errors' => ['更新状态失败。']];
+        }
+    }
+
+    try {
+        $pdo->prepare('UPDATE articles SET status = :status WHERE id = :id')
+            ->execute(['status' => $status, 'id' => $id]);
+        return ['ok' => true, 'errors' => []];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'errors' => ['更新状态失败。']];
+    }
+}
+
+function unique_article_slug(string $baseSlug, ?int $ignoreId = null): string
+{
+    $pdo = db();
+    $base = $baseSlug !== '' ? $baseSlug : 'article-' . date('YmdHis');
+    if (!$pdo instanceof PDO) {
+        return $base;
+    }
+
+    $candidate = $base;
+    $suffix = 2;
+    try {
+        while (true) {
+            $sql = 'SELECT id FROM articles WHERE slug = :slug';
+            $params = ['slug' => $candidate];
+            if ($ignoreId !== null) {
+                $sql .= ' AND id <> :id';
+                $params['id'] = $ignoreId;
+            }
+            $sql .= ' LIMIT 1';
+            $statement = $pdo->prepare($sql);
+            $statement->execute($params);
+            if (!$statement->fetch()) {
+                return $candidate;
+            }
+            $candidate = $base . '-' . $suffix;
+            $suffix++;
+            if ($suffix > 50) {
+                return $base . '-' . substr((string) time(), -4);
+            }
+        }
+    } catch (Throwable $exception) {
+        return $base;
+    }
+}
+
+function duplicate_article(int $id): array
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'errors' => ['数据库未连接。']];
+    }
+
+    $article = admin_article_by_id($id);
+    if (!$article) {
+        return ['ok' => false, 'errors' => ['文章不存在。']];
+    }
+
+    $newSlug = unique_article_slug(((string) $article['slug']) . '-copy');
+    $newTitle = (string) $article['title'] . '（副本）';
+
+    try {
+        $statement = $pdo->prepare('INSERT INTO articles
+            (category_id, slug, status, title, dek, brief, why_it_matters, body, read_time_minutes, published_at)
+            VALUES (:category_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :read_time_minutes, :published_at)');
+        $statement->execute([
+            'category_id' => (int) $article['category_id'],
+            'slug' => $newSlug,
+            'status' => 'draft',
+            'title' => $newTitle,
+            'dek' => (string) $article['dek'],
+            'brief' => (string) $article['brief'],
+            'why_it_matters' => (string) $article['why_it_matters'],
+            'body' => (string) $article['body'],
+            'read_time_minutes' => (int) $article['read_time_minutes'],
+            'published_at' => null,
+        ]);
+
+        return ['ok' => true, 'id' => (int) $pdo->lastInsertId()];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'errors' => ['复制文章失败。']];
+    }
+}
+
+function admin_article_preview(int $id): ?array
+{
+    $article = admin_article_by_id($id);
+    if (!$article) {
+        return null;
+    }
+
+    $pdo = db();
+    $categoryName = '';
+    $categorySlug = '';
+    if ($pdo instanceof PDO) {
+        try {
+            $statement = $pdo->prepare('SELECT slug, name FROM categories WHERE id = :id LIMIT 1');
+            $statement->execute(['id' => (int) $article['category_id']]);
+            $category = $statement->fetch();
+            if ($category) {
+                $categorySlug = (string) $category['slug'];
+                $categoryName = (string) $category['name'];
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+
+    $body = json_decode((string) $article['body'], true);
+    if (!is_array($body)) {
+        $body = preg_split('/\R{2,}/', trim((string) $article['body'])) ?: [];
+    }
+
+    return [
+        'slug' => (string) $article['slug'],
+        'category' => $categorySlug,
+        'category_name' => $categoryName,
+        'title' => (string) $article['title'],
+        'dek' => (string) $article['dek'],
+        'brief' => (string) $article['brief'],
+        'why' => (string) $article['why_it_matters'],
+        'numbers' => [],
+        'body' => array_values(array_filter(array_map('strval', $body))),
+        'read_time' => (int) $article['read_time_minutes'] . ' min read',
+        'published_at' => !empty($article['published_at']) ? date('Y-m-d', strtotime((string) $article['published_at'])) : date('Y-m-d'),
+        'status' => (string) $article['status'],
+    ];
 }

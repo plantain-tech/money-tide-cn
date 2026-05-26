@@ -1,4 +1,20 @@
-<?php $pageTitle = '文章管理 - 钱潮 Money Tide'; ?>
+<?php
+$pageTitle = '文章管理 - 钱潮 Money Tide';
+$statusLabels = ['draft' => '草稿', 'review' => '审核', 'published' => '已发布', 'archived' => '已归档'];
+$tabs = [
+    '' => '全部',
+    'draft' => '草稿',
+    'review' => '审核',
+    'published' => '已发布',
+    'archived' => '已归档',
+];
+$baseQuery = $filters;
+unset($baseQuery['status']);
+$tabHref = static function (string $status) use ($baseQuery): string {
+    $params = array_filter(array_merge($baseQuery, ['status' => $status]), static fn ($v) => $v !== '' && $v !== null);
+    return url('admin/articles') . ($params ? '?' . http_build_query($params) : '');
+};
+?>
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
@@ -16,18 +32,40 @@
         <div class="status-banner is-warning"><strong>数据库未连接</strong><span>连接 MySQL 后才能管理文章。</span></div>
     <?php endif; ?>
 
+    <?php if (!empty($flash)): ?>
+        <div class="status-banner is-ready"><strong>提示</strong><span><?= e($flash) ?></span></div>
+    <?php endif; ?>
+
+    <nav class="admin-tabs" aria-label="状态">
+        <?php foreach ($tabs as $value => $label): ?>
+            <?php $count = $value === '' ? ($statusCounts['all'] ?? 0) : ($statusCounts[$value] ?? 0); ?>
+            <a class="admin-tab <?= $filters['status'] === $value ? 'is-active' : '' ?>" href="<?= e($tabHref($value)) ?>">
+                <span><?= e($label) ?></span>
+                <small><?= e((string) $count) ?></small>
+            </a>
+        <?php endforeach; ?>
+    </nav>
+
     <form class="admin-filter-bar" method="get" action="<?= e(url('admin/articles')) ?>">
-        <input type="search" name="q" placeholder="搜索标题或 slug" value="<?= e($filters['q']) ?>">
-        <select name="status">
-            <option value="">全部状态</option>
-            <?php foreach (['draft' => '草稿', 'review' => '审核', 'published' => '已发布', 'archived' => '已归档'] as $value => $label): ?>
-                <option value="<?= e($value) ?>" <?= $filters['status'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
-            <?php endforeach; ?>
-        </select>
+        <input type="search" name="q" placeholder="搜索标题、slug 或副标题" value="<?= e($filters['q']) ?>">
+        <input type="hidden" name="status" value="<?= e($filters['status']) ?>">
         <select name="category">
             <option value="">全部栏目</option>
             <?php foreach ($adminCategories as $category): ?>
                 <option value="<?= e($category['slug']) ?>" <?= $filters['category'] === $category['slug'] ? 'selected' : '' ?>><?= e($category['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <input type="date" name="from" value="<?= e($filters['from']) ?>" aria-label="起始日期">
+        <input type="date" name="to" value="<?= e($filters['to']) ?>" aria-label="结束日期">
+        <select name="sort" aria-label="排序">
+            <?php foreach ([
+                'updated_desc' => '最近更新',
+                'updated_asc' => '最早更新',
+                'published_desc' => '最近发布',
+                'published_asc' => '最早发布',
+                'title_asc' => '标题 A→Z',
+            ] as $value => $label): ?>
+                <option value="<?= e($value) ?>" <?= $filters['sort'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
         <button class="button button-small" type="submit">筛选</button>
@@ -44,20 +82,24 @@
                     <small><?= e($article['slug']) ?> · <?= e((string) $article['read_time_minutes']) ?> min</small>
                 </div>
                 <span><?= e($article['category_name']) ?></span>
-                <span><mark><?= e($article['status']) ?></mark></span>
+                <span><mark><?= e($statusLabels[$article['status']] ?? $article['status']) ?></mark></span>
                 <span><?= e($article['published_at'] ? date('Y-m-d H:i', strtotime((string) $article['published_at'])) : '未发布') ?></span>
                 <div class="admin-row-actions">
                     <?php if ($article['status'] === 'published'): ?>
                         <a href="<?= e(url('article/' . $article['slug'])) ?>">查看</a>
                     <?php endif; ?>
+                    <a href="<?= e(url('admin/articles/' . $article['id'] . '/preview')) ?>">预览</a>
                     <a href="<?= e(url('admin/articles/' . $article['id'] . '/edit')) ?>">编辑</a>
+                    <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/duplicate')) ?>" class="inline-action">
+                        <button type="submit" class="link-button" onclick="return confirm('复制这篇文章为新草稿？')">复制</button>
+                    </form>
                 </div>
             </div>
         <?php endforeach; ?>
         <?php if (!$articles): ?>
             <div class="empty-state">
-                <strong>还没有数据库文章。</strong>
-                <p>你可以新建文章，或从工作台一键生成 3 篇启动文章。</p>
+                <strong>没有匹配的文章。</strong>
+                <p>尝试调整状态、栏目或日期筛选，或新建文章。</p>
             </div>
         <?php endif; ?>
     </div>

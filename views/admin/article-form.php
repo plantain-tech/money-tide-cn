@@ -1,4 +1,19 @@
-<?php $pageTitle = ($mode === 'edit' ? '编辑文章' : '新建文章') . ' - 钱潮 Money Tide'; ?>
+<?php
+$pageTitle = ($mode === 'edit' ? '编辑文章' : '新建文章') . ' - 钱潮 Money Tide';
+$articleId = (int) ($articleId ?? 0);
+$currentStatus = (string) ($currentStatus ?? 'draft');
+$checklist = $checklist ?? [];
+$flash = (string) ($flash ?? '');
+$statusLabels = ['draft' => '草稿', 'review' => '审核', 'published' => '已发布', 'archived' => '已归档'];
+$transitions = [
+    'draft' => [['review', '提交审核']],
+    'review' => [['draft', '退回草稿'], ['published', '发布上线']],
+    'published' => [['archived', '归档下线']],
+    'archived' => [['draft', '恢复为草稿']],
+];
+$nextSteps = $transitions[$currentStatus] ?? [];
+$checklistPassed = !empty($checklist) ? array_reduce($checklist, static fn (bool $carry, array $item): bool => $carry && $item['passed'], true) : false;
+?>
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
@@ -8,8 +23,15 @@
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin/articles')) ?>">返回列表</a>
+            <?php if ($mode === 'edit' && $articleId > 0): ?>
+                <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/preview')) ?>" target="_blank" rel="noopener">预览</a>
+            <?php endif; ?>
         </div>
     </div>
+
+    <?php if ($flash !== ''): ?>
+        <div class="status-banner is-ready"><strong>提示</strong><span><?= e($flash) ?></span></div>
+    <?php endif; ?>
 
     <?php if ($errors): ?>
         <div class="form-message form-message-error">
@@ -17,6 +39,49 @@
                 <div><?= e($error) ?></div>
             <?php endforeach; ?>
         </div>
+    <?php endif; ?>
+
+    <?php if ($mode === 'edit'): ?>
+        <div class="workflow-panel">
+            <div>
+                <p class="eyebrow">当前状态</p>
+                <strong><?= e($statusLabels[$currentStatus] ?? $currentStatus) ?></strong>
+            </div>
+            <?php if ($nextSteps): ?>
+                <div class="workflow-actions">
+                    <?php foreach ($nextSteps as $step): [$nextStatus, $label] = $step; ?>
+                        <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/status')) ?>">
+                            <input type="hidden" name="status" value="<?= e($nextStatus) ?>">
+                            <input type="hidden" name="return" value="edit">
+                            <button class="button button-small <?= $nextStatus === 'published' ? 'is-primary' : '' ?>" type="submit"
+                                <?= ($nextStatus === 'published' && !$checklistPassed) ? 'disabled title="发布前检查未全部通过"' : '' ?>>
+                                <?= e($label) ?>
+                            </button>
+                        </form>
+                    <?php endforeach; ?>
+                    <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/duplicate')) ?>">
+                        <button class="button button-small button-ghost" type="submit" onclick="return confirm('从这篇文章创建新草稿？')">复制为新稿</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($checklist): ?>
+            <div class="publish-checklist">
+                <p class="eyebrow">发布前检查</p>
+                <ul>
+                    <?php foreach ($checklist as $item): ?>
+                        <li class="<?= $item['passed'] ? 'is-pass' : 'is-fail' ?>">
+                            <span aria-hidden="true"><?= $item['passed'] ? '✓' : '○' ?></span>
+                            <?= e($item['label']) ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php if (!$checklistPassed): ?>
+                    <small>请补齐未通过的项目，再切换为“已发布”。</small>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <form class="cms-form" method="post" action="<?= e($action) ?>">
@@ -33,7 +98,7 @@
             <label>
                 状态
                 <select name="status">
-                    <?php foreach (['draft' => '草稿', 'review' => '审核', 'published' => '已发布', 'archived' => '已归档'] as $value => $label): ?>
+                    <?php foreach ($statusLabels as $value => $label): ?>
                         <option value="<?= e($value) ?>" <?= $form['status'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>
