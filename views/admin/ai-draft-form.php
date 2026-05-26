@@ -24,7 +24,7 @@
         </div>
     <?php endif; ?>
 
-    <form class="cms-form" method="post" action="<?= e(url('admin/ai-drafts/new')) ?>">
+    <form class="cms-form" method="post" action="<?= e(url('admin/ai-drafts/new')) ?>" data-ai-draft-form>
         <div class="cms-form-grid">
             <label>
                 栏目机器人
@@ -59,8 +59,24 @@
             <strong>编辑守门</strong>
             <span>生成后必须人工核查来源、数字和金融风险表述，再转成文章草稿。</span>
         </div>
+        <div class="ai-generation-panel" data-ai-generation-panel hidden aria-live="polite">
+            <div class="ai-generation-head">
+                <div>
+                    <span class="ai-generation-kicker">AI generation</span>
+                    <strong data-ai-generation-title>Editorial bot is preparing the draft</strong>
+                </div>
+                <span class="ai-generation-percent" data-ai-generation-percent>0%</span>
+            </div>
+            <div class="ai-generation-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-ai-generation-progressbar>
+                <span data-ai-generation-bar></span>
+            </div>
+            <div class="ai-generation-meta">
+                <span data-ai-generation-step>Reading source links and building the editorial brief.</span>
+                <span data-ai-generation-time>0s elapsed</span>
+            </div>
+        </div>
         <div class="cms-form-actions">
-            <button class="button" type="submit">生成草稿</button>
+            <button class="button" type="submit" data-ai-generate-button>生成草稿</button>
             <a class="ghost-link" href="<?= e(url('admin/ai-drafts')) ?>">取消</a>
         </div>
     </form>
