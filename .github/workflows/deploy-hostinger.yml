@@ -82,66 +82,41 @@ jobs:
             echo "Database secrets are not set; deploying without generated config.php."
           fi
 
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
+      - name: Deploy public files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./public/
+          server-dir: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
+          timeout: 120000
+          log-level: minimal
 
-      - name: Deploy via FTPS with lftp
-        env:
-          FTP_HOST: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          FTP_USER: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
-          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
-        run: |
-          set -e
-          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
-            echo "FTP secrets are missing; skipping deploy."
-            exit 1
-          fi
-          APP_DIR="${APP_DIR%/}"
-          PUBLIC_DIR="${PUBLIC_DIR%/}"
-          DEPLOY_SCRIPT="$(mktemp)"
-          cat > "$DEPLOY_SCRIPT" <<EOF
-          open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
-          set ftp:ssl-allow yes
-          set ftp:ssl-force yes
-          set ftp:ssl-protect-data yes
-          set ftp:passive-mode yes
-          set ssl:verify-certificate no
-          set ssl:check-hostname no
-          set cmd:fail-exit yes
-          set net:max-retries 5
-          set net:reconnect-interval-base 10
-          set net:timeout 60
-          set mirror:parallel-transfer-count 1
-          set mirror:use-pget-n 1
-          EOF
-          add_put() {
-            local file="$1"
-            local base=""
-            local rel=""
-            case "$file" in
-              public/*) base="$PUBLIC_DIR"; rel="${file#public/}" ;;
-              src/*) base="$APP_DIR/src"; rel="${file#src/}" ;;
-              views/*) base="$APP_DIR/views"; rel="${file#views/}" ;;
-              *) return 0 ;;
-            esac
-            local rel_dir
-            rel_dir="$(dirname "$rel")"
-            local remote_dir="$base"
-            if [ "$rel_dir" != "." ]; then
-              remote_dir="$base/$rel_dir"
-            fi
-            printf 'mkdir -p "%s"\n' "$remote_dir" >> "$DEPLOY_SCRIPT"
-            printf 'put -O "%s" "%s"\n' "$remote_dir" "$file" >> "$DEPLOY_SCRIPT"
-          }
-          while IFS= read -r -d '' file; do
-            add_put "$file"
-          done < <(find public src views -type f -not -path '*/.git/*' -not -name '.DS_Store' -print0)
-          cat >> "$DEPLOY_SCRIPT" <<EOF
-          bye
-          EOF
-          timeout 20m lftp -f "$DEPLOY_SCRIPT"
+      - name: Deploy app source
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./src/
+          server-dir: ${{ secrets.HOSTINGER_APP_DIR }}src/
+          timeout: 120000
+          log-level: minimal
+
+      - name: Deploy views
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./views/
+          server-dir: ${{ secrets.HOSTINGER_APP_DIR }}views/
+          timeout: 120000
+          log-level: minimal
 
       - name: Verify production homepage
         env:
