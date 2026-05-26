@@ -1915,6 +1915,11 @@ main {
     cursor: pointer;
 }
 
+.link-button.is-danger {
+    color: #b3261e;
+    border-bottom-color: #b3261e;
+}
+
 .workflow-panel {
     display: flex;
     flex-wrap: wrap;
@@ -2233,6 +2238,5 @@ main {
     transform: rotate(-30deg);
     transform-origin: top left;
 }
-
 
 

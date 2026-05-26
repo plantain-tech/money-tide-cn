@@ -174,6 +174,14 @@ if (preg_match('#^admin/articles/(\d+)/duplicate$#', $route, $matches) && ($_SER
     exit;
 }
 
+if (preg_match('#^admin/articles/(\d+)/delete$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $result = delete_article((int) $matches[1]);
+    $flash = $result['ok'] ? 'Article deleted.' : ('Delete failed: ' . implode(' ', $result['errors']));
+    header('Location: ' . url('admin/articles') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/preview$#', $route, $matches)) {
     require_admin();
     $articleId = (int) $matches[1];

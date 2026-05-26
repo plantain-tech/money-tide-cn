@@ -5,6 +5,6 @@ header('Content-Type: application/json; charset=utf-8');
 echo json_encode([
     'status' => 'ok',
     'app' => 'money-tide',
-    'release' => 'week-2-day-6-analytics-growth',
+    'release' => 'week-2-day-7-launch-readiness',
     'checked_at' => gmdate('c'),
 ], JSON_UNESCAPED_SLASHES);

@@ -656,6 +656,37 @@ function duplicate_article(int $id): array
     }
 }
 
+function delete_article(int $id): array
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'errors' => ['Database is not connected.']];
+    }
+
+    $article = admin_article_by_id($id);
+    if (!$article) {
+        return ['ok' => false, 'errors' => ['Article not found.']];
+    }
+
+    $status = (string) ($article['status'] ?? '');
+    if (!in_array($status, ['draft', 'archived'], true)) {
+        return ['ok' => false, 'errors' => ['Only draft or archived articles can be deleted.']];
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare('DELETE FROM article_tags WHERE article_id = :id')->execute(['id' => $id]);
+        $pdo->prepare('DELETE FROM articles WHERE id = :id LIMIT 1')->execute(['id' => $id]);
+        $pdo->commit();
+        return ['ok' => true, 'errors' => []];
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ['ok' => false, 'errors' => ['Delete failed.']];
+    }
+}
+
 function admin_article_preview(int $id): ?array
 {
     $article = admin_article_by_id($id);

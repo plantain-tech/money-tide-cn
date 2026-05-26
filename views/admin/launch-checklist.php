@@ -1,20 +1,21 @@
-<?php $pageTitle = 'Launch Checklist - 钱潮 Money Tide'; ?>
+<?php $pageTitle = 'Week 2 Launch Checklist - 钱潮 Money Tide'; ?>
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Day 7</p>
+            <p class="eyebrow">Week 2 Day 7</p>
             <h1>Launch Checklist</h1>
-            <p><?= $ready ? 'MVP is launch-ready.' : 'A few launch checks still need attention.' ?></p>
+            <p><?= $ready ? 'Week 2 release is launch-ready.' : 'A few launch checks still need attention.' ?></p>
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
+            <a class="ghost-link" href="<?= e(url('admin/qa')) ?>">生产 QA</a>
             <a class="button button-small" href="<?= e(url()) ?>">查看网站</a>
         </div>
     </div>
 
     <div class="status-banner <?= $ready ? 'is-ready' : 'is-warning' ?>">
         <strong><?= $ready ? 'Ready' : 'Needs Review' ?></strong>
-        <span>First-week MVP launch gate.</span>
+        <span>Week 2 launch gate for reader experience, editorial workflow, AI agency, newsletter growth, and analytics.</span>
     </div>
 
     <div class="admin-table launch-table">

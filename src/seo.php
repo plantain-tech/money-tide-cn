@@ -70,13 +70,19 @@ function emit_robots(): void
 
 function qa_checks(): array
 {
-    $checks = [
+    ensure_analytics_table();
+    ensure_ai_prompt_templates_table();
+    ensure_ai_draft_versions_table();
+    ensure_ai_draft_checks_table();
+
+    return [
         ['name' => 'Database connection', 'ok' => db_is_ready(), 'detail' => db_is_ready() ? 'connected' : 'unavailable'],
         ['name' => 'Categories available', 'ok' => count(get_categories()) > 0, 'detail' => (string) count(get_categories())],
         ['name' => 'Published articles available', 'ok' => count(get_articles()) > 0, 'detail' => (string) count(get_articles())],
-        ['name' => 'AI provider configured', 'ok' => ai_provider_status()['ready'], 'detail' => ai_provider_status()['label'] . ' · ' . ai_provider_status()['model']],
+        ['name' => 'AI provider configured', 'ok' => ai_provider_status()['ready'], 'detail' => ai_provider_status()['label'] . ' - ' . ai_provider_status()['model']],
         ['name' => 'Subscriber table reachable', 'ok' => db_count('subscribers') >= 0, 'detail' => (string) db_count('subscribers')],
+        ['name' => 'Analytics table reachable', 'ok' => db_count('analytics_events') >= 0, 'detail' => (string) db_count('analytics_events')],
+        ['name' => 'AI versions table reachable', 'ok' => db_count('ai_draft_versions') >= 0, 'detail' => (string) db_count('ai_draft_versions')],
+        ['name' => 'AI checks table reachable', 'ok' => db_count('ai_draft_checks') >= 0, 'detail' => (string) db_count('ai_draft_checks')],
     ];
-
-    return $checks;
 }

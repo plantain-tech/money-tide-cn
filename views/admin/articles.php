@@ -93,6 +93,11 @@ $tabHref = static function (string $status) use ($baseQuery): string {
                     <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/duplicate')) ?>" class="inline-action">
                         <button type="submit" class="link-button" onclick="return confirm('复制这篇文章为新草稿？')">复制</button>
                     </form>
+                    <?php if (in_array($article['status'], ['draft', 'archived'], true)): ?>
+                        <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/delete')) ?>" class="inline-action">
+                            <button type="submit" class="link-button is-danger" onclick="return confirm('永久删除这篇草稿/归档文章？')">删除</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>
