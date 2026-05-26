@@ -108,6 +108,22 @@
             <strong>AI 提示词模板</strong>
             <span>按栏目编辑机器人提示词，无需上线发布。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/research-desk')) ?>">
+            <strong>研究简报</strong>
+            <span>写文章之前，让 AI 先整理事实和角度。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/sources')) ?>">
+            <strong>来源库</strong>
+            <span>保存常用来源并标记可信度。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/source-templates')) ?>">
+            <strong>输入模板</strong>
+            <span>预设栏目 + 角度 + 来源，加速生成研究简报。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/newsletter')) ?>">
+            <strong>钱潮早报</strong>
+            <span>组装、预览、测试、广播每一期 newsletter。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/analytics')) ?>">
             <strong>站内分析</strong>
             <span>查看 14 天浏览趋势、热门文章、订阅来源。</span>

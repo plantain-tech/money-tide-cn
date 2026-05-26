@@ -43,6 +43,11 @@ jobs:
           OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
           GA_MEASUREMENT_ID: ${{ secrets.GA_MEASUREMENT_ID }}
           PLAUSIBLE_DOMAIN: ${{ secrets.PLAUSIBLE_DOMAIN }}
+          EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
+          EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
+          EMAIL_FROM_ADDRESS: ${{ secrets.EMAIL_FROM_ADDRESS }}
+          EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME }}
+          MAILGUN_DOMAIN: ${{ secrets.MAILGUN_DOMAIN }}
         run: |
           if [ -n "$HOSTINGER_DB_NAME" ]; then
             php -r '
@@ -74,6 +79,13 @@ jobs:
                 "analytics" => [
                     "ga_measurement_id" => getenv("GA_MEASUREMENT_ID"),
                     "plausible_domain" => getenv("PLAUSIBLE_DOMAIN"),
+                ],
+                "email" => [
+                    "provider" => getenv("EMAIL_PROVIDER") ?: "log",
+                    "api_key" => getenv("EMAIL_API_KEY") ?: "",
+                    "from_address" => getenv("EMAIL_FROM_ADDRESS") ?: "",
+                    "from_name" => getenv("EMAIL_FROM_NAME") ?: "钱潮 Money Tide",
+                    "mailgun_domain" => getenv("MAILGUN_DOMAIN") ?: "",
                 ],
             ];
             file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");

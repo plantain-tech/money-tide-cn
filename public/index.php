@@ -339,6 +339,11 @@ if ($route === 'admin/ai-drafts/new') {
     require_admin();
     $errors = [];
     $form = ai_draft_form_defaults();
+    foreach (['section_slug', 'topic_angle', 'source_links', 'target_reader', 'urgency'] as $prefillKey) {
+        if (isset($_GET[$prefillKey])) {
+            $form[$prefillKey] = (string) $_GET[$prefillKey];
+        }
+    }
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $result = generate_ai_draft($_POST);
         if ($result['ok']) {
@@ -469,6 +474,336 @@ if ($route === 'admin/ai-templates') {
         'defaults' => editorial_bot_template_defaults(),
         'flash' => $flash,
     ]);
+    exit;
+}
+
+if ($route === 'admin/newsletter') {
+    require_admin();
+    render_page('admin/newsletter-issues', [
+        'site' => $site,
+        'categories' => $categories,
+        'issues' => newsletter_issues([]),
+        'providerStatus' => email_provider_status(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/newsletter/new') {
+    require_admin();
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_newsletter_issue($_POST);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/newsletter/' . $result['id'] . '/edit') . '?flash=' . rawurlencode('新建期号已创建。'));
+            exit;
+        }
+        render_page('admin/newsletter-issue-form', [
+            'site' => $site,
+            'categories' => $categories,
+            'issue' => null,
+            'form' => array_replace(newsletter_issue_form_defaults(), $_POST),
+            'errors' => $result['errors'] ?? [],
+            'mode' => 'create',
+            'action' => url('admin/newsletter/new'),
+            'availableArticles' => [],
+            'providerStatus' => email_provider_status(),
+            'sends' => [],
+        ]);
+        exit;
+    }
+    render_page('admin/newsletter-issue-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'issue' => null,
+        'form' => newsletter_issue_form_defaults(),
+        'errors' => [],
+        'mode' => 'create',
+        'action' => url('admin/newsletter/new'),
+        'availableArticles' => [],
+        'providerStatus' => email_provider_status(),
+        'sends' => [],
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/edit$#', $route, $matches)) {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $issue = newsletter_issue_by_id($issueId);
+    if (!$issue) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    $errors = [];
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_newsletter_issue($_POST, $issueId);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode('已保存。'));
+            exit;
+        }
+        $errors = $result['errors'] ?? [];
+    }
+    $form = [
+        'subject' => (string) $issue['subject'],
+        'intro' => (string) ($issue['intro'] ?? ''),
+        'outro' => (string) ($issue['outro'] ?? ''),
+        'scheduled_at' => !empty($issue['scheduled_at']) ? date('Y-m-d\TH:i', strtotime((string) $issue['scheduled_at'])) : '',
+    ];
+    render_page('admin/newsletter-issue-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'issue' => $issue,
+        'form' => $form,
+        'errors' => $errors,
+        'mode' => 'edit',
+        'action' => url('admin/newsletter/' . $issueId . '/edit'),
+        'availableArticles' => publishable_articles_for_issue($issueId),
+        'providerStatus' => email_provider_status(),
+        'sends' => newsletter_issue_sends($issueId),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/articles/add$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    add_article_to_issue($issueId, (int) ($_POST['article_id'] ?? 0), (string) ($_POST['blurb'] ?? ''));
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit'));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/articles/(\d+)/remove$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    remove_article_from_issue($issueId, (int) $matches[2]);
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit'));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/preview$#', $route, $matches)) {
+    require_admin();
+    $issue = newsletter_issue_by_id((int) $matches[1]);
+    if (!$issue) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    header('X-Robots-Tag: noindex, nofollow', false);
+    echo render_newsletter_issue_html($issue);
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/test$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $result = send_newsletter_test($issueId, (string) ($_POST['test_email'] ?? ''));
+    $flash = $result['ok'] ? '测试邮件已发送/记录。' : ('测试发送失败：' . ($result['message'] ?? ''));
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/send$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    if (!can_publish_article()) {
+        http_response_code(403);
+        render_page('403', compact('site', 'categories'));
+        exit;
+    }
+    $issueId = (int) $matches[1];
+    $result = send_newsletter_broadcast($issueId);
+    if ($result['ok']) {
+        $flash = sprintf('广播完成：收件人 %d，成功 %d，失败 %d。', $result['recipients'], $result['sent'], $result['failed']);
+    } else {
+        $flash = '发送失败：' . ($result['message'] ?? '');
+    }
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/delete$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    if (!can_delete_article()) {
+        http_response_code(403);
+        render_page('403', compact('site', 'categories'));
+        exit;
+    }
+    delete_newsletter_issue((int) $matches[1]);
+    header('Location: ' . url('admin/newsletter') . '?flash=' . rawurlencode('已删除。'));
+    exit;
+}
+
+if ($route === 'admin/sources') {
+    require_admin();
+    $filters = [
+        'section_slug' => (string) ($_GET['section_slug'] ?? ''),
+        'credibility' => (string) ($_GET['credibility'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+    ];
+    $flash = '';
+    $errors = [];
+    $form = ['id' => '', 'name' => '', 'url' => '', 'section_slug' => '', 'credibility' => 'standard', 'notes' => ''];
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (($_POST['action'] ?? '') === 'delete') {
+            delete_source_profile((int) ($_POST['id'] ?? 0));
+            $flash = '已删除来源。';
+        } else {
+            $id = (int) ($_POST['id'] ?? 0);
+            $result = save_source_profile($_POST, $id > 0 ? $id : null);
+            if ($result['ok']) {
+                $flash = '已保存来源。';
+            } else {
+                $errors = $result['errors'] ?? [];
+                $form = array_replace($form, $_POST);
+            }
+        }
+    }
+    render_page('admin/sources', [
+        'site' => $site,
+        'categories' => $categories,
+        'sources' => source_profiles($filters),
+        'filters' => $filters,
+        'flash' => $flash,
+        'errors' => $errors,
+        'form' => $form,
+        'credibilityOptions' => source_credibility_options(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/source-templates') {
+    require_admin();
+    $flash = '';
+    $errors = [];
+    $form = ['id' => '', 'section_slug' => '', 'name' => '', 'topic_angle' => '', 'source_links' => ''];
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (($_POST['action'] ?? '') === 'delete') {
+            delete_source_template((int) ($_POST['id'] ?? 0));
+            $flash = '已删除模板。';
+        } else {
+            $id = (int) ($_POST['id'] ?? 0);
+            $result = save_source_template($_POST, $id > 0 ? $id : null);
+            if ($result['ok']) {
+                $flash = '已保存模板。';
+            } else {
+                $errors = $result['errors'] ?? [];
+                $form = array_replace($form, $_POST);
+            }
+        }
+    }
+    render_page('admin/source-templates', [
+        'site' => $site,
+        'categories' => $categories,
+        'templates' => source_templates([]),
+        'flash' => $flash,
+        'errors' => $errors,
+        'form' => $form,
+        'botSections' => editorial_bot_templates(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/research-desk') {
+    require_admin();
+    $filters = [
+        'section_slug' => (string) ($_GET['section_slug'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+    ];
+    render_page('admin/research-desk', [
+        'site' => $site,
+        'categories' => $categories,
+        'briefs' => research_briefs($filters),
+        'filters' => $filters,
+        'botSections' => editorial_bot_templates(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/research-desk/new') {
+    require_admin();
+    $errors = [];
+    $form = [
+        'section_slug' => (string) ($_GET['section_slug'] ?? 'markets'),
+        'topic_angle' => '',
+        'source_links' => '',
+    ];
+    if (!empty($_GET['template_id'])) {
+        $template = source_template_by_id((int) $_GET['template_id']);
+        if ($template) {
+            $form['section_slug'] = (string) $template['section_slug'];
+            $form['topic_angle'] = (string) ($template['topic_angle'] ?? '');
+            $form['source_links'] = (string) ($template['source_links'] ?? '');
+        }
+    }
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = generate_research_brief($_POST);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/research-desk/' . $result['id']));
+            exit;
+        }
+        $errors = $result['errors'] ?? [];
+        $form = array_replace($form, $_POST);
+    }
+    render_page('admin/research-desk-form', [
+        'site' => $site,
+        'categories' => $categories,
+        'form' => $form,
+        'errors' => $errors,
+        'botSections' => editorial_bot_templates(),
+        'templates' => source_templates([]),
+        'aiProvider' => ai_provider_status(),
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/research-desk/(\d+)$#', $route, $matches)) {
+    require_admin();
+    $brief = research_brief_by_id((int) $matches[1]);
+    if (!$brief) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    render_page('admin/research-brief-detail', [
+        'site' => $site,
+        'categories' => $categories,
+        'brief' => $brief,
+        'botSections' => editorial_bot_templates(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/research-desk/(\d+)/use$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $brief = research_brief_by_id((int) $matches[1]);
+    if (!$brief) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    mark_research_brief_used((int) $matches[1]);
+    $payload = $brief['brief_payload'];
+    $angle = (string) $brief['topic_angle'];
+    $extras = "\n\n[Research brief #" . (int) $brief['id'] . "]\n";
+    if (!empty($payload['key_facts'])) {
+        $extras .= "Key facts:\n- " . implode("\n- ", (array) $payload['key_facts']) . "\n";
+    }
+    if (!empty($payload['angles'])) {
+        $extras .= "Angles:\n- " . implode("\n- ", (array) $payload['angles']) . "\n";
+    }
+    $angleWithExtras = trim($angle . $extras);
+    $query = http_build_query([
+        'topic_angle' => $angleWithExtras,
+        'source_links' => implode("\n", (array) $brief['source_links']),
+        'section_slug' => $brief['section_slug'],
+        'brief_id' => (int) $brief['id'],
+    ]);
+    header('Location: ' . url('admin/ai-drafts/new') . '?' . $query);
     exit;
 }
 

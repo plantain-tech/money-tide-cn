@@ -21,6 +21,13 @@ function app_config(?string $key = null, $default = null)
                 'email' => '',
                 'password_hash' => '',
             ],
+            'email' => [
+                'provider' => 'log',
+                'api_key' => '',
+                'from_address' => '',
+                'from_name' => '钱潮 Money Tide',
+                'mailgun_domain' => '',
+            ],
         ];
 
         $configFile = APP_BASE_PATH . '/config.php';

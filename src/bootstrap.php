@@ -16,6 +16,8 @@ require_once __DIR__ . '/ai.php';
 require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/launch.php';
 require_once __DIR__ . '/analytics.php';
+require_once __DIR__ . '/newsletter_issues.php';
+require_once __DIR__ . '/ai_sources.php';
 require_once __DIR__ . '/content.php';
 
 function e(string $value): string
