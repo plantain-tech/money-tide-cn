@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: hostinger-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -97,15 +97,21 @@ jobs:
             echo "FTP secrets are missing; skipping deploy."
             exit 1
           fi
-          lftp -u "$FTP_USER","$FTP_PASS" "ftps://$FTP_HOST" <<EOF
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" <<EOF
+          set ftp:ssl-allow yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ftp:passive-mode yes
           set ssl:verify-certificate no
-          set ftp:ssl-protect-data true
-          set net:max-retries 3
-          set net:timeout 30
-          set mirror:parallel-transfer-count 4
-          mirror -R --no-perms --exclude-glob .git* --exclude-glob .DS_Store ./public/ "$PUBLIC_DIR"
-          mirror -R --no-perms --exclude-glob .git* --exclude-glob .DS_Store ./src/ "${APP_DIR}src/"
-          mirror -R --no-perms --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
+          set ssl:check-hostname no
+          set net:max-retries 5
+          set net:reconnect-interval-base 10
+          set net:timeout 60
+          set mirror:parallel-transfer-count 1
+          set mirror:use-pget-n 1
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./public/ "$PUBLIC_DIR"
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./src/ "${APP_DIR}src/"
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
           bye
           EOF
 
