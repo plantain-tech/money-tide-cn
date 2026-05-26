@@ -1057,10 +1057,15 @@ main {
     display: flex;
     justify-content: space-between;
     gap: 24px;
-    padding: 28px clamp(16px, 4vw, 56px);
+    padding: 28px max(clamp(16px, 4vw, 56px), 112px) 28px clamp(16px, 4vw, 56px);
     border-top: 2px solid var(--line);
     background: var(--ink);
     color: var(--white);
+}
+
+.site-footer nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .site-footer p {
@@ -1656,5 +1661,11 @@ main {
 
     .site-footer {
         flex-direction: column;
+        padding-right: 14px;
+        padding-bottom: 86px;
+    }
+
+    .site-footer nav {
+        justify-content: flex-start;
     }
 }
