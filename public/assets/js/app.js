@@ -82,6 +82,40 @@ if (backToTopButton) {
     updateBackToTop();
 }
 
+document.querySelectorAll('[data-share-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const url = button.getAttribute('data-share-copy') || window.location.href;
+        const originalText = button.textContent;
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const input = document.createElement('input');
+                input.value = url;
+                input.setAttribute('readonly', '');
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+            }
+            button.textContent = '已复制';
+            button.classList.add('is-copied');
+            window.setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('is-copied');
+            }, 1800);
+        } catch (error) {
+            button.textContent = '复制失败';
+            window.setTimeout(() => {
+                button.textContent = originalText;
+            }, 1800);
+        }
+    });
+});
+
 function startAiGenerationProgress(form) {
     const panel = form.querySelector('[data-ai-generation-panel]');
     const bar = form.querySelector('[data-ai-generation-bar]');
