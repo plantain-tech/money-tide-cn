@@ -82,6 +82,32 @@ if ($route === 'admin') {
     exit;
 }
 
+if ($route === 'admin/charset-debug') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    $pdo = db();
+    $out = ['db_ready' => $pdo instanceof PDO];
+    if ($pdo instanceof PDO) {
+        try {
+            $out['session_vars'] = $pdo->query("SHOW VARIABLES LIKE 'character_set%'")->fetchAll();
+            $out['collations'] = $pdo->query("SHOW VARIABLES LIKE 'collation%'")->fetchAll();
+            $out['articles_table'] = $pdo->query("SHOW CREATE TABLE articles")->fetch();
+            $out['sample'] = $pdo->query("SELECT id, title, HEX(title) AS title_hex FROM articles WHERE title LIKE '%西班牙%' OR title LIKE '%加密%' OR title LIKE '%Polymarket%' LIMIT 5")->fetchAll();
+            $stmt = $pdo->prepare("SELECT id, title FROM articles WHERE title LIKE :q LIMIT 5");
+            $stmt->execute(['q' => '%西班牙%']);
+            $out['like_bind_cjk'] = $stmt->fetchAll();
+            $stmt2 = $pdo->prepare("SELECT id, title FROM articles WHERE title LIKE :q LIMIT 5");
+            $stmt2->execute(['q' => '%Polymarket%']);
+            $out['like_bind_latin'] = $stmt2->fetchAll();
+            $out['like_literal_cjk'] = $pdo->query("SELECT id, title FROM articles WHERE title LIKE '%西班牙%' LIMIT 5")->fetchAll();
+        } catch (Throwable $e) {
+            $out['error'] = $e->getMessage();
+        }
+    }
+    echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
 if ($route === 'admin/db-health') {
     require_admin();
     header('Content-Type: application/json; charset=utf-8');
