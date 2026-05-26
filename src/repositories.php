@@ -234,6 +234,9 @@ function normalize_article_input(array $input): array
 
     $body = trim((string) ($input['body'] ?? ''));
     $paragraphs = array_values(array_filter(array_map('trim', preg_split('/\R{2,}/', $body) ?: [])));
+    if ($status === 'published') {
+        $paragraphs = append_article_publish_disclaimer($paragraphs ?: [$body]);
+    }
 
     return [
         'category_id' => (int) ($input['category_id'] ?? 0),
@@ -247,6 +250,27 @@ function normalize_article_input(array $input): array
         'read_time_minutes' => max(1, (int) ($input['read_time_minutes'] ?? 3)),
         'published_at' => $publishedAt,
     ];
+}
+
+function append_article_publish_disclaimer(array $paragraphs): array
+{
+    $disclaimer = '本文内容仅供参考，不构成投资建议。';
+    $removedNotes = [
+        'Editor note: This article was AI-assisted. Verify sources, facts, numbers, and tone before publishing.',
+        'This is for information only and is not investment advice.',
+    ];
+
+    $cleaned = [];
+    foreach ($paragraphs as $paragraph) {
+        $paragraph = trim((string) $paragraph);
+        if ($paragraph === '' || $paragraph === $disclaimer || in_array($paragraph, $removedNotes, true)) {
+            continue;
+        }
+        $cleaned[] = $paragraph;
+    }
+
+    $cleaned[] = $disclaimer;
+    return $cleaned;
 }
 
 function validate_article_input(array $data, ?int $id = null): array
