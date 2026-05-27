@@ -148,6 +148,10 @@
             <strong>Week 4 QA</strong>
             <span>检查留存、SEO、分享、会员准备和 Week 5 backlog。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/week5-checklist')) ?>">
+            <strong>Week 5 QA</strong>
+            <span>检查 AI 编辑部、草稿队列、事实核查、改写、newsletter 助理与 Week 6 backlog。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

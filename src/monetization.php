@@ -174,3 +174,39 @@ function week_five_backlog(): array
         ['title' => 'Monitoring alerts', 'detail' => 'Webhook or email alert for failed smoke checks and deploys.'],
     ];
 }
+
+function week_five_qa_checklist(): array
+{
+    return [
+        ['label' => '8 AI 编辑机器人都可见、可编辑、可恢复默认。', 'tip' => '/admin/ai-bots — 滚动 + 切换 active/inactive + 重置按钮'],
+        ['label' => 'AI 选题 Intake 能提交一个选题 → 生成结构化简报 → 跳转到 /admin/ai-drafts/new 预填。', 'tip' => '/admin/ai-intake — 简报应该包含 headline 候选、源问题、风险提示'],
+        ['label' => 'AI 草稿队列有 9 个状态 tab，每个 tab 显示该状态下的真实总数（不受其他 filter 影响）。', 'tip' => '/admin/ai-drafts — 切换栏目或状态时其它 tab 的数字保持不变'],
+        ['label' => '草稿卡片显示 quality score 徽章和警告 pill。', 'tip' => '不需要 AI 调用，evaluations 都是本地启发式'],
+        ['label' => '草稿详情页有 tone 预设条（更精炼/更口语化/更专业），点击会弹出确认+进度条。', 'tip' => '/admin/ai-drafts/{id} 顶部'],
+        ['label' => '每个 rewrite 块（title/dek/brief/why/social/newsletter/body/seo_title/seo_description/tags）都能单独重写。', 'tip' => '版本历史每次重写都会快照'],
+        ['label' => '文章编辑页面顶部有事实/风险警告面板和 Claims 区块。', 'tip' => '/admin/articles/{id}/edit — 包含建议提取候选 + 已记录 claims 列表'],
+        ['label' => '一键添加候选 claim、标记已核实、删除 claim 都正常。', 'tip' => '删除按钮触发确认 modal'],
+        ['label' => '已发布文章包含合规免责声明 "本文内容仅供参考，不构成投资建议。"', 'tip' => '查看任意已发布 /article/{slug} 最后一段'],
+        ['label' => 'Newsletter 期号编辑页有 "AI 早报助理" 面板，三类操作：生成开场白、为每篇文章生成推荐语、追加 6 个主题段落之一。', 'tip' => '/admin/newsletter/{id}/edit'],
+        ['label' => '所有 AI 生成按钮都会触发不可关闭的进度 modal，结束时随页面跳转消失。', 'tip' => '试一次重写或生成简报，观察进度阶段文案 + 计时器'],
+        ['label' => '没有任何 AI 操作会自动发布文章/广播 newsletter。所有发布/广播仍由编辑手动点击。', 'tip' => '检查路由代码：发布只在 /admin/articles/{id}/status 和 /admin/newsletter/{id}/send'],
+        ['label' => '生产 smoke 检查全部通过。', 'tip' => '/admin/smoke?format=json — 18+ 个 check 应该全部 ok=true'],
+        ['label' => '部署 release marker 已更新到 week-5 系列。', 'tip' => '/health.php'],
+    ];
+}
+
+function week_six_backlog(): array
+{
+    return [
+        ['title' => 'AI 文章批量校对', 'detail' => '对已发布文章做一次 AI 二审 — 检查事实、口吻、合规、SEO，输出可批改的 diff。'],
+        ['title' => 'Newsletter 自动定时发送', 'detail' => '基于 scheduled_at 字段，每小时跑一次 cron 检查 ready/scheduled issues 并自动广播。'],
+        ['title' => 'Reader 偏好驱动的个性化早报', 'detail' => '按 reader_preference_topics 给每位读者生成不同内容的 newsletter，而不是 broadcast same email.'],
+        ['title' => 'AI bot 性能日报', 'detail' => '每天给管理员一个邮件总结：哪个 bot 用得多、平均生成时长、失败率、警告分布。'],
+        ['title' => '前端文章页 AI 摘要按钮', 'detail' => '读者点击 "60 秒读懂" 按钮，调用 AI 用 3 句话总结当前文章，结果缓存到 article_summary。'],
+        ['title' => 'Comment 模块（admin moderated）', 'detail' => '读者评论 → moderation queue → 通过/拒绝。带 spam 简单过滤。'],
+        ['title' => 'Public RSS feed', 'detail' => '/feed/all.xml + /feed/category/{slug}.xml，按 RSS 2.0 + Atom 都输出。'],
+        ['title' => 'Search 模块', 'detail' => '简单全文搜索（title/dek/brief/body LIKE），后续可换 Meilisearch。'],
+        ['title' => '编辑日历视图', 'detail' => '把 articles + newsletter_issues 按 published_at/scheduled_at 排到一个月视图。'],
+        ['title' => 'Production payments 集成', 'detail' => 'Stripe/Paddle 接入 + hard paywall + premium 标识 + 订阅状态同步。'],
+    ];
+}
