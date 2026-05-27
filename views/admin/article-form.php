@@ -209,6 +209,11 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
             <textarea name="body" rows="14" required><?= e((string) $form['body']) ?></textarea>
         </label>
 
+        <label>
+            标签
+            <input type="text" name="tags" value="<?= e((string) ($form['tags'] ?? '')) ?>" placeholder="用逗号或换行分隔，例如：Fed, AI, 出海">
+        </label>
+
         <div class="cms-form-actions">
             <button class="button" type="submit">保存文章</button>
             <a class="ghost-link" href="<?= e(url('admin/articles')) ?>">取消</a>

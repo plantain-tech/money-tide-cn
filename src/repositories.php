@@ -493,12 +493,20 @@ function save_article(array $input, ?int $id = null): array
             $data['id'] = $id;
         }
 
+        $tagsRaw = (string) ($input['tags'] ?? '');
+        unset($data['tags']);
         $statement->execute($data);
         $articleId = $id ?? (int) $pdo->lastInsertId();
         if ($id === null) {
             record_article_audit($articleId, 'created', null, $data['status'], 'Article created.');
         } elseif ($existing && $data['status'] !== (string) ($existing['status'] ?? '')) {
             record_article_audit($articleId, 'status_change', (string) $existing['status'], $data['status'], 'Status changed from article form.');
+        }
+        if (function_exists('set_article_tags')) {
+            $tagList = array_values(array_filter(array_map('trim', preg_split('/[,，;；\n]+/u', $tagsRaw) ?: [])));
+            if ($tagList || ($id !== null && isset($input['tags']))) {
+                set_article_tags($articleId, $tagList);
+            }
         }
         return ['ok' => true, 'errors' => [], 'id' => $articleId];
     } catch (Throwable $exception) {
@@ -640,6 +648,7 @@ function article_form_defaults(): array
         'created_by_user_id' => '',
         'read_time_minutes' => 3,
         'published_at' => '',
+        'tags' => '',
     ];
 }
 
@@ -670,6 +679,9 @@ function article_to_form(array $article): array
         'created_by_user_id' => (string) ($article['created_by_user_id'] ?? ''),
         'read_time_minutes' => (int) ($article['read_time_minutes'] ?? 3),
         'published_at' => !empty($article['published_at']) ? date('Y-m-d\TH:i', strtotime((string) $article['published_at'])) : '',
+        'tags' => function_exists('article_tags') && !empty($article['id'])
+            ? implode(', ', array_map(static fn ($t) => (string) $t['name'], article_tags((int) $article['id'])))
+            : '',
     ];
 }
 
