@@ -339,6 +339,12 @@ function generate_ai_story_brief(array $input): array
     }
 
     $payload = normalize_ai_story_brief_payload($response['payload']);
+    db(true);
+    ensure_ai_story_intakes_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => 'Brief generated but database reconnect failed.', 'form' => $form];
+    }
     try {
         $statement = $pdo->prepare('INSERT INTO ai_story_intakes
             (bot_slug, topic_angle, source_links, urgency, target_reader, brief_payload, status)
