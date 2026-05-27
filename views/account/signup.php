@@ -22,16 +22,17 @@
             <button class="button" type="submit">注册</button>
         </form>
 
-        <?php $hasOauth = false; foreach ($oauth as $info) { if ($info['configured']) { $hasOauth = true; break; } } ?>
-        <?php if ($hasOauth): ?>
+        <?php if (!empty($oauth)): ?>
             <div class="account-oauth">
                 <p class="eyebrow">使用第三方账号</p>
-                <?php foreach ($oauth as $key => $info): if ($info['configured']): ?>
-                    <a class="button button-small button-ghost" href="<?= e(url('account/oauth/' . $key)) ?>">使用 <?= e($info['label']) ?> 登录</a>
-                <?php endif; endforeach; ?>
+                <?php foreach ($oauth as $key => $info): ?>
+                    <?php if ($info['configured']): ?>
+                        <a class="button button-small button-ghost" href="<?= e(url('account/oauth/' . $key)) ?>">使用 <?= e($info['label']) ?> 登录</a>
+                    <?php else: ?>
+                        <p class="account-oauth-note"><small><?= e($info['label']) ?> 登录将在配置 OAuth 凭证后开放。</small></p>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
-        <?php else: ?>
-            <p class="account-oauth-note"><small>Google / Apple / 微信 登录将在配置 OAuth 凭证后开放。</small></p>
         <?php endif; ?>
 
         <p class="account-alt">已有账号？<a href="<?= e(url('account/login')) ?>">登录</a></p>
