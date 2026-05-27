@@ -914,6 +914,10 @@ if ($route === 'account/profile') {
 
 if (preg_match('#^account/oauth/([a-z]+)$#', $route, $matches)) {
     $result = oauth_initiate((string) $matches[1]);
+    if ($result['ok'] && !empty($result['redirect_url'])) {
+        header('Location: ' . $result['redirect_url']);
+        exit;
+    }
     $msg = $result['message'] ?? '该登录方式暂不可用。';
     header('Location: ' . url('account/login') . '?error=' . rawurlencode($msg));
     exit;
@@ -921,6 +925,10 @@ if (preg_match('#^account/oauth/([a-z]+)$#', $route, $matches)) {
 
 if (preg_match('#^account/oauth/([a-z]+)/callback$#', $route, $matches)) {
     $result = oauth_handle_callback((string) $matches[1], $_GET);
+    if ($result['ok']) {
+        header('Location: ' . url('account'));
+        exit;
+    }
     $msg = $result['message'] ?? '回调暂未实现。';
     header('Location: ' . url('account/login') . '?error=' . rawurlencode($msg));
     exit;

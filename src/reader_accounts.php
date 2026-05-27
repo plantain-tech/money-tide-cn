@@ -426,9 +426,11 @@ function oauth_initiate(string $provider): array
     if (!$status[$provider]['configured']) {
         return ['ok' => false, 'message' => $status[$provider]['label'] . ' 登录尚未配置。管理员需要在部署 Secrets 中设置 ' . implode(' 和 ', $status[$provider]['env_keys']) . '。'];
     }
-    // Real OAuth handshake would happen here; we stop at the configured check
-    // until client credentials are provisioned.
-    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 登录已配置但回调处理尚未实现。请使用邮箱密码登录。'];
+
+    if ($provider === 'google') {
+        return oauth_google_initiate();
+    }
+    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 登录尚未实现。'];
 }
 
 function oauth_handle_callback(string $provider, array $request): array
@@ -437,5 +439,163 @@ function oauth_handle_callback(string $provider, array $request): array
     if (!isset($status[$provider]) || !$status[$provider]['configured']) {
         return ['ok' => false, 'message' => '该登录方式不可用。'];
     }
-    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 回调暂未实现。请稍后再试。'];
+    if ($provider === 'google') {
+        return oauth_google_callback($request);
+    }
+    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 回调暂未实现。'];
+}
+
+function oauth_google_redirect_uri(): string
+{
+    return canonical_url('account/oauth/google/callback');
+}
+
+function oauth_google_initiate(): array
+{
+    start_session();
+    $state = bin2hex(random_bytes(16));
+    $_SESSION['oauth_google_state'] = $state;
+    $params = [
+        'client_id' => (string) app_config('oauth.google.client_id', ''),
+        'redirect_uri' => oauth_google_redirect_uri(),
+        'response_type' => 'code',
+        'scope' => 'openid email profile',
+        'state' => $state,
+        'access_type' => 'online',
+        'prompt' => 'select_account',
+    ];
+    $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+    return ['ok' => true, 'redirect_url' => $url];
+}
+
+function oauth_google_callback(array $request): array
+{
+    start_session();
+    $expected = (string) ($_SESSION['oauth_google_state'] ?? '');
+    unset($_SESSION['oauth_google_state']);
+    $given = (string) ($request['state'] ?? '');
+    if ($expected === '' || !hash_equals($expected, $given)) {
+        return ['ok' => false, 'message' => '登录状态校验失败，请重试。'];
+    }
+    if (!empty($request['error'])) {
+        return ['ok' => false, 'message' => 'Google 返回错误：' . (string) $request['error']];
+    }
+    $code = (string) ($request['code'] ?? '');
+    if ($code === '') {
+        return ['ok' => false, 'message' => '缺少授权码。'];
+    }
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'message' => 'cURL not available'];
+    }
+
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query([
+            'code' => $code,
+            'client_id' => (string) app_config('oauth.google.client_id', ''),
+            'client_secret' => (string) app_config('oauth.google.client_secret', ''),
+            'redirect_uri' => oauth_google_redirect_uri(),
+            'grant_type' => 'authorization_code',
+        ]),
+        CURLOPT_TIMEOUT => 30,
+    ]);
+    $raw = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($raw === false || $status >= 400) {
+        return ['ok' => false, 'message' => 'Google 令牌交换失败：HTTP ' . $status . ' ' . $err];
+    }
+    $token = json_decode((string) $raw, true);
+    if (!is_array($token) || empty($token['id_token'])) {
+        return ['ok' => false, 'message' => 'Google 返回无效令牌。'];
+    }
+    $claims = oauth_decode_jwt_payload((string) $token['id_token']);
+    $email = isset($claims['email']) ? strtolower((string) $claims['email']) : '';
+    if ($email === '' || empty($claims['email_verified'])) {
+        return ['ok' => false, 'message' => 'Google 账号没有可用的已验证邮箱。'];
+    }
+    $sub = (string) ($claims['sub'] ?? '');
+    $name = (string) ($claims['name'] ?? '');
+    if ($name === '') {
+        $name = strstr($email, '@', true) ?: $email;
+    }
+
+    return oauth_login_or_create_reader('google', $sub, $email, $name);
+}
+
+function oauth_decode_jwt_payload(string $jwt): array
+{
+    $parts = explode('.', $jwt);
+    if (count($parts) < 2) {
+        return [];
+    }
+    $payload = strtr($parts[1], '-_', '+/');
+    $padded = $payload . str_repeat('=', (4 - strlen($payload) % 4) % 4);
+    $decoded = base64_decode($padded, true);
+    if ($decoded === false) {
+        return [];
+    }
+    $claims = json_decode($decoded, true);
+    return is_array($claims) ? $claims : [];
+}
+
+function oauth_login_or_create_reader(string $provider, string $providerUserId, string $email, string $name): array
+{
+    ensure_reader_accounts_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => '数据库未连接。'];
+    }
+    try {
+        // 1) Existing link?
+        $stmt = $pdo->prepare('SELECT user_id FROM login_providers WHERE provider = :provider AND provider_user_id = :pid LIMIT 1');
+        $stmt->execute(['provider' => $provider, 'pid' => $providerUserId]);
+        $userId = (int) ($stmt->fetchColumn() ?: 0);
+
+        if ($userId === 0) {
+            // 2) Existing user by email?
+            $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+            $stmt->execute(['email' => $email]);
+            $userId = (int) ($stmt->fetchColumn() ?: 0);
+            if ($userId === 0) {
+                // 3) Create new reader account, no password_hash
+                $pdo->prepare('INSERT INTO users (email, display_name, role) VALUES (:email, :name, "reader")')
+                    ->execute(['email' => $email, 'name' => $name]);
+                $userId = (int) $pdo->lastInsertId();
+            } else {
+                // Backfill display name if missing
+                $pdo->prepare('UPDATE users SET display_name = COALESCE(NULLIF(display_name, ""), :name) WHERE id = :id')
+                    ->execute(['name' => $name, 'id' => $userId]);
+            }
+            // Link the provider
+            try {
+                $pdo->prepare('INSERT INTO login_providers (user_id, provider, provider_user_id) VALUES (:id, :provider, :pid)')
+                    ->execute(['id' => $userId, 'provider' => $provider, 'pid' => $providerUserId]);
+            } catch (Throwable $exception) {
+                // unique violation if already linked under a race — ignore
+            }
+        }
+
+        // Ensure a subscribers row exists so the newsletter pipeline reaches them
+        $pdo->prepare('INSERT INTO subscribers (email, status, referral_code, source)
+            VALUES (:email, "active", :ref, "oauth-' . $provider . '")
+            ON DUPLICATE KEY UPDATE status = "active", updated_at = CURRENT_TIMESTAMP')
+            ->execute(['email' => $email, 'ref' => bin2hex(random_bytes(8))]);
+
+        start_session();
+        $_SESSION['reader'] = [
+            'id' => $userId,
+            'email' => $email,
+            'name' => $name,
+        ];
+        if (function_exists('record_event')) {
+            record_event('reader_login', ['source' => 'oauth-' . $provider]);
+        }
+        return ['ok' => true, 'user_id' => $userId];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => 'OAuth 登录失败：' . $exception->getMessage()];
+    }
 }
