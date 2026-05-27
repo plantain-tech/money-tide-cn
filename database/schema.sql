@@ -122,6 +122,32 @@ CREATE TABLE ai_drafts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE ai_bots (
+    section_slug VARCHAR(120) NOT NULL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    tone TEXT NULL,
+    target_reader TEXT NULL,
+    source_requirements TEXT NULL,
+    risk_rules TEXT NULL,
+    prompt_template TEXT NOT NULL,
+    status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ai_story_intakes (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    bot_slug VARCHAR(120) NOT NULL,
+    topic_angle TEXT NOT NULL,
+    source_links LONGTEXT NULL,
+    urgency ENUM('low','normal','high','breaking') NOT NULL DEFAULT 'normal',
+    target_reader TEXT NULL,
+    brief_payload LONGTEXT NOT NULL,
+    status ENUM('briefed','draft_created','archived') NOT NULL DEFAULT 'briefed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_intake_bot_time (bot_slug, created_at),
+    INDEX idx_intake_status_time (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE ai_usage_logs (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     provider VARCHAR(60) NOT NULL,

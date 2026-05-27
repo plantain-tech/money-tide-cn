@@ -17,7 +17,7 @@ function database_diagnostics(): array
     }
     $tables = [
         'articles', 'categories', 'subscribers', 'newsletter_preferences', 'users', 'authors',
-        'analytics_events', 'ai_drafts', 'ai_draft_versions', 'ai_draft_checks', 'ai_prompt_templates',
+        'analytics_events', 'ai_bots', 'ai_story_intakes', 'ai_drafts', 'ai_draft_versions', 'ai_draft_checks', 'ai_prompt_templates',
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
@@ -66,6 +66,12 @@ function admin_smoke_checks(): array
     ensure_ai_draft_versions_table();
     ensure_ai_draft_checks_table();
     ensure_ai_prompt_templates_table();
+    if (function_exists('ensure_ai_bots_schema')) {
+        ensure_ai_bots_schema();
+    }
+    if (function_exists('ensure_ai_story_intakes_schema')) {
+        ensure_ai_story_intakes_schema();
+    }
     if (function_exists('ensure_newsletter_issues_schema')) {
         ensure_newsletter_issues_schema();
     }
@@ -133,6 +139,13 @@ function admin_smoke_checks(): array
         $money = monetization_summary();
         $checks[] = ['name' => 'Monetization schema', 'ok' => isset($money['tiers']['free']), 'detail' => $money['premium_articles'] . ' premium articles'];
     }
+    if (function_exists('ai_bot_profiles')) {
+        $botCount = count(ai_bot_profiles(true));
+        $checks[] = ['name' => 'AI newsroom bots', 'ok' => $botCount >= 8, 'detail' => $botCount . ' active bots'];
+    }
+    if (function_exists('ai_story_intakes')) {
+        $checks[] = ['name' => 'AI story intake', 'ok' => true, 'detail' => count(ai_story_intakes(5)) . ' recent briefs'];
+    }
 
     return $checks;
 }
@@ -144,7 +157,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'reader_saved_articles', 'reader_recent_reads'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }
@@ -153,7 +166,9 @@ function diagnostics_export_csv(string $table): bool
         return false;
     }
     try {
-        $statement = $pdo->query("SELECT * FROM {$table} ORDER BY id DESC LIMIT 5000");
+        $orderColumn = $table === 'ai_bots' ? 'section_slug' : 'id';
+        $direction = $table === 'ai_bots' ? 'ASC' : 'DESC';
+        $statement = $pdo->query("SELECT * FROM {$table} ORDER BY {$orderColumn} {$direction} LIMIT 5000");
         $rows = $statement->fetchAll();
     } catch (Throwable $exception) {
         return false;

@@ -34,6 +34,14 @@ function editorial_bot_templates(): array
         } catch (Throwable $exception) {
         }
     }
+    if (function_exists('ai_bot_profiles')) {
+        foreach (ai_bot_profiles(true) as $slug => $bot) {
+            $defaults[$slug] = [
+                'name' => (string) $bot['name'],
+                'prompt' => (string) $bot['prompt_template'],
+            ];
+        }
+    }
     return $defaults;
 }
 

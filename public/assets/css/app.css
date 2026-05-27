@@ -2343,6 +2343,61 @@ main {
     font-weight: 800;
 }
 
+.admin-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+    gap: 24px;
+    align-items: start;
+}
+
+.admin-side-panel,
+.admin-detail-panel {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 22px;
+}
+
+.admin-side-panel h2,
+.admin-detail-panel h2 {
+    margin-top: 0;
+}
+
+.admin-list-item {
+    display: block;
+    border-top: 1px solid var(--line);
+    padding: 14px 0;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.admin-list-item strong,
+.admin-list-item span {
+    display: block;
+}
+
+.admin-list-item span {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.ai-brief-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.ai-brief-grid article {
+    border: 2px solid var(--ink);
+    background: var(--white);
+    padding: 18px;
+}
+
+.ai-brief-grid h3 {
+    margin-top: 0;
+}
+
 .article-hero-media {
     margin: 28px 0 0;
     border: 2px solid var(--ink);
@@ -2827,6 +2882,11 @@ main {
 }
 
 @media (max-width: 720px) {
+    .admin-two-column,
+    .ai-brief-grid {
+        grid-template-columns: 1fr;
+    }
+
     .account-card {
         padding: 24px;
     }
@@ -2876,4 +2936,3 @@ main {
     margin: 6px 0 8px;
     font-size: 20px;
 }
-

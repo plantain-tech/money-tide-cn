@@ -372,6 +372,55 @@ if ($route === 'admin/ai-drafts') {
     exit;
 }
 
+if ($route === 'admin/ai-bots') {
+    require_admin();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        if (($_POST['action'] ?? '') === 'reset') {
+            $result = reset_ai_bot_profile((string) ($_POST['section_slug'] ?? ''));
+        } else {
+            $result = save_ai_bot_profile($_POST);
+        }
+        $flash = (string) ($result['message'] ?? ($result['ok'] ? 'Saved.' : 'Save failed.'));
+    }
+    render_page('admin/ai-bots', [
+        'site' => $site,
+        'categories' => $categories,
+        'bots' => ai_bot_profiles(false),
+        'defaults' => ai_bot_profile_defaults(),
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/ai-intake') {
+    require_admin();
+    $form = ai_story_intake_defaults();
+    $message = (string) ($_GET['message'] ?? '');
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = generate_ai_story_brief($_POST);
+        if ($result['ok']) {
+            header('Location: ' . url('admin/ai-intake') . '?brief=' . (int) $result['id']);
+            exit;
+        }
+        $message = (string) ($result['message'] ?? 'Brief generation failed.');
+        $form = array_replace($form, $_POST);
+    }
+    $briefId = (int) ($_GET['brief'] ?? 0);
+    render_page('admin/ai-intake', [
+        'site' => $site,
+        'categories' => $categories,
+        'bots' => ai_bot_profiles(true),
+        'form' => $form,
+        'message' => $message,
+        'selectedBrief' => $briefId > 0 ? ai_story_intake_by_id($briefId) : null,
+        'briefs' => ai_story_intakes(20),
+        'aiProvider' => ai_provider_status(),
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/ai-drafts/new') {
     require_admin();
     $errors = [];

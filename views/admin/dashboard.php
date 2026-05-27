@@ -100,6 +100,14 @@
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/ai-bots')) ?>">
+            <strong>AI Bots</strong>
+            <span>Manage section bots, tone, target reader, source rules, risk rules, and active status.</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/ai-intake')) ?>">
+            <strong>Story Intake</strong>
+            <span>Submit a story angle and sources, then generate a structured editorial brief.</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts/new')) ?>">
             <strong>生成 AI 草稿</strong>
             <span>输入来源链接，生成可审核的编辑草稿。</span>
