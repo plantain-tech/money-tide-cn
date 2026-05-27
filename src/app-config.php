@@ -28,6 +28,14 @@ function app_config(?string $key = null, $default = null)
                 'from_name' => '钱潮 Money Tide',
                 'mailgun_domain' => '',
             ],
+            'oauth' => [
+                'google' => ['client_id' => '', 'client_secret' => ''],
+                'apple' => ['client_id' => '', 'client_secret' => ''],
+                'wechat' => ['app_id' => '', 'app_secret' => ''],
+            ],
+            'security' => [
+                'unsubscribe_secret' => '',
+            ],
         ];
 
         $configFile = APP_BASE_PATH . '/config.php';

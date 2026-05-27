@@ -94,6 +94,31 @@ $flash = $flash ?? '';
         </section>
 
         <section class="newsletter-block">
+            <h2>状态流转</h2>
+            <p>当前状态：<strong><?= e($status) ?></strong></p>
+            <div class="workflow-actions">
+                <?php
+                $transitions = [
+                    'draft' => [['ready', '标记为 Ready']],
+                    'ready' => [['draft', '回到草稿'], ['sent', '直接标记为已发送']],
+                    'sent' => [['archived', '归档']],
+                    'archived' => [['draft', '恢复为草稿']],
+                ];
+                foreach ($transitions[$status] ?? [] as $step):
+                    [$nextStatus, $label] = $step;
+                ?>
+                    <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/status')) ?>">
+                        <input type="hidden" name="status" value="<?= e($nextStatus) ?>">
+                        <button class="button button-small" type="submit"><?= e($label) ?></button>
+                    </form>
+                <?php endforeach; ?>
+                <?php if (in_array($status, ['sent', 'archived'], true) && !empty($issue['slug'])): ?>
+                    <a class="ghost-link" href="<?= e(url('newsletter/' . $issue['slug'])) ?>" target="_blank" rel="noopener">查看公开页面</a>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <section class="newsletter-block">
             <h2>测试 & 广播</h2>
             <div class="status-banner <?= $providerStatus['ready'] ? 'is-ready' : 'is-warning' ?>">
                 <strong>邮件服务：<?= e($providerStatus['provider']) ?></strong>

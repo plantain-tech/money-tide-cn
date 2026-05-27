@@ -124,6 +124,10 @@
             <strong>钱潮早报</strong>
             <span>组装、预览、测试、广播每一期 newsletter。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/oauth')) ?>">
+            <strong>第三方登录</strong>
+            <span>查看 Google / Apple / 微信 登录配置状态。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/analytics')) ?>">
             <strong>站内分析</strong>
             <span>查看 14 天浏览趋势、热门文章、订阅来源。</span>

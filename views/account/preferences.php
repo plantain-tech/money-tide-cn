@@ -9,7 +9,7 @@
             <label>
                 邮件频率
                 <select name="digest_frequency">
-                    <?php foreach (['daily' => '每天', 'weekly' => '每周', 'off' => '暂停'] as $value => $label): ?>
+                    <?php foreach (reader_frequency_options() as $value => $label): ?>
                         <option value="<?= e($value) ?>" <?= ($account['preferences']['digest_frequency'] === $value) ? 'selected' : '' ?>><?= e($label) ?></option>
                     <?php endforeach; ?>
                 </select>

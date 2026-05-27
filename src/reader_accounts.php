@@ -27,10 +27,16 @@ function ensure_reader_accounts_schema(): void
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS reader_preferences (
             user_id INT UNSIGNED NOT NULL PRIMARY KEY,
-            digest_frequency ENUM('daily','weekly','off') NOT NULL DEFAULT 'daily',
+            digest_frequency ENUM('daily','weekly','alerts','off') NOT NULL DEFAULT 'daily',
             language VARCHAR(20) NOT NULL DEFAULT 'zh-CN',
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        // Idempotent upgrade for existing installs that pre-date 'alerts'.
+        try {
+            $pdo->exec("ALTER TABLE reader_preferences MODIFY digest_frequency ENUM('daily','weekly','alerts','off') NOT NULL DEFAULT 'daily'");
+        } catch (Throwable $exception) {
+        }
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS reader_preference_topics (
             user_id INT UNSIGNED NOT NULL,
@@ -177,6 +183,84 @@ function reader_account_data(int $userId): array
     return ['preferences' => $prefs, 'topics' => $topics, 'subscriber' => $subscriber];
 }
 
+function unsubscribe_secret(): string
+{
+    $secret = (string) app_config('security.unsubscribe_secret', '');
+    if ($secret !== '') {
+        return $secret;
+    }
+    // Stable fallback so existing tokens keep working when the secret is unset.
+    return 'money-tide-default-unsubscribe-secret';
+}
+
+function generate_unsubscribe_token(string $email): string
+{
+    $email = strtolower(trim($email));
+    if ($email === '') {
+        return '';
+    }
+    $payload = base64_encode($email);
+    $sig = substr(hash_hmac('sha256', $email, unsubscribe_secret()), 0, 24);
+    return rtrim(strtr($payload, '+/', '-_'), '=') . '.' . $sig;
+}
+
+function verify_unsubscribe_token(string $token): ?string
+{
+    if (strpos($token, '.') === false) {
+        return null;
+    }
+    [$payload, $sig] = explode('.', $token, 2);
+    $email = base64_decode(strtr($payload, '-_', '+/'), true);
+    if (!$email) {
+        return null;
+    }
+    $expected = substr(hash_hmac('sha256', $email, unsubscribe_secret()), 0, 24);
+    if (!hash_equals($expected, $sig)) {
+        return null;
+    }
+    return strtolower((string) $email);
+}
+
+function unsubscribe_email_by_token(string $token): array
+{
+    $email = verify_unsubscribe_token($token);
+    if ($email === null) {
+        return ['ok' => false, 'message' => '退订链接无效或已过期。'];
+    }
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => '数据库未连接。'];
+    }
+    try {
+        $pdo->prepare('UPDATE subscribers SET status = "unsubscribed", updated_at = CURRENT_TIMESTAMP WHERE email = :email')
+            ->execute(['email' => $email]);
+        $userRow = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+        $userRow->execute(['email' => $email]);
+        $userId = (int) ($userRow->fetchColumn() ?: 0);
+        if ($userId > 0) {
+            $pdo->prepare("INSERT INTO reader_preferences (user_id, digest_frequency)
+                VALUES (:id, 'off') ON DUPLICATE KEY UPDATE digest_frequency = 'off'")
+                ->execute(['id' => $userId]);
+        }
+        if (function_exists('record_event')) {
+            record_event('reader_unsubscribe', ['source' => 'email-token']);
+        }
+        return ['ok' => true, 'email' => $email];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => '退订失败：' . $exception->getMessage()];
+    }
+}
+
+function reader_frequency_options(): array
+{
+    return [
+        'daily' => '每天早报',
+        'weekly' => '每周精选',
+        'alerts' => '仅重大提醒',
+        'off' => '暂停订阅',
+    ];
+}
+
 function save_reader_preferences(int $userId, array $topics, string $frequency): array
 {
     ensure_reader_accounts_schema();
@@ -184,7 +268,7 @@ function save_reader_preferences(int $userId, array $topics, string $frequency):
     if (!$pdo instanceof PDO) {
         return ['ok' => false, 'message' => '数据库未连接。'];
     }
-    if (!in_array($frequency, ['daily', 'weekly', 'off'], true)) {
+    if (!array_key_exists($frequency, reader_frequency_options())) {
         $frequency = 'daily';
     }
     try {
@@ -281,20 +365,89 @@ function reader_referral_data(int $userId): array
     return $out;
 }
 
+function update_reader_profile(int $userId, array $input): array
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => '数据库未连接。'];
+    }
+    $displayName = trim((string) ($input['display_name'] ?? ''));
+    $newPassword = (string) ($input['new_password'] ?? '');
+    $currentPassword = (string) ($input['current_password'] ?? '');
+    if ($displayName === '') {
+        return ['ok' => false, 'message' => '显示名不能为空。'];
+    }
+
+    try {
+        if ($newPassword !== '') {
+            if (strlen($newPassword) < 6) {
+                return ['ok' => false, 'message' => '新密码至少 6 位。'];
+            }
+            $row = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
+            $row->execute(['id' => $userId]);
+            $existingHash = (string) $row->fetchColumn();
+            if ($existingHash === '' || !password_verify($currentPassword, $existingHash)) {
+                return ['ok' => false, 'message' => '当前密码不正确。'];
+            }
+            $pdo->prepare('UPDATE users SET display_name = :name, password_hash = :hash WHERE id = :id')
+                ->execute(['name' => $displayName, 'hash' => password_hash($newPassword, PASSWORD_DEFAULT), 'id' => $userId]);
+        } else {
+            $pdo->prepare('UPDATE users SET display_name = :name WHERE id = :id')
+                ->execute(['name' => $displayName, 'id' => $userId]);
+        }
+        start_session();
+        if (isset($_SESSION['reader'])) {
+            $_SESSION['reader']['name'] = $displayName;
+        }
+        return ['ok' => true];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => '保存失败：' . $exception->getMessage()];
+    }
+}
+
 function oauth_provider_status(): array
 {
     return [
         'google' => [
-            'configured' => (string) app_config('oauth.google.client_id', '') !== '',
+            'configured' => (string) app_config('oauth.google.client_id', '') !== ''
+                && (string) app_config('oauth.google.client_secret', '') !== '',
             'label' => 'Google',
+            'env_keys' => ['OAUTH_GOOGLE_CLIENT_ID', 'OAUTH_GOOGLE_CLIENT_SECRET'],
         ],
         'apple' => [
-            'configured' => (string) app_config('oauth.apple.client_id', '') !== '',
+            'configured' => (string) app_config('oauth.apple.client_id', '') !== ''
+                && (string) app_config('oauth.apple.client_secret', '') !== '',
             'label' => 'Apple',
+            'env_keys' => ['OAUTH_APPLE_CLIENT_ID', 'OAUTH_APPLE_CLIENT_SECRET'],
         ],
         'wechat' => [
-            'configured' => (string) app_config('oauth.wechat.app_id', '') !== '',
+            'configured' => (string) app_config('oauth.wechat.app_id', '') !== ''
+                && (string) app_config('oauth.wechat.app_secret', '') !== '',
             'label' => '微信',
+            'env_keys' => ['OAUTH_WECHAT_APP_ID', 'OAUTH_WECHAT_APP_SECRET'],
         ],
     ];
+}
+
+function oauth_initiate(string $provider): array
+{
+    $status = oauth_provider_status();
+    if (!isset($status[$provider])) {
+        return ['ok' => false, 'message' => '未知登录方式。'];
+    }
+    if (!$status[$provider]['configured']) {
+        return ['ok' => false, 'message' => $status[$provider]['label'] . ' 登录尚未配置。管理员需要在部署 Secrets 中设置 ' . implode(' 和 ', $status[$provider]['env_keys']) . '。'];
+    }
+    // Real OAuth handshake would happen here; we stop at the configured check
+    // until client credentials are provisioned.
+    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 登录已配置但回调处理尚未实现。请使用邮箱密码登录。'];
+}
+
+function oauth_handle_callback(string $provider, array $request): array
+{
+    $status = oauth_provider_status();
+    if (!isset($status[$provider]) || !$status[$provider]['configured']) {
+        return ['ok' => false, 'message' => '该登录方式不可用。'];
+    }
+    return ['ok' => false, 'message' => $status[$provider]['label'] . ' 回调暂未实现。请稍后再试。'];
 }

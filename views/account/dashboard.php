@@ -22,6 +22,7 @@
 
         <nav class="account-menu">
             <a class="button" href="<?= e(url('account/preferences')) ?>">编辑偏好</a>
+            <a class="button button-ghost" href="<?= e(url('account/profile')) ?>">个人资料</a>
             <a class="button button-ghost" href="<?= e(url('account/referral')) ?>">邀请朋友</a>
             <a class="button button-ghost" href="<?= e(url('account/unsubscribe')) ?>">订阅管理</a>
             <a class="ghost-link" href="<?= e(url('account/logout')) ?>">退出登录</a>

@@ -11,10 +11,11 @@ function ensure_newsletter_issues_schema(): void
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS newsletter_issues (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(120) NULL,
             subject VARCHAR(255) NOT NULL,
             intro TEXT NULL,
             outro TEXT NULL,
-            status ENUM('draft','scheduled','sent') NOT NULL DEFAULT 'draft',
+            status ENUM('draft','ready','scheduled','sent','archived') NOT NULL DEFAULT 'draft',
             scheduled_at DATETIME NULL,
             sent_at DATETIME NULL,
             created_by_user_id INT UNSIGNED NULL,
@@ -25,6 +26,22 @@ function ensure_newsletter_issues_schema(): void
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_newsletter_issue_status (status, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        try {
+            $pdo->exec("ALTER TABLE newsletter_issues MODIFY status ENUM('draft','ready','scheduled','sent','archived') NOT NULL DEFAULT 'draft'");
+        } catch (Throwable $exception) {
+        }
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM newsletter_issues LIKE 'slug'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec("ALTER TABLE newsletter_issues ADD COLUMN slug VARCHAR(120) NULL AFTER id");
+            }
+        } catch (Throwable $exception) {
+        }
+        try {
+            $pdo->exec("ALTER TABLE newsletter_issues ADD UNIQUE KEY uniq_newsletter_slug (slug)");
+        } catch (Throwable $exception) {
+        }
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS newsletter_issue_articles (
             issue_id INT UNSIGNED NOT NULL,
@@ -147,11 +164,13 @@ function save_newsletter_issue(array $input, ?int $id = null): array
     }
 
     try {
+        $slug = generate_newsletter_slug($subject, $id);
         if ($id === null) {
             $userId = (int) (current_user()['id'] ?? 0);
-            $statement = $pdo->prepare('INSERT INTO newsletter_issues (subject, intro, outro, scheduled_at, created_by_user_id, status)
-                VALUES (:subject, :intro, :outro, :scheduled_at, :created_by, "draft")');
+            $statement = $pdo->prepare('INSERT INTO newsletter_issues (slug, subject, intro, outro, scheduled_at, created_by_user_id, status)
+                VALUES (:slug, :subject, :intro, :outro, :scheduled_at, :created_by, "draft")');
             $statement->execute([
+                'slug' => $slug,
                 'subject' => $subject,
                 'intro' => $intro,
                 'outro' => $outro,
@@ -160,17 +179,117 @@ function save_newsletter_issue(array $input, ?int $id = null): array
             ]);
             return ['ok' => true, 'id' => (int) $pdo->lastInsertId()];
         }
-        $statement = $pdo->prepare('UPDATE newsletter_issues SET subject = :subject, intro = :intro, outro = :outro, scheduled_at = :scheduled_at WHERE id = :id');
+        $statement = $pdo->prepare('UPDATE newsletter_issues SET subject = :subject, intro = :intro, outro = :outro, scheduled_at = :scheduled_at, slug = COALESCE(slug, :slug) WHERE id = :id');
         $statement->execute([
             'subject' => $subject,
             'intro' => $intro,
             'outro' => $outro,
             'scheduled_at' => $scheduledAt,
+            'slug' => $slug,
             'id' => $id,
         ]);
         return ['ok' => true, 'id' => $id];
     } catch (Throwable $exception) {
         return ['ok' => false, 'errors' => ['保存失败：' . $exception->getMessage()]];
+    }
+}
+
+function generate_newsletter_slug(string $subject, ?int $ignoreId = null): string
+{
+    $base = 'issue-' . date('Ymd');
+    $latin = preg_replace('/[^a-z0-9]+/i', '-', strtolower($subject)) ?: '';
+    $latin = trim($latin, '-');
+    if ($latin !== '') {
+        $base .= '-' . substr($latin, 0, 60);
+    }
+    $base = trim($base, '-');
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return $base;
+    }
+    $candidate = $base;
+    $suffix = 2;
+    try {
+        while (true) {
+            $sql = 'SELECT id FROM newsletter_issues WHERE slug = :slug';
+            $params = ['slug' => $candidate];
+            if ($ignoreId !== null) {
+                $sql .= ' AND id <> :id';
+                $params['id'] = $ignoreId;
+            }
+            $sql .= ' LIMIT 1';
+            $statement = $pdo->prepare($sql);
+            $statement->execute($params);
+            if (!$statement->fetch()) {
+                return $candidate;
+            }
+            $candidate = $base . '-' . $suffix;
+            $suffix++;
+            if ($suffix > 50) {
+                return $base . '-' . substr((string) time(), -4);
+            }
+        }
+    } catch (Throwable $exception) {
+        return $base;
+    }
+}
+
+function transition_newsletter_status(int $id, string $next): array
+{
+    $allowed = ['draft', 'ready', 'sent', 'archived'];
+    if (!in_array($next, $allowed, true)) {
+        return ['ok' => false, 'message' => '未知状态。'];
+    }
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => '数据库未连接。'];
+    }
+    try {
+        $pdo->prepare('UPDATE newsletter_issues SET status = :status WHERE id = :id')
+            ->execute(['status' => $next, 'id' => $id]);
+        return ['ok' => true];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => $exception->getMessage()];
+    }
+}
+
+function public_newsletter_archive(int $limit = 30): array
+{
+    ensure_newsletter_issues_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        $statement = $pdo->query("SELECT id, slug, subject, intro, sent_at, created_at, status
+            FROM newsletter_issues
+            WHERE status IN ('sent', 'archived')
+            ORDER BY COALESCE(sent_at, created_at) DESC
+            LIMIT " . (int) $limit);
+        return $statement->fetchAll() ?: [];
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function public_newsletter_issue(string $slug): ?array
+{
+    ensure_newsletter_issues_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return null;
+    }
+    try {
+        $statement = $pdo->prepare("SELECT * FROM newsletter_issues WHERE slug = :slug AND status IN ('sent','archived') LIMIT 1");
+        $statement->execute(['slug' => $slug]);
+        $issue = $statement->fetch();
+        if (!$issue) {
+            return null;
+        }
+        $issue['articles'] = newsletter_issue_articles((int) $issue['id']);
+        return $issue;
+    } catch (Throwable $exception) {
+        return null;
     }
 }
 
@@ -250,13 +369,17 @@ function publishable_articles_for_issue(int $issueId): array
     }
 }
 
-function render_newsletter_issue_html(array $issue): string
+function render_newsletter_issue_html(array $issue, string $recipientEmail = ''): string
 {
     $subject = (string) ($issue['subject'] ?? '');
     $intro = (string) ($issue['intro'] ?? '');
     $outro = (string) ($issue['outro'] ?? '');
     $articles = $issue['articles'] ?? [];
     $baseUrl = rtrim((string) app_config('app_url', 'https://moneytidecn.avanturadeals.com'), '/');
+    $unsubscribeUrl = '';
+    if ($recipientEmail !== '' && function_exists('generate_unsubscribe_token')) {
+        $unsubscribeUrl = $baseUrl . '/unsubscribe?token=' . rawurlencode(generate_unsubscribe_token($recipientEmail));
+    }
 
     $blocks = '';
     foreach ($articles as $article) {
@@ -281,6 +404,12 @@ HTML;
     $introHtml = nl2br(htmlspecialchars($intro, ENT_QUOTES, 'UTF-8'));
     $outroHtml = nl2br(htmlspecialchars($outro, ENT_QUOTES, 'UTF-8'));
 
+    $footerExtra = '';
+    if ($unsubscribeUrl !== '') {
+        $unsubscribeSafe = htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8');
+        $footerExtra = '<br><a href="' . $unsubscribeSafe . '" style="color:#dcff00;text-decoration:underline;">一键退订</a> · <a href="' . $baseUrl . '/account" style="color:#dcff00;text-decoration:underline;">订阅偏好</a>';
+    }
+
     return <<<HTML
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><title>{$subjectHtml}</title></head>
@@ -298,7 +427,7 @@ HTML;
 <div style="color:#666;line-height:1.6;font-size:13px;border-top:2px dashed #0a0a0a;padding-top:18px;">{$outroHtml}</div>
 </td></tr>
 <tr><td style="padding:16px 28px;background:#0a0a0a;color:#f6f4ee;font-size:12px;text-align:center;">
-钱潮 Money Tide · <a href="{$baseUrl}" style="color:#dcff00;text-decoration:none;">moneytidecn.avanturadeals.com</a>
+钱潮 Money Tide · <a href="{$baseUrl}" style="color:#dcff00;text-decoration:none;">moneytidecn.avanturadeals.com</a>{$footerExtra}
 </td></tr>
 </table>
 </td></tr></table>
@@ -450,13 +579,13 @@ function send_newsletter_broadcast(int $issueId): array
         return ['ok' => false, 'message' => '无法读取订阅者：' . $exception->getMessage()];
     }
 
-    $html = render_newsletter_issue_html($issue);
     $subject = (string) $issue['subject'];
     $sent = 0;
     $failed = 0;
     $sendStmt = $pdo->prepare('INSERT INTO newsletter_sends (issue_id, email, status, error_message) VALUES (:issue_id, :email, :status, :error)');
     foreach ($subscribers as $row) {
         $email = (string) $row['email'];
+        $html = render_newsletter_issue_html($issue, $email);
         $result = send_email_via_provider($email, $subject, $html);
         $status = $result['ok'] ? 'sent' : 'failed';
         if ($result['ok']) {

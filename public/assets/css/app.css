@@ -2782,4 +2782,46 @@ main {
     }
 }
 
+.newsletter-archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0;
+    display: grid;
+    gap: 14px;
+}
+
+.newsletter-archive-list li {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.newsletter-archive-list li h3 {
+    margin: 6px 0;
+    font-size: 18px;
+}
+
+.newsletter-archive-list li small {
+    color: var(--muted);
+}
+
+.newsletter-public-block {
+    border-top: 2px dashed var(--ink);
+    padding: 18px 0;
+}
+
+.newsletter-public-block:first-of-type {
+    border-top: 0;
+}
+
+.newsletter-public-block h2 {
+    margin: 6px 0 8px;
+    font-size: 20px;
+}
+
+
 

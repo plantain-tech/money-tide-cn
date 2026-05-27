@@ -66,6 +66,7 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
         <div class="header-actions">
             <a class="ghost-link" href="<?= e(url('latest')) ?>">最新</a>
             <a class="ghost-link" href="<?= e(url('topics')) ?>">话题</a>
+            <a class="ghost-link" href="<?= e(url('newsletter')) ?>">早报</a>
             <?php if (function_exists('reader_session') && reader_session() !== null): ?>
                 <a class="ghost-link" href="<?= e(url('account')) ?>">账号</a>
             <?php else: ?>

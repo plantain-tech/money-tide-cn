@@ -623,6 +623,26 @@ if (preg_match('#^admin/newsletter/(\d+)/send$#', $route, $matches) && ($_SERVER
     exit;
 }
 
+if (preg_match('#^admin/newsletter/(\d+)/status$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $next = (string) ($_POST['status'] ?? '');
+    $result = transition_newsletter_status($issueId, $next);
+    $flash = $result['ok'] ? '状态已更新为 ' . $next . '。' : ('切换失败：' . ($result['message'] ?? ''));
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if ($route === 'admin/oauth') {
+    require_admin();
+    render_page('admin/oauth', [
+        'site' => $site,
+        'categories' => $categories,
+        'providers' => oauth_provider_status(),
+    ]);
+    exit;
+}
+
 if (preg_match('#^admin/newsletter/(\d+)/delete$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_admin();
     if (!can_delete_article()) {
@@ -868,6 +888,44 @@ if ($route === 'account/logout') {
     exit;
 }
 
+if ($route === 'account/profile') {
+    require_reader();
+    $reader = reader_session();
+    $flash = '';
+    $error = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = update_reader_profile((int) $reader['id'], $_POST);
+        if ($result['ok']) {
+            $flash = '资料已更新。';
+            $reader = reader_session();
+        } else {
+            $error = $result['message'];
+        }
+    }
+    render_page('account/profile', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'flash' => $flash,
+        'error' => $error,
+    ]);
+    exit;
+}
+
+if (preg_match('#^account/oauth/([a-z]+)$#', $route, $matches)) {
+    $result = oauth_initiate((string) $matches[1]);
+    $msg = $result['message'] ?? '该登录方式暂不可用。';
+    header('Location: ' . url('account/login') . '?error=' . rawurlencode($msg));
+    exit;
+}
+
+if (preg_match('#^account/oauth/([a-z]+)/callback$#', $route, $matches)) {
+    $result = oauth_handle_callback((string) $matches[1], $_GET);
+    $msg = $result['message'] ?? '回调暂未实现。';
+    header('Location: ' . url('account/login') . '?error=' . rawurlencode($msg));
+    exit;
+}
+
 if ($route === 'account') {
     require_reader();
     $reader = reader_session();
@@ -934,6 +992,44 @@ if ($route === 'account/referral') {
         'categories' => $categories,
         'reader' => $reader,
         'referral' => reader_referral_data((int) $reader['id']),
+    ]);
+    exit;
+}
+
+// ===== Public newsletter archive =====
+if ($route === 'newsletter') {
+    render_page('newsletter-archive', [
+        'site' => $site,
+        'categories' => $categories,
+        'issues' => public_newsletter_archive(30),
+    ]);
+    exit;
+}
+
+if (strpos($route, 'newsletter/') === 0) {
+    $slug = basename($route);
+    $issue = public_newsletter_issue($slug);
+    if (!$issue) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    render_page('newsletter-issue', [
+        'site' => $site,
+        'categories' => $categories,
+        'issue' => $issue,
+    ]);
+    exit;
+}
+
+// ===== Signed unsubscribe link from emails =====
+if ($route === 'unsubscribe') {
+    $token = (string) ($_GET['token'] ?? '');
+    $result = $token !== '' ? unsubscribe_email_by_token($token) : ['ok' => false, 'message' => '缺少退订令牌。'];
+    render_page('unsubscribe-result', [
+        'site' => $site,
+        'categories' => $categories,
+        'result' => $result,
     ]);
     exit;
 }
