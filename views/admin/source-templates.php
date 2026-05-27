@@ -72,7 +72,7 @@
                     <form method="post" action="<?= e(url('admin/source-templates')) ?>" class="inline-action">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="id" value="<?= e((string) $tpl['id']) ?>">
-                        <button type="submit" class="link-button is-danger" onclick="return confirm('删除这个模板？')">删除</button>
+                        <button type="submit" class="link-button is-danger" data-confirm="删除这个模板？" data-confirm-sub="模板会从研究台中消失，但已经生成的研究简报不受影响。" data-confirm-variant="danger" data-confirm-title="删除模板" data-confirm-confirm="删除">删除</button>
                     </form>
                 </div>
             </div>

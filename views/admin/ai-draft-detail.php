@@ -98,7 +98,7 @@ $totalChecks = count($factChecks);
                                 <small><?= e((string) $version['source']) ?></small>
                             </div>
                             <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/restore/' . $version['id'])) ?>">
-                                <button type="submit" class="link-button" onclick="return confirm('恢复到此版本？当前内容会另存为新版本。')">恢复</button>
+                                <button type="submit" class="link-button" data-confirm="恢复到此版本？" data-confirm-sub="当前内容会另存为新版本。" data-confirm-title="恢复版本" data-confirm-confirm="恢复">恢复</button>
                             </form>
                         </li>
                     <?php endforeach; ?>

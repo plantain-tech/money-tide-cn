@@ -95,7 +95,7 @@
                     <form method="post" action="<?= e(url('admin/sources')) ?>" class="inline-action">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="id" value="<?= e((string) $src['id']) ?>">
-                        <button type="submit" class="link-button is-danger" onclick="return confirm('删除这条来源？')">删除</button>
+                        <button type="submit" class="link-button is-danger" data-confirm="删除这条来源？" data-confirm-sub="历史使用过该来源的研究简报不受影响，但这条来源不会再出现在选择列表里。" data-confirm-variant="danger" data-confirm-title="删除来源" data-confirm-confirm="删除">删除</button>
                     </form>
                 </div>
             </div>

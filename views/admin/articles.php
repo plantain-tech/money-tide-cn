@@ -95,11 +95,11 @@ $tabHref = static function (string $status) use ($baseQuery): string {
                     <a href="<?= e(url('admin/articles/' . $article['id'] . '/preview')) ?>">预览</a>
                     <a href="<?= e(url('admin/articles/' . $article['id'] . '/edit')) ?>">编辑</a>
                     <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/duplicate')) ?>" class="inline-action">
-                        <button type="submit" class="link-button" onclick="return confirm('复制这篇文章为新草稿？')">复制</button>
+                        <button type="submit" class="link-button" data-confirm="复制这篇文章为新草稿？" data-confirm-sub="副本会以草稿状态保存。" data-confirm-title="复制文章" data-confirm-confirm="复制">复制</button>
                     </form>
                     <?php if (can_delete_article() && in_array($article['status'], ['draft', 'archived'], true)): ?>
                         <form method="post" action="<?= e(url('admin/articles/' . $article['id'] . '/delete')) ?>" class="inline-action">
-                            <button type="submit" class="link-button is-danger" onclick="return confirm('永久删除这篇草稿/归档文章？')">删除</button>
+                            <button type="submit" class="link-button is-danger" data-confirm="永久删除这篇文章？" data-confirm-sub="这一操作无法撤销。仅限草稿和已归档文章。" data-confirm-variant="danger" data-confirm-title="删除文章" data-confirm-confirm="永久删除">删除</button>
                         </form>
                     <?php endif; ?>
                 </div>

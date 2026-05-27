@@ -52,7 +52,7 @@
                 <div class="ai-template-actions">
                     <button class="button button-small" type="submit">保存任务模板</button>
                     <?php if ($isCustom): ?>
-                        <button class="link-button" type="submit" name="action" value="reset" onclick="return confirm('恢复这个任务模板的默认提示词？')">恢复默认</button>
+                        <button class="link-button" type="submit" name="action" value="reset" data-confirm="恢复这个任务模板的默认提示词？" data-confirm-sub="你的自定义改动会被覆盖。" data-confirm-title="恢复默认模板" data-confirm-confirm="恢复默认">恢复默认</button>
                     <?php endif; ?>
                 </div>
             </form>

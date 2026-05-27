@@ -74,11 +74,11 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
                     </form>
                 <?php endforeach; ?>
                 <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/duplicate')) ?>">
-                    <button class="button button-small button-ghost" type="submit" onclick="return confirm('从这篇文章创建新草稿？')">复制为新稿</button>
+                    <button class="button button-small button-ghost" type="submit" data-confirm="从这篇文章创建新草稿？" data-confirm-sub="副本会以草稿状态保存，便于在不动原文的前提下二次编辑。" data-confirm-title="创建副本" data-confirm-confirm="创建副本">复制为新稿</button>
                 </form>
                 <?php if ($canDeleteCurrentArticle): ?>
                     <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/delete')) ?>">
-                        <button class="button button-small button-danger" type="submit" onclick="return confirm('永久删除这篇草稿/归档文章？')">删除</button>
+                        <button class="button button-small button-danger" type="submit" data-confirm="永久删除这篇文章？" data-confirm-sub="这一操作无法撤销。仅限草稿和已归档文章。" data-confirm-variant="danger" data-confirm-title="删除文章" data-confirm-confirm="永久删除">删除</button>
                     </form>
                 <?php endif; ?>
             </div>

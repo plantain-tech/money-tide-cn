@@ -276,3 +276,162 @@ function showFormMessage(form, message, isSuccess) {
     element.classList.toggle('form-message-success', isSuccess);
     element.classList.toggle('form-message-error', !isSuccess);
 }
+
+/* =============================================================
+   Modal confirmation dialog (replaces window.confirm)
+   ============================================================= */
+(function () {
+    let backdrop;
+    let titleEl;
+    let bodyEl;
+    let iconEl;
+    let confirmBtn;
+    let cancelBtn;
+    let modalEl;
+    let lastFocus = null;
+    let pending = null;
+
+    function ensureModal() {
+        if (backdrop) return;
+        backdrop = document.createElement('div');
+        backdrop.className = 'mt-modal-backdrop';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+        backdrop.setAttribute('aria-labelledby', 'mt-modal-title');
+        backdrop.innerHTML = '\n<div class="mt-modal" tabindex="-1">\n  <div class="mt-modal-header">\n    <div class="mt-modal-icon" aria-hidden="true">?</div>\n    <h2 class="mt-modal-title" id="mt-modal-title"></h2>\n  </div>\n  <div class="mt-modal-body" id="mt-modal-body"></div>\n  <div class="mt-modal-footer">\n    <button type="button" class="button button-small button-ghost button-cancel"></button>\n    <button type="button" class="button button-small button-confirm"></button>\n  </div>\n</div>';
+        document.body.appendChild(backdrop);
+        modalEl = backdrop.querySelector('.mt-modal');
+        iconEl = backdrop.querySelector('.mt-modal-icon');
+        titleEl = backdrop.querySelector('.mt-modal-title');
+        bodyEl = backdrop.querySelector('.mt-modal-body');
+        confirmBtn = backdrop.querySelector('.button-confirm');
+        cancelBtn = backdrop.querySelector('.button-cancel');
+
+        confirmBtn.addEventListener('click', () => resolve(true));
+        cancelBtn.addEventListener('click', () => resolve(false));
+        backdrop.addEventListener('click', (event) => {
+            if (event.target === backdrop) resolve(false);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (!backdrop.classList.contains('is-open')) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                resolve(false);
+            } else if (event.key === 'Enter' && event.target !== cancelBtn) {
+                event.preventDefault();
+                resolve(true);
+            }
+        });
+    }
+
+    function resolve(value) {
+        if (!pending) return;
+        const cb = pending;
+        pending = null;
+        backdrop.classList.remove('is-open');
+        modalEl.classList.remove('is-danger', 'is-broadcast', 'is-info');
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+            try { lastFocus.focus(); } catch (_) {}
+        }
+        lastFocus = null;
+        cb(value);
+    }
+
+    function openModal(options) {
+        ensureModal();
+        const variant = options.variant || 'info';
+        modalEl.classList.add('is-' + variant);
+
+        const iconChar = variant === 'danger' ? '!' : variant === 'broadcast' ? '↑' : '?';
+        iconEl.textContent = iconChar;
+
+        titleEl.textContent = options.title || (variant === 'danger' ? '确认删除' : '请确认');
+
+        bodyEl.innerHTML = '';
+        const main = document.createElement('p');
+        main.textContent = options.message || '';
+        bodyEl.appendChild(main);
+        if (options.sub) {
+            const sub = document.createElement('p');
+            sub.className = 'mt-modal-sub';
+            sub.textContent = options.sub;
+            bodyEl.appendChild(sub);
+        }
+
+        confirmBtn.textContent = options.confirmLabel || (variant === 'danger' ? '删除' : '确认');
+        cancelBtn.textContent = options.cancelLabel || '取消';
+
+        lastFocus = document.activeElement;
+        backdrop.classList.add('is-open');
+
+        return new Promise((res) => {
+            pending = res;
+            requestAnimationFrame(() => {
+                (variant === 'danger' ? cancelBtn : confirmBtn).focus();
+            });
+        });
+    }
+
+    function parseDataset(button) {
+        const ds = button.dataset;
+        return {
+            message: ds.confirm || '',
+            sub: ds.confirmSub || '',
+            title: ds.confirmTitle || '',
+            variant: ds.confirmVariant || 'info',
+            confirmLabel: ds.confirmConfirm || '',
+            cancelLabel: ds.confirmCancel || '',
+        };
+    }
+
+    function bindButton(button) {
+        if (button.dataset.confirmBound === '1') return;
+        button.dataset.confirmBound = '1';
+        button.addEventListener('click', async (event) => {
+            if (button.dataset.confirmBypass === '1') {
+                button.dataset.confirmBypass = '0';
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            const choice = await openModal(parseDataset(button));
+            if (!choice) return;
+            button.dataset.confirmBypass = '1';
+            // Re-trigger the original behavior — submit form or link nav.
+            const form = button.form;
+            if (form && (button.type === 'submit' || !button.type)) {
+                if (button.name) {
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = button.name;
+                    hidden.value = button.value || '';
+                    hidden.setAttribute('data-confirm-temp', '1');
+                    form.appendChild(hidden);
+                }
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            } else if (button.tagName === 'A' && button.href) {
+                window.location.href = button.href;
+            } else {
+                button.click();
+            }
+        });
+    }
+
+    function init() {
+        document.querySelectorAll('[data-confirm]').forEach(bindButton);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Expose for ad-hoc programmatic use.
+    window.moneyTideConfirm = openModal;
+})();
+

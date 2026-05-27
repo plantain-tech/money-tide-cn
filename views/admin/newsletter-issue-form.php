@@ -64,7 +64,7 @@ $flash = $flash ?? '';
                                 <p><?= e((string) ($art['blurb'] ?: $art['brief'])) ?></p>
                             </div>
                             <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/articles/' . $art['id'] . '/remove')) ?>">
-                                <button type="submit" class="link-button is-danger" onclick="return confirm('从本期移除这篇文章？')">移除</button>
+                                <button type="submit" class="link-button is-danger" data-confirm="从本期移除这篇文章？" data-confirm-sub="文章本身不会被删除，只是从这一期 newsletter 中移除。" data-confirm-variant="danger" data-confirm-title="移除文章" data-confirm-confirm="移除">移除</button>
                             </form>
                         </li>
                     <?php endforeach; ?>
@@ -129,7 +129,7 @@ $flash = $flash ?? '';
                 <button type="submit" class="button button-small">发送测试</button>
             </form>
             <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/send')) ?>" class="newsletter-broadcast-form">
-                <button type="submit" class="button is-primary" onclick="return confirm('确认向所有 active 订阅者广播本期？')" <?= ($status === 'sent' || !$articles) ? 'disabled' : '' ?>>广播给所有订阅者</button>
+                <button type="submit" class="button is-primary" data-confirm="向所有 active 订阅者广播本期 newsletter？" data-confirm-sub="一旦发送将无法撤回。请先用测试邮箱预览过。" data-confirm-variant="broadcast" data-confirm-title="广播本期" data-confirm-confirm="立即广播" <?= ($status === 'sent' || !$articles) ? 'disabled' : '' ?>>广播给所有订阅者</button>
                 <?php if ($status === 'sent'): ?>
                     <small>本期已发送 (<?= e((string) $issue['sent_count']) ?>/<?= e((string) $issue['recipients_count']) ?>)。</small>
                 <?php endif; ?>
@@ -149,7 +149,7 @@ $flash = $flash ?? '';
             <?php endif; ?>
             <?php if (can_delete_article()): ?>
                 <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/delete')) ?>" class="newsletter-delete-form">
-                    <button type="submit" class="button button-small button-danger" onclick="return confirm('永久删除这一期？')">删除本期</button>
+                    <button type="submit" class="button button-small button-danger" data-confirm="永久删除这一期 newsletter？" data-confirm-sub="发送记录也会一并删除，无法恢复。" data-confirm-variant="danger" data-confirm-title="删除本期" data-confirm-confirm="永久删除">删除本期</button>
                 </form>
             <?php endif; ?>
         </section>
