@@ -93,6 +93,41 @@ $flash = $flash ?? '';
             <?php endif; ?>
         </section>
 
+        <section class="newsletter-block ai-assistant-block">
+            <h2>AI 早报助理</h2>
+            <p><small>基于本期已加入的文章生成开场白、每篇推荐语，或追加主题板块到开场白尾部。每次调用消耗 1 个 AI 额度。</small></p>
+            <div class="ai-assistant-actions">
+                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-intro')) ?>">
+                    <button type="submit" class="button button-small"
+                            data-confirm="让 AI 生成本期开场白？"
+                            data-confirm-sub="会基于本期已加入的文章生成 2-3 句导读，覆盖当前的 intro 字段。"
+                            data-confirm-title="生成开场白"
+                            data-confirm-confirm="生成">生成开场白</button>
+                </form>
+                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-blurbs')) ?>">
+                    <button type="submit" class="button button-small"
+                            data-confirm="让 AI 为本期每篇文章生成推荐语？"
+                            data-confirm-sub="覆盖现有 blurb，本身只在本期可见，不影响原文章。"
+                            data-confirm-title="生成推荐语"
+                            data-confirm-confirm="生成">为每篇文章生成推荐语</button>
+                </form>
+            </div>
+
+            <div class="ai-theme-block-grid">
+                <p class="ai-theme-block-label">追加主题段落到开场白：</p>
+                <?php foreach (newsletter_theme_blocks() as $themeKey => $themeMeta): ?>
+                    <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-theme')) ?>">
+                        <input type="hidden" name="theme" value="<?= e($themeKey) ?>">
+                        <button type="submit" class="button button-small button-ghost"
+                                data-confirm="追加「<?= e((string) $themeMeta['label']) ?>」段落到开场白？"
+                                data-confirm-sub="AI 会根据近 96 小时已发布文章写一段总结，追加在 intro 末尾。"
+                                data-confirm-title="追加主题段落"
+                                data-confirm-confirm="追加"><?= e((string) $themeMeta['label']) ?></button>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
         <section class="newsletter-block">
             <h2>状态流转</h2>
             <p>当前状态：<strong><?= e($status) ?></strong></p>

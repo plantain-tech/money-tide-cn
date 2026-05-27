@@ -326,7 +326,34 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
         'seoChecklist' => seo_article_checklist($article),
         'auditLogs' => article_audit_logs($articleId),
         'flash' => (string) ($_GET['flash'] ?? ''),
+        'warnings' => article_warnings($article),
+        'riskCategories' => ai_risk_categories(),
+        'claims' => article_claims($articleId),
+        'claimTypes' => ai_claim_types(),
+        'suggestedClaims' => extract_article_claims_locally($article),
     ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/claims/add$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    save_article_claim($articleId, (string) ($_POST['claim_type'] ?? ''), (string) ($_POST['content'] ?? ''), (string) ($_POST['source_url'] ?? ''));
+    header('Location: ' . url('admin/articles/' . $articleId . '/edit') . '#claims');
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/claims/(\d+)/(verify|dispute|delete)$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $claimId = (int) $matches[2];
+    $action = $matches[3];
+    if ($action === 'delete') {
+        delete_article_claim($claimId);
+    } else {
+        update_article_claim_status($claimId, $action === 'verify' ? 'verified' : 'disputed');
+    }
+    header('Location: ' . url('admin/articles/' . $articleId . '/edit') . '#claims');
     exit;
 }
 
@@ -354,14 +381,23 @@ if ($route === 'admin/seed-launch-articles' && ($_SERVER['REQUEST_METHOD'] ?? 'G
 
 if ($route === 'admin/ai-drafts') {
     require_admin();
+    ensure_ai_quality_columns();
+    $drafts = ai_drafts([
+        'status' => $_GET['status'] ?? '',
+        'section_slug' => $_GET['section_slug'] ?? '',
+    ]);
+    // Enrich each row with quality score + warnings (local, no AI quota).
+    foreach ($drafts as &$d) {
+        $d['_quality'] = ai_draft_quality_score($d);
+        $d['_warnings'] = ai_draft_warnings($d);
+    }
+    unset($d);
     render_page('admin/ai-drafts', [
         'site' => $site,
         'categories' => $categories,
-        'drafts' => ai_drafts([
-            'status' => $_GET['status'] ?? '',
-            'section_slug' => $_GET['section_slug'] ?? '',
-        ]),
+        'drafts' => $drafts,
         'templates' => editorial_bot_templates(),
+        'statusOptions' => ai_draft_status_options(),
         'filters' => [
             'status' => (string) ($_GET['status'] ?? ''),
             'section_slug' => (string) ($_GET['section_slug'] ?? ''),
@@ -479,6 +515,22 @@ if ($route === 'admin/subscribers.csv') {
     exit;
 }
 
+if (preg_match('#^admin/ai-drafts/(\d+)/tone$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $draftId = (int) $matches[1];
+    $preset = (string) ($_POST['preset'] ?? '');
+    $presets = ai_tone_presets();
+    if (!isset($presets[$preset])) {
+        header('Location: ' . url('admin/ai-drafts/' . $draftId) . '?message=' . rawurlencode('未知语气预设。'));
+        exit;
+    }
+    $result = ai_rewrite_section($draftId, 'body', $presets[$preset]['instruction']);
+    $flash = $result['ok'] ? ('已套用「' . $presets[$preset]['label'] . '」语气。') : ($result['message'] ?? '改写失败。');
+    header('Location: ' . url('admin/ai-drafts/' . $draftId) . '?message=' . rawurlencode($flash));
+    exit;
+}
+
+
 if (preg_match('#^admin/ai-drafts/(\d+)$#', $route, $matches)) {
     require_admin();
     $draftId = (int) $matches[1];
@@ -495,6 +547,7 @@ if (preg_match('#^admin/ai-drafts/(\d+)$#', $route, $matches)) {
         'draft' => $draft,
         'templates' => editorial_bot_templates(),
         'rewriteTargets' => ai_rewrite_targets(),
+        'tonePresets' => ai_tone_presets(),
         'factChecks' => ai_draft_checks($draftId),
         'versions' => ai_draft_versions($draftId),
         'message' => (string) ($_GET['message'] ?? ''),
@@ -675,6 +728,48 @@ if (preg_match('#^admin/newsletter/(\d+)/preview$#', $route, $matches)) {
     header('Content-Type: text/html; charset=utf-8');
     header('X-Robots-Tag: noindex, nofollow', false);
     echo render_newsletter_issue_html($issue);
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/ai-intro$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $result = generate_newsletter_intro($issueId);
+    $flash = $result['ok'] ? '已生成开场白。' : ($result['message'] ?? 'AI 生成失败。');
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/ai-blurbs$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $result = generate_newsletter_blurbs($issueId);
+    $flash = $result['ok'] ? '已生成每篇文章的推荐语。' : ($result['message'] ?? 'AI 生成失败。');
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/newsletter/(\d+)/ai-theme$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $issueId = (int) $matches[1];
+    $theme = (string) ($_POST['theme'] ?? '');
+    $result = generate_themed_block($issueId, $theme);
+    if ($result['ok']) {
+        // Append the generated content to the issue's intro field (or you could store per-theme).
+        $pdo = db();
+        if ($pdo instanceof PDO) {
+            try {
+                $issue = newsletter_issue_by_id($issueId);
+                $append = "\n\n【" . ($result['label'] ?? '主题') . "】\n" . $result['content'];
+                $newIntro = trim((string) ($issue['intro'] ?? '')) . $append;
+                $pdo->prepare('UPDATE newsletter_issues SET intro = :intro WHERE id = :id')
+                    ->execute(['intro' => $newIntro, 'id' => $issueId]);
+            } catch (Throwable $exception) {
+            }
+        }
+    }
+    $flash = $result['ok'] ? ('已追加「' . ($result['label'] ?? '') . '」段落到开场白。') : ($result['message'] ?? 'AI 生成失败。');
+    header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
     exit;
 }
 

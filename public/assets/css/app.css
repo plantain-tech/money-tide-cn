@@ -3333,3 +3333,473 @@ main {
     }
 }
 
+/* =============================================================
+   W5D3 AI Draft Queue
+   ============================================================= */
+.ai-draft-queue {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.ai-draft-row {
+    display: grid;
+    gap: 10px;
+    padding: 16px 18px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.ai-draft-row:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--ink);
+}
+
+.ai-draft-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ai-draft-row-title strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+    line-height: 1.35;
+}
+
+.ai-draft-row-title small {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.ai-draft-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.draft-status-pill {
+    padding: 3px 9px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-weight: 900;
+    font-size: 12px;
+}
+
+.draft-status-pill[data-status="approved"] {
+    background: #c8f7c5;
+}
+
+.draft-status-pill[data-status="needs_review"] {
+    background: #ffd166;
+}
+
+.draft-status-pill[data-status="rejected"] {
+    background: #ffb3a7;
+}
+
+.draft-status-pill[data-status="converted"] {
+    background: var(--lime);
+}
+
+.quality-badge {
+    padding: 3px 9px;
+    font-weight: 900;
+    font-size: 12px;
+    border: 2px solid var(--ink);
+}
+
+.quality-badge.is-high {
+    background: #c8f7c5;
+}
+
+.quality-badge.is-mid {
+    background: #ffe7a3;
+}
+
+.quality-badge.is-low {
+    background: #ffb3a7;
+}
+
+.ai-draft-row-warnings {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.warning-pill {
+    padding: 3px 9px;
+    border: 2px solid var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    max-width: 100%;
+}
+
+.warning-pill.is-high {
+    background: #ffb3a7;
+}
+
+.warning-pill.is-medium {
+    background: #ffe7a3;
+}
+
+.warning-pill.is-low {
+    background: var(--paper);
+}
+
+.warning-pill.is-more {
+    background: var(--ink);
+    color: var(--white);
+}
+
+.ai-draft-row-foot {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* =============================================================
+   W5D4 Risk warning panel + Claims panel
+   ============================================================= */
+.risk-warning-panel {
+    border: 2px solid var(--ink);
+    background: #fff8d6;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    box-shadow: 4px 4px 0 var(--ink);
+}
+
+.risk-warning-panel.has-high {
+    background: #ffe1dc;
+}
+
+.risk-warning-panel header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.risk-warning-panel header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.risk-warning-stats {
+    display: flex;
+    gap: 8px;
+}
+
+.risk-stat {
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.risk-stat.is-high {
+    background: #ffb3a7;
+}
+
+.risk-stat.is-medium {
+    background: #ffe7a3;
+}
+
+.risk-warning-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.risk-warning {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border-left: 4px solid var(--ink);
+}
+
+.risk-warning.is-high {
+    border-left-color: #d24033;
+}
+
+.risk-warning.is-medium {
+    border-left-color: #e08e1f;
+}
+
+.risk-warning.is-low {
+    border-left-color: var(--muted);
+}
+
+.risk-warning-label {
+    font-weight: 900;
+    font-size: 13px;
+}
+
+.risk-warning-message {
+    font-size: 14px;
+}
+
+.risk-warning-foot {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+@media (max-width: 640px) {
+    .risk-warning {
+        grid-template-columns: 1fr;
+    }
+}
+
+.claims-panel {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 18px 22px;
+    margin-top: 24px;
+}
+
+.claims-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.claims-panel-head h2 {
+    margin: 4px 0 0;
+    font-size: 20px;
+}
+
+.claims-list {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.claim-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+}
+
+.claim-row.is-verified {
+    background: #e8f7e6;
+}
+
+.claim-row.is-disputed {
+    background: #fff0d6;
+}
+
+.claim-row .claim-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    font-size: 11px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.claim-row strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.claim-row small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+}
+
+.claim-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.claim-actions form {
+    margin: 0;
+}
+
+.claim-status-pill {
+    padding: 3px 9px;
+    border: 2px solid var(--ink);
+    font-weight: 900;
+    font-size: 12px;
+    background: var(--paper-strong);
+}
+
+.claim-status-pill.is-verified {
+    background: #c8f7c5;
+}
+
+.claim-status-pill.is-disputed {
+    background: #ffe7a3;
+}
+
+.claims-suggestions {
+    border-top: 2px dashed var(--ink);
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.claims-suggestions summary {
+    cursor: pointer;
+    font-weight: 800;
+    padding: 4px 0;
+}
+
+.claims-suggestions-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.suggestion-group h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+}
+
+.suggestion-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.suggestion-group .link-button {
+    text-align: left;
+    font-size: 13px;
+    width: 100%;
+    padding: 4px 0;
+}
+
+.claim-add-form {
+    display: grid;
+    grid-template-columns: 140px 1fr 1fr auto;
+    gap: 8px;
+    align-items: stretch;
+    margin-top: 14px;
+}
+
+.claim-add-form select,
+.claim-add-form input {
+    border: 2px solid var(--ink);
+    padding: 8px 10px;
+    background: var(--paper);
+    font: inherit;
+}
+
+@media (max-width: 720px) {
+    .claim-add-form {
+        grid-template-columns: 1fr;
+    }
+    .claim-row {
+        grid-template-columns: 1fr;
+    }
+    .claim-actions {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
+
+/* =============================================================
+   W5D5 Tone preset bar
+   ============================================================= */
+.tone-preset-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin: 18px 0;
+    border: 2px dashed var(--ink);
+    background: var(--paper);
+}
+
+.tone-preset-label {
+    font-weight: 900;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tone-preset-bar form {
+    margin: 0;
+}
+
+/* =============================================================
+   W5D6 Newsletter AI assistant panel
+   ============================================================= */
+.ai-assistant-block {
+    background: linear-gradient(180deg, var(--paper-strong), var(--paper));
+}
+
+.ai-assistant-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0 12px;
+}
+
+.ai-assistant-actions form {
+    margin: 0;
+}
+
+.ai-theme-block-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 2px dashed var(--ink);
+}
+
+.ai-theme-block-label {
+    grid-column: 1 / -1;
+    font-weight: 900;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 4px;
+}
+
+.ai-theme-block-grid form {
+    margin: 0;
+}
+
+.ai-theme-block-grid button {
+    width: 100%;
+}
+
+

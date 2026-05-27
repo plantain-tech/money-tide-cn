@@ -31,6 +31,22 @@ $totalChecks = count($factChecks);
         <span>AI 草稿不能直接发布，必须先转成 CMS 草稿。</span>
     </div>
 
+    <?php if (!empty($tonePresets)): ?>
+        <div class="tone-preset-bar">
+            <span class="tone-preset-label">一键调整正文语气：</span>
+            <?php foreach ($tonePresets as $key => $preset): ?>
+                <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/tone')) ?>">
+                    <input type="hidden" name="preset" value="<?= e($key) ?>">
+                    <button type="submit" class="button button-small button-ghost"
+                            data-confirm="把正文重写为「<?= e($preset['label']) ?>」？"
+                            data-confirm-sub="这会重写整段正文。当前版本会自动备份到版本历史。"
+                            data-confirm-title="调整语气"
+                            data-confirm-confirm="重写"><?= e($preset['label']) ?></button>
+                </form>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
     <div class="ai-draft-layout">
         <article class="ai-draft-preview">
             <?php foreach ($rewriteTargets as $key => $meta): ?>

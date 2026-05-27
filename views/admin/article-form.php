@@ -116,6 +116,38 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
         </div>
     <?php endif; ?>
 
+    <?php if ($mode === 'edit' && !empty($warnings)): ?>
+        <?php
+            $riskCategories = $riskCategories ?? [];
+            $highCount = 0; $medCount = 0; $lowCount = 0;
+            foreach ($warnings as $w) {
+                if ($w['severity'] === 'high') $highCount++;
+                elseif ($w['severity'] === 'medium') $medCount++;
+                else $lowCount++;
+            }
+        ?>
+        <div class="risk-warning-panel <?= $highCount > 0 ? 'has-high' : ($medCount > 0 ? 'has-medium' : 'has-low') ?>">
+            <header>
+                <p class="eyebrow">事实与风险提示</p>
+                <h3>编辑前请确认 <?= e((string) count($warnings)) ?> 条提示</h3>
+                <div class="risk-warning-stats">
+                    <?php if ($highCount): ?><span class="risk-stat is-high"><?= e((string) $highCount) ?> 高风险</span><?php endif; ?>
+                    <?php if ($medCount): ?><span class="risk-stat is-medium"><?= e((string) $medCount) ?> 中等</span><?php endif; ?>
+                    <?php if ($lowCount): ?><span class="risk-stat is-low"><?= e((string) $lowCount) ?> 提醒</span><?php endif; ?>
+                </div>
+            </header>
+            <ul class="risk-warning-list">
+                <?php foreach ($warnings as $w): ?>
+                    <li class="risk-warning is-<?= e((string) $w['severity']) ?>">
+                        <span class="risk-warning-label"><?= e($riskCategories[$w['type']] ?? $w['type']) ?></span>
+                        <span class="risk-warning-message"><?= e((string) $w['message']) ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <p class="risk-warning-foot">这些是本地启发式检查的结果，最终发布仍由编辑判断。</p>
+        </div>
+    <?php endif; ?>
+
     <form class="cms-form" method="post" action="<?= e($action) ?>">
         <div class="cms-form-grid">
             <label>
@@ -242,6 +274,88 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
             <a class="ghost-link" href="<?= e(url('admin/articles')) ?>">取消</a>
         </div>
     </form>
+
+    <?php if ($mode === 'edit'): ?>
+        <section class="claims-panel" id="claims">
+            <header class="claims-panel-head">
+                <div>
+                    <p class="eyebrow">事实核查 · Claims</p>
+                    <h2>关键声明清单</h2>
+                </div>
+                <small>把正文里的数字、公司、市场判断、政策判断逐一记录，发布前确认每条都有来源。</small>
+            </header>
+
+            <?php if (!empty($claims)): ?>
+                <div class="claims-list">
+                    <?php foreach ($claims as $claim): ?>
+                        <div class="claim-row is-<?= e((string) $claim['status']) ?>">
+                            <div>
+                                <span class="claim-type"><?= e($claimTypes[$claim['claim_type']] ?? $claim['claim_type']) ?></span>
+                                <strong><?= e((string) $claim['content']) ?></strong>
+                                <?php if (!empty($claim['source_url'])): ?>
+                                    <small><a href="<?= e((string) $claim['source_url']) ?>" target="_blank" rel="noopener"><?= e((string) $claim['source_url']) ?></a></small>
+                                <?php endif; ?>
+                            </div>
+                            <div class="claim-actions">
+                                <span class="claim-status-pill is-<?= e((string) $claim['status']) ?>">
+                                    <?= $claim['status'] === 'verified' ? '已核实' : ($claim['status'] === 'disputed' ? '存疑' : '未核实') ?>
+                                </span>
+                                <?php if ($claim['status'] !== 'verified'): ?>
+                                    <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/claims/' . $claim['id'] . '/verify')) ?>">
+                                        <button type="submit" class="link-button">标记已核实</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if ($claim['status'] !== 'disputed'): ?>
+                                    <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/claims/' . $claim['id'] . '/dispute')) ?>">
+                                        <button type="submit" class="link-button">标记存疑</button>
+                                    </form>
+                                <?php endif; ?>
+                                <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/claims/' . $claim['id'] . '/delete')) ?>">
+                                    <button type="submit" class="link-button is-danger" data-confirm="删除这条 claim？" data-confirm-variant="danger" data-confirm-title="删除 claim" data-confirm-confirm="删除">删除</button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="empty-hint"><small>还没有 claim 记录。可以从下方建议中快速添加，或手动补充。</small></p>
+            <?php endif; ?>
+
+            <details class="claims-suggestions">
+                <summary>从正文里自动提取的候选（点击添加）</summary>
+                <div class="claims-suggestions-body">
+                    <?php foreach ($claimTypes as $key => $label): ?>
+                        <?php $items = $suggestedClaims[$key] ?? []; if (!$items) continue; ?>
+                        <div class="suggestion-group">
+                            <h4><?= e($label) ?></h4>
+                            <ul>
+                                <?php foreach ($items as $item): ?>
+                                    <li>
+                                        <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/claims/add')) ?>">
+                                            <input type="hidden" name="claim_type" value="<?= e($key) ?>">
+                                            <input type="hidden" name="content" value="<?= e((string) $item) ?>">
+                                            <button type="submit" class="link-button">+ <?= e(mb_substr((string) $item, 0, 60, 'UTF-8')) ?></button>
+                                        </form>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </details>
+
+            <form class="claim-add-form" method="post" action="<?= e(url('admin/articles/' . $articleId . '/claims/add')) ?>">
+                <select name="claim_type" required>
+                    <?php foreach ($claimTypes as $key => $label): ?>
+                        <option value="<?= e($key) ?>"><?= e($label) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <input type="text" name="content" placeholder="例如：2026 Q1 美联储利率维持在 5.25-5.5%" required>
+                <input type="url" name="source_url" placeholder="来源 URL（可选）">
+                <button type="submit" class="button button-small">添加 claim</button>
+            </form>
+        </section>
+    <?php endif; ?>
 
     <?php if ($mode === 'edit' && $auditLogs): ?>
         <section class="audit-panel">

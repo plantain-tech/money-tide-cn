@@ -21,7 +21,7 @@ function database_diagnostics(): array
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
-        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings',
+        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -152,6 +152,17 @@ function admin_smoke_checks(): array
     }
     if (function_exists('ai_story_intakes')) {
         $checks[] = ['name' => 'AI story intake', 'ok' => true, 'detail' => count(ai_story_intakes(5)) . ' recent briefs'];
+    }
+    if (function_exists('ai_draft_status_options')) {
+        ensure_ai_quality_columns();
+        $checks[] = ['name' => 'AI draft pipeline statuses', 'ok' => count(ai_draft_status_options()) >= 8, 'detail' => count(ai_draft_status_options()) . ' status options'];
+    }
+    if (function_exists('article_claims')) {
+        ensure_article_claims_schema();
+        $checks[] = ['name' => 'Article claims schema', 'ok' => true, 'detail' => db_count('article_claims') . ' claims tracked'];
+    }
+    if (function_exists('newsletter_theme_blocks')) {
+        $checks[] = ['name' => 'Newsletter theme blocks', 'ok' => true, 'detail' => count(newsletter_theme_blocks()) . ' themes available'];
     }
 
     return $checks;

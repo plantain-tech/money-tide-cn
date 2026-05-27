@@ -495,7 +495,8 @@ function last_ai_draft_save_error(): string
 
 function update_ai_draft_status(int $id, string $status): bool
 {
-    if (!in_array($status, ['generated', 'reviewed', 'accepted', 'rejected'], true)) {
+    $allowed = ['idea', 'briefed', 'generated', 'needs_review', 'reviewed', 'approved', 'converted', 'rejected', 'accepted'];
+    if (!in_array($status, $allowed, true)) {
         return false;
     }
     $pdo = db();
@@ -695,6 +696,36 @@ function ai_rewrite_targets(): array
         'social_headline' => ['label' => '社交标题', 'scalar' => true, 'hint' => '微博/X 等社交平台标题，吸引点击但不标题党。'],
         'newsletter_blurb' => ['label' => 'Newsletter blurb', 'scalar' => true, 'hint' => '邮件 newsletter 推荐语，2-3 句。'],
         'body' => ['label' => '正文', 'scalar' => false, 'hint' => '完整正文，3-6 段，每段一个观点。'],
+        'seo_title' => ['label' => 'SEO 标题', 'scalar' => true, 'hint' => '50-60 字符，含核心关键词，不夸大。'],
+        'seo_description' => ['label' => 'SEO 描述', 'scalar' => true, 'hint' => '140-160 字符，独立成句，含核心信息和动作召唤。'],
+        'tags' => ['label' => '标签', 'scalar' => false, 'hint' => '3-6 个中文标签（每个 2-6 字）。'],
+    ];
+}
+
+function ai_tone_presets(): array
+{
+    return [
+        'concise' => [
+            'label' => '更精炼',
+            'instruction' => '在保持事实和结论不变的前提下，把每段精简 20-30%。删除冗余形容词，保留具体数字和动作。',
+        ],
+        'conversational' => [
+            'label' => '更口语化',
+            'instruction' => '把语气改成更口语、更对话式的中文。保留所有事实，但让读者读起来像朋友在解释。',
+        ],
+        'professional' => [
+            'label' => '更专业',
+            'instruction' => '把语气调整为更克制、更专业的财经媒体风格。删去口语化表达，使用更精确的术语，但避免行话堆砌。',
+        ],
+    ];
+}
+
+function ai_seo_targets(): array
+{
+    return [
+        'seo_title' => ['label' => 'SEO 标题', 'hint' => '50-60 字符，含核心关键词，有点击意愿但不夸大。'],
+        'seo_description' => ['label' => 'SEO 描述', 'hint' => '140-160 字符，独立成句，包含核心信息和动作召唤。'],
+        'tags' => ['label' => '标签', 'hint' => '3-6 个中文标签，每个 2-6 字，便于按话题检索。'],
     ];
 }
 

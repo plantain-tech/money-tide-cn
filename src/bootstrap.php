@@ -19,6 +19,8 @@ require_once __DIR__ . '/launch.php';
 require_once __DIR__ . '/analytics.php';
 require_once __DIR__ . '/newsletter_issues.php';
 require_once __DIR__ . '/ai_sources.php';
+require_once __DIR__ . '/ai_quality.php';
+require_once __DIR__ . '/newsletter_ai.php';
 require_once __DIR__ . '/reader_accounts.php';
 require_once __DIR__ . '/retention.php';
 require_once __DIR__ . '/monetization.php';
