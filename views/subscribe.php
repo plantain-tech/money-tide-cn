@@ -26,9 +26,7 @@ $topics = [
     <div class="subscribe-panel growth-subscribe-panel">
         <h2>创建账户并订阅</h2>
         <div class="social-stack">
-            <button type="button">使用 Google 继续</button>
-            <button type="button">使用 微信 继续</button>
-            <button type="button">使用 Apple 继续</button>
+            <a href="<?= e(url('account/oauth/google')) ?>">使用 Google 继续</a>
         </div>
         <div class="divider"><span>或使用邮箱</span></div>
         <form class="subscribe-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>

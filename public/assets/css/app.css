@@ -599,12 +599,20 @@ main {
 }
 
 .social-login-row button,
-.social-stack button {
+.social-login-row a,
+.social-stack button,
+.social-stack a {
     min-height: 40px;
     border: 2px solid var(--ink);
     background: var(--white);
     font-weight: 900;
     cursor: pointer;
+    color: var(--ink);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
 }
 
 .category-band,
@@ -1057,7 +1065,8 @@ main {
     margin: 20px 0;
 }
 
-.social-stack button {
+.social-stack button,
+.social-stack a {
     width: 100%;
 }
 
@@ -2867,5 +2876,4 @@ main {
     margin: 6px 0 8px;
     font-size: 20px;
 }
-
 

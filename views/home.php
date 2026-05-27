@@ -144,9 +144,7 @@ foreach ($focusSlugs as $slug) {
             <button type="submit">订阅</button>
         </form>
         <div class="social-login-row" aria-label="快捷登录">
-            <button type="button">Google</button>
-            <button type="button">微信</button>
-            <button type="button">Apple</button>
+            <a href="<?= e(url('account/oauth/google')) ?>">使用 Google 继续</a>
         </div>
     </aside>
 </section>

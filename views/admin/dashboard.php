@@ -126,7 +126,7 @@
         </a>
         <a class="admin-module" href="<?= e(url('admin/oauth')) ?>">
             <strong>第三方登录</strong>
-            <span>查看 Google 登录配置状态；Apple 和微信暂不在当前路线图。</span>
+            <span>查看 Google 登录配置状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/analytics')) ?>">
             <strong>站内分析</strong>
