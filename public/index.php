@@ -382,25 +382,31 @@ if ($route === 'admin/seed-launch-articles' && ($_SERVER['REQUEST_METHOD'] ?? 'G
 if ($route === 'admin/ai-drafts') {
     require_admin();
     ensure_ai_quality_columns();
+    $statusFilter = (string) ($_GET['status'] ?? '');
+    $sectionFilter = (string) ($_GET['section_slug'] ?? '');
+    // The 'approved' tab also matches legacy 'accepted' rows.
+    $statusForQuery = $statusFilter === 'approved' ? ['approved', 'accepted'] : $statusFilter;
     $drafts = ai_drafts([
-        'status' => $_GET['status'] ?? '',
-        'section_slug' => $_GET['section_slug'] ?? '',
+        'status' => $statusForQuery,
+        'section_slug' => $sectionFilter,
     ]);
-    // Enrich each row with quality score + warnings (local, no AI quota).
     foreach ($drafts as &$d) {
         $d['_quality'] = ai_draft_quality_score($d);
         $d['_warnings'] = ai_draft_warnings($d);
     }
     unset($d);
+    $statusCounts = ai_draft_status_counts(['section_slug' => $sectionFilter]);
     render_page('admin/ai-drafts', [
         'site' => $site,
         'categories' => $categories,
         'drafts' => $drafts,
         'templates' => editorial_bot_templates(),
         'statusOptions' => ai_draft_status_options(),
+        'statusCounts' => $statusCounts,
+        'totalCount' => array_sum($statusCounts),
         'filters' => [
-            'status' => (string) ($_GET['status'] ?? ''),
-            'section_slug' => (string) ($_GET['section_slug'] ?? ''),
+            'status' => $statusFilter,
+            'section_slug' => $sectionFilter,
         ],
         'aiProvider' => ai_provider_status(),
         'aiUsage' => ai_usage_summary(),

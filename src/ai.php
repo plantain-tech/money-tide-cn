@@ -146,8 +146,18 @@ function ai_drafts(array $filters = []): array
     $sql = 'SELECT id, section_slug, prompt_name, status, source_links, draft_payload, created_at FROM ai_drafts WHERE 1 = 1';
     $params = [];
     if (!empty($filters['status'])) {
-        $sql .= ' AND status = :status';
-        $params['status'] = $filters['status'];
+        if (is_array($filters['status'])) {
+            $placeholders = [];
+            foreach (array_values($filters['status']) as $i => $val) {
+                $key = 's' . $i;
+                $placeholders[] = ':' . $key;
+                $params[$key] = (string) $val;
+            }
+            $sql .= ' AND status IN (' . implode(',', $placeholders) . ')';
+        } else {
+            $sql .= ' AND status = :status';
+            $params['status'] = $filters['status'];
+        }
     }
     if (!empty($filters['section_slug'])) {
         $sql .= ' AND section_slug = :section_slug';

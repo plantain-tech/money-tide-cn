@@ -29,6 +29,53 @@ function ai_draft_status_label(string $status): string
     return $options[$status] ?? $status;
 }
 
+/**
+ * Normalize legacy 'accepted' status to 'approved' for display + counting.
+ * The DB still stores 'accepted' for backward compatibility; the UI only
+ * surfaces the new pipeline statuses.
+ */
+function ai_draft_normalize_status(string $status): string
+{
+    return $status === 'accepted' ? 'approved' : $status;
+}
+
+/**
+ * Counts grouped by status, scoped to the section_slug filter only.
+ * The status filter is intentionally ignored so each tab can show its
+ * true total under the current bot/section.
+ */
+function ai_draft_status_counts(array $filters = []): array
+{
+    ensure_ai_quality_columns();
+    $out = [
+        'idea' => 0, 'briefed' => 0, 'generated' => 0, 'needs_review' => 0,
+        'reviewed' => 0, 'approved' => 0, 'converted' => 0, 'rejected' => 0,
+    ];
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return $out;
+    }
+    $sql = "SELECT status, COUNT(*) AS n FROM ai_drafts WHERE 1=1";
+    $params = [];
+    if (!empty($filters['section_slug'])) {
+        $sql .= " AND section_slug = :section_slug";
+        $params['section_slug'] = $filters['section_slug'];
+    }
+    $sql .= " GROUP BY status";
+    try {
+        $statement = $pdo->prepare($sql);
+        $statement->execute($params);
+        foreach ($statement->fetchAll() as $row) {
+            $status = ai_draft_normalize_status((string) $row['status']);
+            if (isset($out[$status])) {
+                $out[$status] += (int) $row['n'];
+            }
+        }
+    } catch (Throwable $exception) {
+    }
+    return $out;
+}
+
 function ensure_ai_quality_columns(): void
 {
     $pdo = db();

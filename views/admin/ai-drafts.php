@@ -1,12 +1,7 @@
 <?php
 $pageTitle = 'AI 草稿队列 - 钱潮 Money Tide';
-$statusCounts = ['idea' => 0, 'briefed' => 0, 'generated' => 0, 'needs_review' => 0, 'reviewed' => 0, 'approved' => 0, 'converted' => 0, 'rejected' => 0, 'accepted' => 0];
-foreach ($drafts as $draft) {
-    $st = (string) ($draft['status'] ?? '');
-    if (isset($statusCounts[$st])) {
-        $statusCounts[$st]++;
-    }
-}
+$statusCounts = $statusCounts ?? [];
+$totalCount = (int) ($totalCount ?? array_sum($statusCounts));
 $totalWarnings = 0;
 foreach ($drafts as $d) {
     $totalWarnings += count($d['_warnings'] ?? []);
@@ -36,7 +31,7 @@ foreach ($drafts as $d) {
         <?php
             $baseQuery = $filters;
             unset($baseQuery['status']);
-            $tabs = ['' => ['全部', count($drafts)]];
+            $tabs = ['' => ['全部', $totalCount]];
             foreach ($statusOptions as $key => $label) {
                 $tabs[$key] = [$label, $statusCounts[$key] ?? 0];
             }
@@ -69,7 +64,7 @@ foreach ($drafts as $d) {
                 $quality = (int) ($draft['_quality'] ?? 0);
                 $warnings = $draft['_warnings'] ?? [];
                 $qualityClass = $quality >= 80 ? 'is-high' : ($quality >= 50 ? 'is-mid' : 'is-low');
-                $status = (string) ($draft['status'] ?? 'generated');
+                $status = ai_draft_normalize_status((string) ($draft['status'] ?? 'generated'));
             ?>
             <a class="ai-draft-row" href="<?= e(url('admin/ai-drafts/' . $draft['id'])) ?>">
                 <div class="ai-draft-row-main">
