@@ -283,7 +283,7 @@ function generate_social_caption(int $articleId, string $channel): array
         . "\n字数限制：不超过 {$meta['limit']} 字符。"
         . "\n要求：{$meta['hint']}"
         . "\n语气：{$meta['tone']}"
-        . "\n不要复制原文，要有自己的钩子。绝不出现"必涨/必跌/建议买入/建议卖出"等表述。"
+        . "\n不要复制原文，要有自己的钩子。绝不出现 必涨 / 必跌 / 建议买入 / 建议卖出 等表述。"
         . "\n\n文章标题：{$article['title']}"
         . "\n副标题：{$article['dek']}"
         . "\n一句话看懂：{$article['brief']}"
