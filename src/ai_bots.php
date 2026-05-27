@@ -393,7 +393,7 @@ function call_ollama_story_brief_api(string $prompt): array
         'format' => 'json',
         'messages' => [
             ['role' => 'system', 'content' => 'You are a careful Chinese financial news assignment editor. Return strict JSON only.'],
-            ['role' => 'user', 'content' => $prompt],
+            ['role' => 'user', 'content' => $prompt . "\n\nReturn only one JSON object. No Markdown, no explanation, no thinking text."],
         ],
     ];
     $ch = curl_init('https://ollama.com/api/chat');
@@ -415,7 +415,7 @@ function call_ollama_story_brief_api(string $prompt): array
         return ['ok' => false, 'message' => 'Ollama Cloud API failed: ' . ($error ?: 'HTTP ' . $status)];
     }
     $decoded = json_decode((string) $raw, true);
-    $payload = json_decode((string) ($decoded['message']['content'] ?? ''), true);
+    $payload = decode_ai_json_object((string) ($decoded['message']['content'] ?? ''));
     return is_array($payload) ? ['ok' => true, 'payload' => $payload] : ['ok' => false, 'message' => 'Ollama Cloud returned invalid JSON.'];
 }
 
@@ -455,8 +455,32 @@ function call_openai_story_brief_api(string $prompt, string $apiKey): array
         return ['ok' => false, 'message' => 'OpenAI API failed: ' . ($error ?: 'HTTP ' . $status)];
     }
     $decoded = json_decode((string) $raw, true);
-    $payload = json_decode(extract_response_text(is_array($decoded) ? $decoded : []), true);
+    $payload = decode_ai_json_object(extract_response_text(is_array($decoded) ? $decoded : []));
     return is_array($payload) ? ['ok' => true, 'payload' => $payload] : ['ok' => false, 'message' => 'OpenAI returned invalid JSON.'];
+}
+
+function decode_ai_json_object(string $content): ?array
+{
+    $content = trim($content);
+    if ($content === '') {
+        return null;
+    }
+
+    $decoded = json_decode($content, true);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+
+    $content = preg_replace('/```(?:json)?|```/i', '', $content) ?? $content;
+    $start = strpos($content, '{');
+    $end = strrpos($content, '}');
+    if ($start === false || $end === false || $end <= $start) {
+        return null;
+    }
+
+    $candidate = substr($content, $start, $end - $start + 1);
+    $decoded = json_decode($candidate, true);
+    return is_array($decoded) ? $decoded : null;
 }
 
 function ai_story_brief_json_schema(): array
