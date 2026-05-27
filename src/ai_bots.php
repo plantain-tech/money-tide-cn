@@ -163,7 +163,7 @@ function save_ai_bot_profile(array $input): array
     ensure_ai_bots_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
-        return ['ok' => false, 'message' => 'Database unavailable.'];
+        return ['ok' => false, 'message' => 'Database unavailable.', 'errors' => ['Database unavailable.']];
     }
 
     $slug = trim((string) ($input['section_slug'] ?? ''));
@@ -540,4 +540,147 @@ function ai_story_brief_to_draft_query(array $intake): string
         'target_reader' => (string) ($intake['target_reader'] ?? ''),
         'urgency' => (string) ($intake['urgency'] ?? 'normal'),
     ]);
+}
+
+function ai_task_template_defaults(): array
+{
+    return [
+        'article_draft' => [
+            'name' => '文章起草模板',
+            'workflow' => '从选题、来源和 Bot 角色生成完整文章草稿。',
+            'prompt' => 'Use the selected section bot profile, source links, and story angle to draft a Chinese financial news article with headline, dek, 一句话看懂, 为什么重要, body, source notes, and risk notes.',
+        ],
+        'headline_rewrite' => [
+            'name' => '标题改写模板',
+            'workflow' => '生成更清晰、更有点击欲望但不夸张的标题。',
+            'prompt' => 'Rewrite the headline in Simplified Chinese. Keep it accurate, specific, and sober. Avoid hype, investment advice, or unsupported certainty.',
+        ],
+        'dek_rewrite' => [
+            'name' => '导语改写模板',
+            'workflow' => '把文章导语改成更适合中文财经读者的解释型摘要。',
+            'prompt' => 'Rewrite the dek as a concise Chinese explanatory summary. Make the market or business implication clear in one or two sentences.',
+        ],
+        'fact_risk_check' => [
+            'name' => '事实与风险检查模板',
+            'workflow' => '抽取需要核查的数字、声明、来源缺口和金融风险。',
+            'prompt' => 'Review the draft for unsupported numbers, missing sources, speculative claims, investment-advice risk, stale context, and unclear attribution. Return a checklist for editors.',
+        ],
+        'seo_metadata' => [
+            'name' => 'SEO 元数据模板',
+            'workflow' => '生成 SEO title、meta description 和搜索意图说明。',
+            'prompt' => 'Create an SEO title and meta description in Simplified Chinese. Keep the title specific and the description under 160 Chinese characters when possible.',
+        ],
+        'newsletter_blurb' => [
+            'name' => 'Newsletter 摘要模板',
+            'workflow' => '把文章改写成钱潮早报中的短摘要。',
+            'prompt' => 'Turn this article into a short Money Tide newsletter blurb in Chinese. Make the reader understand why it matters quickly.',
+        ],
+        'social_caption' => [
+            'name' => '社交文案模板',
+            'workflow' => '生成适合社交平台传播的短文案。',
+            'prompt' => 'Create a concise Chinese social caption with one clear hook, one key point, and no misleading claims. Avoid personalized investment advice.',
+        ],
+        'source_summary' => [
+            'name' => '来源摘要模板',
+            'workflow' => '把来源链接整理成编辑可读的事实摘要。',
+            'prompt' => 'Summarize the provided sources for an editor. Separate confirmed facts, numbers to verify, missing context, and possible follow-up questions.',
+        ],
+    ];
+}
+
+function ensure_ai_task_templates_schema(): void
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS ai_task_templates (
+            task_key VARCHAR(120) NOT NULL PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            workflow VARCHAR(255) NOT NULL,
+            prompt TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $insert = $pdo->prepare('INSERT IGNORE INTO ai_task_templates (task_key, name, workflow, prompt)
+            VALUES (:task_key, :name, :workflow, :prompt)');
+        foreach (ai_task_template_defaults() as $key => $template) {
+            $insert->execute([
+                'task_key' => $key,
+                'name' => $template['name'],
+                'workflow' => $template['workflow'],
+                'prompt' => $template['prompt'],
+            ]);
+        }
+    } catch (Throwable $exception) {
+    }
+}
+
+function ai_task_templates(): array
+{
+    ensure_ai_task_templates_schema();
+    $templates = ai_task_template_defaults();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return $templates;
+    }
+
+    try {
+        $rows = $pdo->query('SELECT task_key, name, workflow, prompt, updated_at FROM ai_task_templates')->fetchAll();
+        foreach ($rows as $row) {
+            $key = (string) $row['task_key'];
+            $templates[$key] = [
+                'name' => (string) $row['name'],
+                'workflow' => (string) $row['workflow'],
+                'prompt' => (string) $row['prompt'],
+                'updated_at' => (string) ($row['updated_at'] ?? ''),
+            ];
+        }
+    } catch (Throwable $exception) {
+    }
+    return $templates;
+}
+
+function save_ai_task_template(array $input): array
+{
+    ensure_ai_task_templates_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'message' => 'Database unavailable.'];
+    }
+
+    $key = trim((string) ($input['task_key'] ?? ''));
+    if (!isset(ai_task_template_defaults()[$key])) {
+        return ['ok' => false, 'message' => 'Choose a valid task template.', 'errors' => ['Choose a valid task template.']];
+    }
+    $data = [
+        'task_key' => $key,
+        'name' => trim((string) ($input['name'] ?? '')),
+        'workflow' => trim((string) ($input['workflow'] ?? '')),
+        'prompt' => trim((string) ($input['prompt'] ?? '')),
+    ];
+    if ($data['name'] === '' || $data['workflow'] === '' || $data['prompt'] === '') {
+        return ['ok' => false, 'message' => 'Name, workflow, and prompt are required.', 'errors' => ['Name, workflow, and prompt are required.']];
+    }
+
+    try {
+        $statement = $pdo->prepare('INSERT INTO ai_task_templates (task_key, name, workflow, prompt)
+            VALUES (:task_key, :name, :workflow, :prompt)
+            ON DUPLICATE KEY UPDATE name = VALUES(name), workflow = VALUES(workflow), prompt = VALUES(prompt)');
+        $statement->execute($data);
+        return ['ok' => true, 'message' => 'Task template saved.', 'errors' => []];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'message' => 'Save failed: ' . $exception->getMessage(), 'errors' => ['Save failed: ' . $exception->getMessage()]];
+    }
+}
+
+function reset_ai_task_template(string $taskKey): array
+{
+    $defaults = ai_task_template_defaults();
+    if (!isset($defaults[$taskKey])) {
+        return ['ok' => false, 'message' => 'Unknown task template.'];
+    }
+    return save_ai_task_template(['task_key' => $taskKey] + $defaults[$taskKey]);
 }

@@ -541,14 +541,10 @@ if ($route === 'admin/ai-templates') {
     $flash = '';
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if (($_POST['action'] ?? '') === 'reset') {
-            reset_editorial_template((string) ($_POST['section_slug'] ?? ''));
+            reset_ai_task_template((string) ($_POST['task_key'] ?? ''));
             $flash = '已重置为默认提示词。';
         } else {
-            $result = save_editorial_template(
-                (string) ($_POST['section_slug'] ?? ''),
-                (string) ($_POST['name'] ?? ''),
-                (string) ($_POST['prompt'] ?? '')
-            );
+            $result = save_ai_task_template($_POST);
             $flash = $result['ok'] ? '已保存。' : implode(' ', $result['errors']);
         }
     }
@@ -556,8 +552,8 @@ if ($route === 'admin/ai-templates') {
     render_page('admin/ai-templates', [
         'site' => $site,
         'categories' => $categories,
-        'templates' => editorial_bot_templates(),
-        'defaults' => editorial_bot_template_defaults(),
+        'templates' => ai_task_templates(),
+        'defaults' => ai_task_template_defaults(),
         'flash' => $flash,
     ]);
     exit;
