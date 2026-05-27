@@ -50,10 +50,6 @@ jobs:
           MAILGUN_DOMAIN: ${{ secrets.MAILGUN_DOMAIN }}
           OAUTH_GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_CLIENT_ID }}
           OAUTH_GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
-          OAUTH_APPLE_CLIENT_ID: ${{ secrets.OAUTH_APPLE_CLIENT_ID }}
-          OAUTH_APPLE_CLIENT_SECRET: ${{ secrets.OAUTH_APPLE_CLIENT_SECRET }}
-          OAUTH_WECHAT_APP_ID: ${{ secrets.OAUTH_WECHAT_APP_ID }}
-          OAUTH_WECHAT_APP_SECRET: ${{ secrets.OAUTH_WECHAT_APP_SECRET }}
           UNSUBSCRIBE_SECRET: ${{ secrets.UNSUBSCRIBE_SECRET }}
         run: |
           if [ -n "$HOSTINGER_DB_NAME" ]; then
@@ -98,14 +94,6 @@ jobs:
                     "google" => [
                         "client_id" => getenv("OAUTH_GOOGLE_CLIENT_ID") ?: "",
                         "client_secret" => getenv("OAUTH_GOOGLE_CLIENT_SECRET") ?: "",
-                    ],
-                    "apple" => [
-                        "client_id" => getenv("OAUTH_APPLE_CLIENT_ID") ?: "",
-                        "client_secret" => getenv("OAUTH_APPLE_CLIENT_SECRET") ?: "",
-                    ],
-                    "wechat" => [
-                        "app_id" => getenv("OAUTH_WECHAT_APP_ID") ?: "",
-                        "app_secret" => getenv("OAUTH_WECHAT_APP_SECRET") ?: "",
                     ],
                 ],
                 "security" => [

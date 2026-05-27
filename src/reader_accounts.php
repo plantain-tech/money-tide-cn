@@ -414,18 +414,6 @@ function oauth_provider_status(): array
             'label' => 'Google',
             'env_keys' => ['OAUTH_GOOGLE_CLIENT_ID', 'OAUTH_GOOGLE_CLIENT_SECRET'],
         ],
-        'apple' => [
-            'configured' => (string) app_config('oauth.apple.client_id', '') !== ''
-                && (string) app_config('oauth.apple.client_secret', '') !== '',
-            'label' => 'Apple',
-            'env_keys' => ['OAUTH_APPLE_CLIENT_ID', 'OAUTH_APPLE_CLIENT_SECRET'],
-        ],
-        'wechat' => [
-            'configured' => (string) app_config('oauth.wechat.app_id', '') !== ''
-                && (string) app_config('oauth.wechat.app_secret', '') !== '',
-            'label' => '微信',
-            'env_keys' => ['OAUTH_WECHAT_APP_ID', 'OAUTH_WECHAT_APP_SECRET'],
-        ],
     ];
 }
 

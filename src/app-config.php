@@ -30,8 +30,6 @@ function app_config(?string $key = null, $default = null)
             ],
             'oauth' => [
                 'google' => ['client_id' => '', 'client_secret' => ''],
-                'apple' => ['client_id' => '', 'client_secret' => ''],
-                'wechat' => ['app_id' => '', 'app_secret' => ''],
             ],
             'security' => [
                 'unsubscribe_secret' => '',
