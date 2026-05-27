@@ -12,6 +12,24 @@ function default_og_image(): string
     return app_url('assets/img/og-money-tide.svg');
 }
 
+function seo_title(string $title, string $suffix = '钱潮 Money Tide'): string
+{
+    $title = trim($title);
+    if ($title === '') {
+        return $suffix;
+    }
+    return str_contains($title, $suffix) ? $title : $title . ' - ' . $suffix;
+}
+
+function seo_description(string $primary, string $fallback = ''): string
+{
+    $value = trim($primary) !== '' ? trim($primary) : trim($fallback);
+    if ($value === '') {
+        $value = '面向中文读者的全球财经、科技与商业简报。';
+    }
+    return mb_strlen($value, 'UTF-8') > 180 ? mb_substr($value, 0, 177, 'UTF-8') . '...' : $value;
+}
+
 function emit_sitemap(array $categories, array $articles, array $tags = []): void
 {
     header('Content-Type: application/xml; charset=utf-8');
@@ -20,6 +38,7 @@ function emit_sitemap(array $categories, array $articles, array $tags = []): voi
         ['loc' => canonical_url(), 'priority' => '1.0'],
         ['loc' => canonical_url('latest'), 'priority' => '0.8'],
         ['loc' => canonical_url('subscribe'), 'priority' => '0.8'],
+        ['loc' => canonical_url('newsletter'), 'priority' => '0.7'],
         ['loc' => canonical_url('topics'), 'priority' => '0.7'],
         ['loc' => canonical_url('about'), 'priority' => '0.4'],
         ['loc' => canonical_url('editorial-standards'), 'priority' => '0.4'],
@@ -38,6 +57,17 @@ function emit_sitemap(array $categories, array $articles, array $tags = []): voi
             'priority' => '0.9',
             'lastmod' => sitemap_date((string) ($article['published_at'] ?? '')),
         ];
+    }
+    if (function_exists('public_newsletter_archive')) {
+        foreach (public_newsletter_archive(100) as $issue) {
+            if (!empty($issue['slug'])) {
+                $urls[] = [
+                    'loc' => canonical_url('newsletter/' . $issue['slug']),
+                    'priority' => '0.5',
+                    'lastmod' => sitemap_date((string) ($issue['published_at'] ?? $issue['updated_at'] ?? '')),
+                ];
+            }
+        }
     }
 
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";

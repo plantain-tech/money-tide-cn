@@ -43,6 +43,8 @@ function ensure_editorial_schema(): void
             'seo_description' => 'VARCHAR(500) NULL',
             'hero_image_path' => 'VARCHAR(255) NULL',
             'hero_image_alt' => 'VARCHAR(255) NULL',
+            'is_premium' => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'premium_excerpt' => 'TEXT NULL',
         ] as $column => $definition) {
             if (!db_column_exists('articles', $column)) {
                 $pdo->exec('ALTER TABLE articles ADD COLUMN ' . $column . ' ' . $definition);
@@ -208,14 +210,18 @@ function category_fallback_image(string $categorySlug): string
 function db_articles(?string $categorySlug = null): ?array
 {
     ensure_editorial_schema();
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
     }
 
-    $sql = "SELECT a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
-                a.read_time_minutes, a.published_at, a.seo_title, a.seo_description,
-                a.hero_image_path, a.hero_image_alt, c.slug AS category, c.name AS category_name,
+    $sql = "SELECT a.id, a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
+                a.read_time_minutes, a.published_at, a.updated_at, a.seo_title, a.seo_description,
+                a.hero_image_path, a.hero_image_alt, a.is_premium, a.premium_excerpt,
+                c.slug AS category, c.name AS category_name,
                 au.name AS author_name
             FROM articles a
             INNER JOIN categories c ON c.id = a.category_id
@@ -247,15 +253,19 @@ function db_articles(?string $categorySlug = null): ?array
 function db_article(string $slug): ?array
 {
     ensure_editorial_schema();
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
     }
 
     try {
-        $statement = $pdo->prepare("SELECT a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
-                a.read_time_minutes, a.published_at, a.seo_title, a.seo_description,
-                a.hero_image_path, a.hero_image_alt, c.slug AS category, c.name AS category_name,
+        $statement = $pdo->prepare("SELECT a.id, a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
+                a.read_time_minutes, a.published_at, a.updated_at, a.seo_title, a.seo_description,
+                a.hero_image_path, a.hero_image_alt, a.is_premium, a.premium_excerpt,
+                c.slug AS category, c.name AS category_name,
                 au.name AS author_name
             FROM articles a
             INNER JOIN categories c ON c.id = a.category_id
@@ -279,6 +289,7 @@ function map_article_row(array $row): array
     }
 
     $article = [
+        'id' => (int) ($row['id'] ?? 0),
         'slug' => (string) $row['slug'],
         'category' => (string) $row['category'],
         'category_name' => (string) $row['category_name'],
@@ -290,10 +301,13 @@ function map_article_row(array $row): array
         'body' => array_values(array_filter(array_map('strval', $body))),
         'read_time' => (int) $row['read_time_minutes'] . ' min read',
         'published_at' => $row['published_at'] ? date('Y-m-d', strtotime((string) $row['published_at'])) : '',
+        'updated_at' => !empty($row['updated_at']) ? date('Y-m-d', strtotime((string) $row['updated_at'])) : '',
         'author_name' => (string) ($row['author_name'] ?? '钱潮编辑部'),
         'seo_title' => (string) ($row['seo_title'] ?? ''),
         'seo_description' => (string) ($row['seo_description'] ?? ''),
         'hero_image_alt' => (string) (($row['hero_image_alt'] ?? '') ?: $row['title']),
+        'is_premium' => !empty($row['is_premium']),
+        'premium_excerpt' => (string) ($row['premium_excerpt'] ?? ''),
     ];
     $article['hero_image'] = article_media_url($article + ['hero_image_path' => $row['hero_image_path'] ?? '']);
 
@@ -317,13 +331,16 @@ function admin_categories(): array
 function admin_articles(array $filters = []): array
 {
     ensure_editorial_schema();
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return [];
     }
 
     $sql = "SELECT a.id, a.slug, a.status, a.title, a.dek, a.read_time_minutes, a.published_at,
-                a.updated_at, a.created_by_user_id, a.hero_image_path,
+                a.updated_at, a.created_by_user_id, a.hero_image_path, a.is_premium,
                 c.name AS category_name, c.slug AS category_slug,
                 au.name AS author_name,
                 COALESCE(u.display_name, u.email) AS editor_name
@@ -408,6 +425,9 @@ function admin_article_status_counts(): array
 function admin_article_by_id(int $id): ?array
 {
     ensure_editorial_schema();
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return null;
@@ -427,6 +447,9 @@ function admin_article_by_id(int $id): ?array
 function save_article(array $input, ?int $id = null): array
 {
     ensure_editorial_schema();
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return ['ok' => false, 'errors' => ['数据库未连接。'], 'id' => $id];
@@ -468,8 +491,8 @@ function save_article(array $input, ?int $id = null): array
         if ($id === null) {
             $data['created_by_user_id'] = $data['updated_by_user_id'];
             $statement = $pdo->prepare('INSERT INTO articles
-                (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, read_time_minutes, published_at)
-                VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :read_time_minutes, :published_at)');
+                (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, is_premium, premium_excerpt, read_time_minutes, published_at)
+                VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :is_premium, :premium_excerpt, :read_time_minutes, :published_at)');
         } else {
             $statement = $pdo->prepare('UPDATE articles SET
                 category_id = :category_id,
@@ -487,6 +510,8 @@ function save_article(array $input, ?int $id = null): array
                 seo_description = :seo_description,
                 hero_image_path = :hero_image_path,
                 hero_image_alt = :hero_image_alt,
+                is_premium = :is_premium,
+                premium_excerpt = :premium_excerpt,
                 read_time_minutes = :read_time_minutes,
                 published_at = :published_at
                 WHERE id = :id');
@@ -557,6 +582,8 @@ function normalize_article_input(array $input): array
         'seo_description' => trim((string) ($input['seo_description'] ?? '')),
         'hero_image_path' => trim((string) ($input['hero_image_path'] ?? '')),
         'hero_image_alt' => trim((string) ($input['hero_image_alt'] ?? '')),
+        'is_premium' => !empty($input['is_premium']) ? 1 : 0,
+        'premium_excerpt' => trim((string) ($input['premium_excerpt'] ?? '')),
         'read_time_minutes' => max(1, (int) ($input['read_time_minutes'] ?? 3)),
         'published_at' => $publishedAt,
     ];
@@ -645,6 +672,8 @@ function article_form_defaults(): array
         'seo_description' => '',
         'hero_image_path' => '',
         'hero_image_alt' => '',
+        'is_premium' => 0,
+        'premium_excerpt' => '',
         'created_by_user_id' => '',
         'read_time_minutes' => 3,
         'published_at' => '',
@@ -676,6 +705,8 @@ function article_to_form(array $article): array
         'seo_description' => (string) ($article['seo_description'] ?? ''),
         'hero_image_path' => (string) ($article['hero_image_path'] ?? ''),
         'hero_image_alt' => (string) ($article['hero_image_alt'] ?? ''),
+        'is_premium' => !empty($article['is_premium']) ? 1 : 0,
+        'premium_excerpt' => (string) ($article['premium_excerpt'] ?? ''),
         'created_by_user_id' => (string) ($article['created_by_user_id'] ?? ''),
         'read_time_minutes' => (int) ($article['read_time_minutes'] ?? 3),
         'published_at' => !empty($article['published_at']) ? date('Y-m-d\TH:i', strtotime((string) $article['published_at'])) : '',
@@ -826,7 +857,7 @@ function transition_article_status(int $id, string $status): array
         return ['ok' => false, 'errors' => ['文章不存在。']];
     }
     if (!can_edit_article($article)) {
-        return ['ok' => false, 'errors' => ['You do not have permission to duplicate this article.']];
+        return ['ok' => false, 'errors' => ['You do not have permission to edit this article.']];
     }
     if (!can_transition_article($article, $status)) {
         return ['ok' => false, 'errors' => ['You do not have permission to change this article status.']];
@@ -926,8 +957,8 @@ function duplicate_article(int $id): array
 
     try {
         $statement = $pdo->prepare('INSERT INTO articles
-            (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, read_time_minutes, published_at)
-            VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :read_time_minutes, :published_at)');
+            (category_id, author_id, editor_id, created_by_user_id, updated_by_user_id, slug, status, title, dek, brief, why_it_matters, body, seo_title, seo_description, hero_image_path, hero_image_alt, is_premium, premium_excerpt, read_time_minutes, published_at)
+            VALUES (:category_id, :author_id, :editor_id, :created_by_user_id, :updated_by_user_id, :slug, :status, :title, :dek, :brief, :why_it_matters, :body, :seo_title, :seo_description, :hero_image_path, :hero_image_alt, :is_premium, :premium_excerpt, :read_time_minutes, :published_at)');
         $user = current_user();
         $userId = is_array($user) && (int) ($user['id'] ?? 0) > 0 ? (int) $user['id'] : null;
         $statement->execute([
@@ -947,6 +978,8 @@ function duplicate_article(int $id): array
             'seo_description' => (string) ($article['seo_description'] ?? ''),
             'hero_image_path' => (string) ($article['hero_image_path'] ?? ''),
             'hero_image_alt' => (string) ($article['hero_image_alt'] ?? ''),
+            'is_premium' => !empty($article['is_premium']) ? 1 : 0,
+            'premium_excerpt' => (string) ($article['premium_excerpt'] ?? ''),
             'read_time_minutes' => (int) $article['read_time_minutes'],
             'published_at' => null,
         ]);
@@ -1047,6 +1080,9 @@ function admin_article_preview(int $id): ?array
         'seo_title' => (string) ($article['seo_title'] ?? ''),
         'seo_description' => (string) ($article['seo_description'] ?? ''),
         'hero_image_alt' => (string) (($article['hero_image_alt'] ?? '') ?: $article['title']),
+        'is_premium' => !empty($article['is_premium']),
+        'premium_excerpt' => (string) ($article['premium_excerpt'] ?? ''),
+        'updated_at' => !empty($article['updated_at']) ? date('Y-m-d', strtotime((string) $article['updated_at'])) : '',
     ];
     $preview['hero_image'] = article_media_url($preview + ['hero_image_path' => $article['hero_image_path'] ?? '']);
 

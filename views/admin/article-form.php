@@ -7,6 +7,7 @@ $flash = (string) ($flash ?? '');
 $authors = $authors ?? [];
 $editors = $editors ?? [];
 $auditLogs = $auditLogs ?? [];
+$seoChecklist = $seoChecklist ?? [];
 $statusLabels = ['draft' => '草稿', 'review' => '审核', 'published' => '已发布', 'archived' => '已归档'];
 $transitions = [
     'draft' => [['review', '提交审核']],
@@ -101,6 +102,20 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
         <?php endif; ?>
     <?php endif; ?>
 
+    <?php if ($mode === 'edit' && $seoChecklist): ?>
+        <div class="publish-checklist">
+            <p class="eyebrow">SEO / 分享检查</p>
+            <ul>
+                <?php foreach ($seoChecklist as $item): ?>
+                    <li class="<?= $item['passed'] ? 'is-pass' : 'is-fail' ?>">
+                        <span aria-hidden="true"><?= $item['passed'] ? '✓' : '○' ?></span>
+                        <?= e($item['label']) ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
     <form class="cms-form" method="post" action="<?= e($action) ?>">
         <div class="cms-form-grid">
             <label>
@@ -150,6 +165,10 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
                 发布时间
                 <input type="datetime-local" name="published_at" value="<?= e((string) $form['published_at']) ?>">
             </label>
+            <label>
+                Premium
+                <span class="checkbox-row"><input type="checkbox" name="is_premium" value="1" <?= !empty($form['is_premium']) ? 'checked' : '' ?>> 会员内容标记</span>
+            </label>
         </div>
 
         <label>
@@ -193,6 +212,10 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
             <label>
                 SEO 描述
                 <textarea name="seo_description" rows="2" placeholder="留空则使用副标题"><?= e((string) ($form['seo_description'] ?? '')) ?></textarea>
+            </label>
+            <label>
+                Premium 摘要 / 软付费墙提示
+                <textarea name="premium_excerpt" rows="2" placeholder="仅在 Premium 标记开启时显示；当前不会阻止阅读"><?= e((string) ($form['premium_excerpt'] ?? '')) ?></textarea>
             </label>
         </section>
 

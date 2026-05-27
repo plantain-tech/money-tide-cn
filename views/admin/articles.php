@@ -81,6 +81,7 @@ $tabHref = static function (string $status) use ($baseQuery): string {
             <div class="admin-table-row">
                 <div>
                     <strong><?= e($article['title']) ?></strong>
+                    <?php if (!empty($article['is_premium'])): ?><small><mark>Premium</mark></small><?php endif; ?>
                     <small><?= e($article['slug']) ?> · <?= e((string) $article['read_time_minutes']) ?> min</small>
                     <small>作者：<?= e((string) ($article['author_name'] ?? '钱潮编辑部')) ?><?= !empty($article['editor_name']) ? ' · 责任编辑：' . e((string) $article['editor_name']) : '' ?></small>
                 </div>

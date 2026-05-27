@@ -21,6 +21,7 @@ function database_diagnostics(): array
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
+        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -77,6 +78,12 @@ function admin_smoke_checks(): array
     if (function_exists('ensure_tags_schema')) {
         ensure_tags_schema();
     }
+    if (function_exists('ensure_retention_schema')) {
+        ensure_retention_schema();
+    }
+    if (function_exists('ensure_monetization_schema')) {
+        ensure_monetization_schema();
+    }
 
     $checks = [];
 
@@ -118,6 +125,14 @@ function admin_smoke_checks(): array
         $tagCount = count(all_tags());
         $checks[] = ['name' => 'Tags with published articles', 'ok' => true, 'detail' => $tagCount . ' tags'];
     }
+    if (function_exists('retention_analytics')) {
+        $retention = retention_analytics();
+        $checks[] = ['name' => 'Reader retention tables', 'ok' => $retention['saved_total'] >= 0, 'detail' => $retention['saved_total'] . ' saved'];
+    }
+    if (function_exists('monetization_summary')) {
+        $money = monetization_summary();
+        $checks[] = ['name' => 'Monetization schema', 'ok' => isset($money['tiers']['free']), 'detail' => $money['premium_articles'] . ' premium articles'];
+    }
 
     return $checks;
 }
@@ -129,7 +144,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs'];
+        'article_audit_logs', 'ai_usage_logs', 'reader_saved_articles', 'reader_recent_reads'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }

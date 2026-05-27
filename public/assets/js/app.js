@@ -146,6 +146,7 @@ document.querySelectorAll('[data-share-copy]').forEach((button) => {
             }
             button.textContent = '已复制';
             button.classList.add('is-copied');
+            recordPublicEvent('share_copy', button.getAttribute('data-share-slug') || '', 'copy-link');
             window.setTimeout(() => {
                 button.textContent = originalText;
                 button.classList.remove('is-copied');
@@ -158,6 +159,48 @@ document.querySelectorAll('[data-share-copy]').forEach((button) => {
         }
     });
 });
+
+document.querySelectorAll('[data-share-event]').forEach((link) => {
+    link.addEventListener('click', () => {
+        recordPublicEvent('article_share', link.getAttribute('data-share-event') || '', link.textContent || 'share');
+    });
+});
+
+const completionMarker = document.querySelector('[data-article-complete]');
+if (completionMarker && 'IntersectionObserver' in window) {
+    let completed = false;
+    const completeObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!completed && entry.isIntersecting) {
+                completed = true;
+                recordPublicEvent('article_complete', completionMarker.getAttribute('data-article-complete') || '', 'scroll-depth');
+                completeObserver.disconnect();
+            }
+        });
+    }, { threshold: 0.2 });
+    completeObserver.observe(completionMarker);
+}
+
+function recordPublicEvent(eventType, slug, source) {
+    try {
+        const body = new URLSearchParams();
+        body.set('event_type', eventType);
+        body.set('slug', slug || '');
+        body.set('source', source || 'public');
+        body.set('path', window.location.pathname.replace(/^\//, ''));
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/analytics/event', body);
+            return;
+        }
+        fetch('/api/analytics/event', {
+            method: 'POST',
+            body,
+            headers: { Accept: 'application/json' },
+            keepalive: true,
+        }).catch(() => {});
+    } catch (error) {
+    }
+}
 
 function startAiGenerationProgress(form) {
     const panel = form.querySelector('[data-ai-generation-panel]');

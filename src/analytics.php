@@ -92,6 +92,7 @@ function analytics_summary(): array
         'top_sources_30d' => [],
         'top_referrers_7d' => [],
         'views_by_day' => [],
+        'retention' => function_exists('retention_analytics') ? retention_analytics() : [],
     ];
     if (!$pdo instanceof PDO) {
         return $defaults;
@@ -147,6 +148,22 @@ function analytics_summary(): array
     }
 
     return $defaults;
+}
+
+function record_public_event_from_request(array $input): array
+{
+    $type = (string) ($input['event_type'] ?? '');
+    $allowed = ['share_copy', 'article_complete', 'article_share', 'newsletter_cta'];
+    if (!in_array($type, $allowed, true)) {
+        return ['ok' => false, 'message' => 'Unsupported event.'];
+    }
+
+    record_event($type, [
+        'slug' => (string) ($input['slug'] ?? ''),
+        'source' => (string) ($input['source'] ?? 'public'),
+        'path' => (string) ($input['path'] ?? ''),
+    ]);
+    return ['ok' => true];
 }
 
 function external_analytics_status(): array

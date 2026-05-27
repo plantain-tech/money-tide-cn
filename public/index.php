@@ -29,6 +29,14 @@ if ($route === 'api/newsletter/subscribe' && ($_SERVER['REQUEST_METHOD'] ?? 'GET
     exit;
 }
 
+if ($route === 'api/analytics/event' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $result = record_public_event_from_request($_POST);
+    http_response_code($result['ok'] ? 200 : 422);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 $site = site_meta();
 $categories = get_categories();
 $articles = get_articles();
@@ -91,6 +99,33 @@ if ($route === 'admin/analytics') {
         'categories' => $categories,
         'analytics' => analytics_summary(),
         'externalAnalytics' => external_analytics_status(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/monetization') {
+    require_admin();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_monetization_settings($_POST);
+        $flash = $result['message'] ?? '';
+    }
+    render_page('admin/monetization', [
+        'site' => $site,
+        'categories' => $categories,
+        'summary' => monetization_summary(),
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/week4-checklist') {
+    require_admin();
+    render_page('admin/week4-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'items' => week_four_qa_checklist(),
+        'backlog' => week_five_backlog(),
     ]);
     exit;
 }
@@ -239,6 +274,7 @@ if ($route === 'admin/articles/new') {
         'articleId' => 0,
         'currentStatus' => 'draft',
         'checklist' => [],
+        'seoChecklist' => [],
         'auditLogs' => [],
         'flash' => '',
     ]);
@@ -287,6 +323,7 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
         'checklist' => publish_checklist(array_merge($article, [
             'category_id' => $article['category_id'],
         ])),
+        'seoChecklist' => seo_article_checklist($article),
         'auditLogs' => article_audit_logs($articleId),
         'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
@@ -943,7 +980,37 @@ if ($route === 'account') {
         'reader' => $reader,
         'account' => reader_account_data((int) $reader['id']),
         'referral' => reader_referral_data((int) $reader['id']),
+        'savedCount' => count(reader_saved_articles((int) $reader['id'])),
+        'recentArticles' => reader_recent_articles((int) $reader['id'], 4),
     ]);
+    exit;
+}
+
+if ($route === 'account/saved') {
+    require_reader();
+    $reader = reader_session();
+    render_page('account/saved', [
+        'site' => $site,
+        'categories' => $categories,
+        'reader' => $reader,
+        'articles' => reader_saved_articles((int) $reader['id']),
+        'recentArticles' => reader_recent_articles((int) $reader['id'], 8),
+    ]);
+    exit;
+}
+
+if ($route === 'account/bookmarks/toggle' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_reader();
+    $reader = reader_session();
+    $slug = (string) ($_POST['slug'] ?? '');
+    $result = toggle_saved_article((int) $reader['id'], $slug);
+    if (($_SERVER['HTTP_ACCEPT'] ?? '') === 'application/json') {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $return = (string) ($_POST['return'] ?? ('article/' . $slug));
+    header('Location: ' . url($return));
     exit;
 }
 
@@ -1230,12 +1297,21 @@ if (strpos($route, 'article/') === 0) {
     }
 
     record_event('article_view', ['slug' => $slug, 'path' => 'article/' . $slug]);
+    $reader = reader_session();
+    if (is_array($reader)) {
+        record_recent_read((int) $reader['id'], $slug);
+    }
+    $fallbackRelated = related_articles($article);
     render_page('article', [
         'site' => $site,
         'categories' => $categories,
         'article' => $article,
-        'related' => related_articles($article),
+        'related' => personalized_related_articles($article, $fallbackRelated, is_array($reader) ? (int) $reader['id'] : null),
         'tags' => article_tags_by_slug($slug),
+        'reader' => $reader,
+        'isSaved' => is_array($reader) ? reader_has_saved_article((int) $reader['id'], (int) ($article['id'] ?? 0)) : false,
+        'newsletterCta' => newsletter_cta_for_category((string) ($article['category'] ?? '')),
+        'monetization' => monetization_settings(),
     ]);
     exit;
 }

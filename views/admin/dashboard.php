@@ -126,11 +126,19 @@
         </a>
         <a class="admin-module" href="<?= e(url('admin/oauth')) ?>">
             <strong>第三方登录</strong>
-            <span>查看 Google / Apple / 微信 登录配置状态。</span>
+            <span>查看 Google 登录配置状态；Apple 和微信暂不在当前路线图。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/analytics')) ?>">
             <strong>站内分析</strong>
             <span>查看 14 天浏览趋势、热门文章、订阅来源。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/monetization')) ?>">
+            <strong>会员与变现</strong>
+            <span>管理 premium 标记、软付费墙提示和订阅层级准备。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/week4-checklist')) ?>">
+            <strong>Week 4 QA</strong>
+            <span>检查留存、SEO、分享、会员准备和 Week 5 backlog。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>

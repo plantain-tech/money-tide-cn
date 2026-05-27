@@ -2289,6 +2289,51 @@ main {
     transform-origin: top left;
 }
 
+.article-retention-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+.premium-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    margin-left: 8px;
+    border: 2px solid var(--ink);
+    background: var(--blue);
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.premium-soft-wall {
+    border: 2px solid var(--ink);
+    background: var(--yellow);
+    padding: 20px;
+    margin: 30px 0;
+}
+
+.premium-soft-wall h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    border: 2px solid var(--ink);
+    padding: 0 12px;
+    background: #fff;
+    font-weight: 800;
+}
+
 .article-hero-media {
     margin: 28px 0 0;
     border: 2px solid var(--ink);
@@ -2822,6 +2867,5 @@ main {
     margin: 6px 0 8px;
     font-size: 20px;
 }
-
 
 

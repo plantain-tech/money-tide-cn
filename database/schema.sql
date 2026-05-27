@@ -34,6 +34,8 @@ CREATE TABLE articles (
     seo_description VARCHAR(500) NULL,
     hero_image_path VARCHAR(255) NULL,
     hero_image_alt VARCHAR(255) NULL,
+    is_premium TINYINT(1) NOT NULL DEFAULT 0,
+    premium_excerpt TEXT NULL,
     read_time_minutes INT UNSIGNED NOT NULL DEFAULT 3,
     published_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,6 +97,7 @@ CREATE TABLE users (
     display_name VARCHAR(120) NULL,
     password_hash VARCHAR(255) NULL,
     role ENUM('reader', 'writer', 'editor', 'admin') NOT NULL DEFAULT 'reader',
+    subscription_tier ENUM('free','member','premium') NOT NULL DEFAULT 'free',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -141,4 +144,28 @@ CREATE TABLE editorial_tasks (
     due_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_editorial_tasks_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE reader_saved_articles (
+    user_id INT UNSIGNED NOT NULL,
+    article_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, article_id),
+    INDEX idx_saved_article (article_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE reader_recent_reads (
+    user_id INT UNSIGNED NOT NULL,
+    article_id INT UNSIGNED NOT NULL,
+    read_count INT UNSIGNED NOT NULL DEFAULT 1,
+    last_read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, article_id),
+    INDEX idx_recent_user_time (user_id, last_read_at),
+    INDEX idx_recent_article_time (article_id, last_read_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE monetization_settings (
+    setting_key VARCHAR(120) NOT NULL PRIMARY KEY,
+    setting_value TEXT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

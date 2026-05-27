@@ -1,27 +1,45 @@
 <?php
-$pageTitle = (($article['seo_title'] ?? '') ?: $article['title']) . ' - 钱潮 Money Tide';
-$pageDescription = ($article['seo_description'] ?? '') ?: $article['dek'];
+$pageTitle = seo_title(($article['seo_title'] ?? '') ?: $article['title']);
+$pageDescription = seo_description((string) ($article['seo_description'] ?? ''), (string) ($article['dek'] ?? ''));
 $canonicalPath = 'article/' . $article['slug'];
 $canonicalUrl = canonical_url($canonicalPath);
 $encodedUrl = rawurlencode($canonicalUrl);
 $encodedTitle = rawurlencode($article['title']);
 $ogType = 'article';
 $ogImage = $article['hero_image'] ?? default_og_image();
+$reader = $reader ?? (function_exists('reader_session') ? reader_session() : null);
+$isSaved = !empty($isSaved);
+$newsletterCta = $newsletterCta ?? newsletter_cta_for_category((string) ($article['category'] ?? ''));
+$monetization = $monetization ?? monetization_settings();
 $sameCategoryRelated = array_values(array_filter($related, static fn (array $item): bool => $item['category'] === $article['category']));
 $otherRelated = array_values(array_filter($related, static fn (array $item): bool => $item['category'] !== $article['category']));
 $relatedArticles = array_slice(array_merge($sameCategoryRelated, $otherRelated), 0, 3);
 $readNext = $relatedArticles[0] ?? ($related[0] ?? null);
-$schema = [
-    '@context' => 'https://schema.org',
+$newsArticleSchema = [
     '@type' => 'NewsArticle',
     'headline' => $article['title'],
     'description' => $pageDescription,
     'datePublished' => $article['published_at'],
+    'dateModified' => ($article['updated_at'] ?? '') ?: $article['published_at'],
     'author' => ['@type' => 'Person', 'name' => $article['author_name'] ?? '钱潮编辑部'],
     'publisher' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
     'image' => $ogImage,
     'mainEntityOfPage' => $canonicalUrl,
     'inLanguage' => 'zh-CN',
+];
+$schema = [
+    '@context' => 'https://schema.org',
+    '@graph' => [
+        $newsArticleSchema,
+        [
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => canonical_url()],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => $article['category_name'], 'item' => canonical_url('category/' . $article['category'])],
+                ['@type' => 'ListItem', 'position' => 3, 'name' => $article['title'], 'item' => $canonicalUrl],
+            ],
+        ],
+    ],
 ];
 ?>
 <article class="article-shell article-reading-shell">
@@ -35,15 +53,30 @@ $schema = [
 
     <header class="article-header article-reading-header reveal-on-scroll">
         <a class="pill" href="<?= e(url('category/' . $article['category'])) ?>"><?= e($article['category_name']) ?></a>
+        <?php if (!empty($article['is_premium'])): ?>
+            <span class="premium-pill"><?= e((string) ($monetization['premium_label'] ?? '会员内容')) ?></span>
+        <?php endif; ?>
         <h1><?= e($article['title']) ?></h1>
         <p><?= e($article['dek']) ?></p>
         <div class="article-meta-row">
             <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?> · 作者：<?= e($article['author_name'] ?? '钱潮编辑部') ?></small>
             <div class="share-actions" aria-label="分享文章">
-                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">X</a>
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">in</a>
-                <button type="button" data-share-copy="<?= e($canonicalUrl) ?>">复制链接</button>
+                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">X</a>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">in</a>
+                <button type="button" data-share-copy="<?= e($canonicalUrl) ?>" data-share-slug="<?= e($article['slug']) ?>">复制链接</button>
             </div>
+        </div>
+        <div class="article-retention-actions">
+            <?php if (is_array($reader)): ?>
+                <form method="post" action="<?= e(url('account/bookmarks/toggle')) ?>">
+                    <input type="hidden" name="slug" value="<?= e($article['slug']) ?>">
+                    <input type="hidden" name="return" value="article/<?= e($article['slug']) ?>">
+                    <button class="button button-small <?= $isSaved ? 'button-ghost' : '' ?>" type="submit"><?= $isSaved ? '已保存' : '保存文章' ?></button>
+                </form>
+                <a class="ghost-link" href="<?= e(url('account/saved')) ?>">我的收藏</a>
+            <?php else: ?>
+                <a class="button button-small button-ghost" href="<?= e(url('account/login')) ?>">登录后保存</a>
+            <?php endif; ?>
         </div>
         <figure class="article-hero-media">
             <img src="<?= e($ogImage) ?>" alt="<?= e($article['hero_image_alt'] ?? $article['title']) ?>" loading="eager">
@@ -61,24 +94,13 @@ $schema = [
         </div>
     </section>
 
-    <?php if (!empty($article['numbers'])): ?>
-        <section class="key-numbers reveal-on-scroll">
-            <?php foreach ($article['numbers'] as $number => $label): ?>
-                <div>
-                    <strong><?= e((string) $number) ?></strong>
-                    <span><?= e((string) $label) ?></span>
-                </div>
-            <?php endforeach; ?>
-        </section>
-    <?php endif; ?>
-
     <div class="article-content-layout">
         <aside class="article-side-rail" aria-label="阅读工具">
             <strong>分享</strong>
             <div class="share-actions vertical">
-                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">X</a>
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener">in</a>
-                <button type="button" data-share-copy="<?= e($canonicalUrl) ?>">复制</button>
+                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">X</a>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">in</a>
+                <button type="button" data-share-copy="<?= e($canonicalUrl) ?>" data-share-slug="<?= e($article['slug']) ?>">复制</button>
             </div>
         </aside>
 
@@ -87,11 +109,19 @@ $schema = [
                 <p><?= e($paragraph) ?></p>
             <?php endforeach; ?>
 
+            <?php if (!empty($article['is_premium'])): ?>
+                <aside class="premium-soft-wall">
+                    <p class="eyebrow"><?= e((string) ($monetization['premium_label'] ?? '会员内容')) ?></p>
+                    <h2>这篇文章已经按会员内容结构标记。</h2>
+                    <p><?= e((string) ($article['premium_excerpt'] ?: ($monetization['member_price_note'] ?? '当前仍对所有读者开放阅读。'))) ?></p>
+                </aside>
+            <?php endif; ?>
+
             <aside class="article-inline-newsletter">
                 <div>
-                    <p class="eyebrow">钱潮早报</p>
-                    <h2>把下一组市场信号发到你的邮箱。</h2>
-                    <p>每天 5 分钟，读懂全球市场、科技、加密与中国公司出海。</p>
+                    <p class="eyebrow"><?= e($newsletterCta['label']) ?></p>
+                    <h2><?= e($newsletterCta['title']) ?></h2>
+                    <p><?= e($newsletterCta['copy']) ?></p>
                 </div>
                 <form class="inline-form" method="post" action="<?= e(url('api/newsletter/subscribe')) ?>" data-newsletter-form>
                     <input type="email" name="email" placeholder="你的邮箱" required>
@@ -99,6 +129,7 @@ $schema = [
                     <button type="submit">订阅</button>
                 </form>
             </aside>
+            <span data-article-complete="<?= e($article['slug']) ?>"></span>
         </div>
     </div>
 

@@ -2,9 +2,7 @@
 $pageTitle = '站内分析 - 钱潮 Money Tide';
 $max = 0;
 foreach ($analytics['views_by_day'] as $row) {
-    if ((int) $row['total'] > $max) {
-        $max = (int) $row['total'];
-    }
+    $max = max($max, (int) $row['total']);
 }
 ?>
 <section class="admin-shell">
@@ -12,7 +10,7 @@ foreach ($analytics['views_by_day'] as $row) {
         <div>
             <p class="eyebrow">Analytics</p>
             <h1>站内分析</h1>
-            <p>轻量内部统计，仅记录页面路径、栏目和来源，不存储个人信息。</p>
+            <p>覆盖浏览、订阅、收藏、分享、读完率和回访读者。</p>
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
@@ -26,8 +24,10 @@ foreach ($analytics['views_by_day'] as $row) {
         <div><span>累计浏览</span><strong><?= e((string) $analytics['views']['total']) ?></strong></div>
         <div><span>今日订阅</span><strong><?= e((string) $analytics['subscribes']['today']) ?></strong></div>
         <div><span>7 日订阅</span><strong><?= e((string) $analytics['subscribes']['last_7d']) ?></strong></div>
-        <div><span>30 日订阅</span><strong><?= e((string) $analytics['subscribes']['last_30d']) ?></strong></div>
-        <div><span>累计订阅事件</span><strong><?= e((string) $analytics['subscribes']['total']) ?></strong></div>
+        <div><span>收藏总数</span><strong><?= e((string) ($analytics['retention']['saved_total'] ?? 0)) ?></strong></div>
+        <div><span>30 日回访读者</span><strong><?= e((string) ($analytics['retention']['returning_readers_30d'] ?? 0)) ?></strong></div>
+        <div><span>30 日读完</span><strong><?= e((string) ($analytics['retention']['completion_events_30d'] ?? 0)) ?></strong></div>
+        <div><span>30 日分享</span><strong><?= e((string) ($analytics['retention']['share_events_30d'] ?? 0)) ?></strong></div>
     </div>
 
     <div class="status-banner <?= ($externalAnalytics['ga_id'] !== '' || $externalAnalytics['plausible_domain'] !== '') ? 'is-ready' : 'is-warning' ?>">
@@ -61,15 +61,21 @@ foreach ($analytics['views_by_day'] as $row) {
             <?php if ($analytics['top_articles_7d']): ?>
                 <ol class="analytics-list">
                     <?php foreach ($analytics['top_articles_7d'] as $row): ?>
-                        <li>
-                            <a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) ($row['title'] ?: $row['slug'])) ?></a>
-                            <span><?= e((string) $row['views']) ?></span>
-                        </li>
+                        <li><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) ($row['title'] ?: $row['slug'])) ?></a><span><?= e((string) $row['views']) ?></span></li>
                     <?php endforeach; ?>
                 </ol>
-            <?php else: ?>
-                <p><small>无数据。</small></p>
-            <?php endif; ?>
+            <?php else: ?><p><small>无数据。</small></p><?php endif; ?>
+        </section>
+
+        <section class="analytics-panel">
+            <h2>最多收藏</h2>
+            <?php if (!empty($analytics['retention']['top_saved'])): ?>
+                <ol class="analytics-list">
+                    <?php foreach ($analytics['retention']['top_saved'] as $row): ?>
+                        <li><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) $row['title']) ?></a><span><?= e((string) $row['saves']) ?></span></li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php else: ?><p><small>暂无收藏数据。</small></p><?php endif; ?>
         </section>
 
         <section class="analytics-panel">
@@ -77,15 +83,10 @@ foreach ($analytics['views_by_day'] as $row) {
             <?php if ($analytics['top_sources_30d']): ?>
                 <ol class="analytics-list">
                     <?php foreach ($analytics['top_sources_30d'] as $row): ?>
-                        <li>
-                            <span><?= e((string) $row['source']) ?></span>
-                            <span><?= e((string) $row['total']) ?></span>
-                        </li>
+                        <li><span><?= e((string) $row['source']) ?></span><span><?= e((string) $row['total']) ?></span></li>
                     <?php endforeach; ?>
                 </ol>
-            <?php else: ?>
-                <p><small>无数据。</small></p>
-            <?php endif; ?>
+            <?php else: ?><p><small>无数据。</small></p><?php endif; ?>
         </section>
 
         <section class="analytics-panel">
@@ -93,15 +94,10 @@ foreach ($analytics['views_by_day'] as $row) {
             <?php if ($analytics['top_referrers_7d']): ?>
                 <ol class="analytics-list">
                     <?php foreach ($analytics['top_referrers_7d'] as $row): ?>
-                        <li>
-                            <span><?= e((string) $row['referrer']) ?></span>
-                            <span><?= e((string) $row['total']) ?></span>
-                        </li>
+                        <li><span><?= e((string) $row['referrer']) ?></span><span><?= e((string) $row['total']) ?></span></li>
                     <?php endforeach; ?>
                 </ol>
-            <?php else: ?>
-                <p><small>无数据。</small></p>
-            <?php endif; ?>
+            <?php else: ?><p><small>无数据。</small></p><?php endif; ?>
         </section>
     </div>
 </section>
