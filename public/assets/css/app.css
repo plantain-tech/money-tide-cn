@@ -3959,4 +3959,225 @@ main {
     width: 100%;
 }
 
+/* =============================================================
+   W6D1-3 Social distribution workspace
+   ============================================================= */
+.social-channel-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 18px;
+}
+
+@media (min-width: 1100px) {
+    .social-channel-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.social-channel-card {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    box-shadow: 6px 6px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+}
+
+.social-channel-card.is-empty {
+    background: var(--paper);
+}
+
+.social-card-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px 20px;
+    align-items: flex-start;
+    padding: 18px 22px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--white);
+}
+
+.social-card-head .eyebrow {
+    margin: 0 0 4px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--lime);
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.social-card-head h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    line-height: 1.3;
+}
+
+.social-card-head small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    display: block;
+    max-width: 360px;
+}
+
+.social-status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border: 2px solid currentColor;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.social-status-chip.is-draft {
+    color: #aaa;
+}
+
+.social-status-chip.is-ready {
+    background: #ffe7a3;
+    color: #0a0a0a;
+    border-color: #0a0a0a;
+}
+
+.social-status-chip.is-posted {
+    background: var(--lime);
+    color: #0a0a0a;
+    border-color: #0a0a0a;
+}
+
+.social-status-chip.is-archived {
+    background: #ddd;
+    color: #555;
+    border-color: #555;
+}
+
+.social-card-body {
+    padding: 18px 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.social-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.social-field-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-weight: 800;
+    font-size: 13px;
+}
+
+.social-counter {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.social-counter.is-over {
+    color: #d24033;
+    font-weight: 900;
+}
+
+.social-field textarea,
+.social-field input[type="text"] {
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    padding: 10px 12px;
+    font: inherit;
+    font-family: inherit;
+    line-height: 1.55;
+    resize: vertical;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.social-field textarea:focus,
+.social-field input:focus {
+    outline: 3px solid var(--lime);
+    outline-offset: 1px;
+}
+
+.social-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.social-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 2px dashed var(--ink);
+}
+
+.social-card-foot form,
+.social-card-actions form {
+    margin: 0;
+}
+
+.social-card-foot select {
+    border: 2px solid var(--ink);
+    padding: 6px 10px;
+    background: var(--paper);
+    font: inherit;
+}
+
+.social-ai-stamp {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* WeChat export */
+.wechat-export-actions {
+    display: flex;
+    gap: 10px;
+    margin: 18px 0 12px;
+    flex-wrap: wrap;
+}
+
+.wechat-source-block {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 12px 18px;
+    margin-bottom: 18px;
+}
+
+.wechat-source-block summary {
+    cursor: pointer;
+    font-weight: 800;
+    padding: 4px 0;
+}
+
+.wechat-source-block textarea {
+    width: 100%;
+    border: 2px solid var(--ink);
+    padding: 10px 12px;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    margin-top: 8px;
+    box-sizing: border-box;
+}
+
+.wechat-preview-frame {
+    border: 2px solid var(--ink);
+    background: #fff;
+    padding: 24px;
+    box-shadow: 6px 6px 0 var(--ink);
+}
+
+.wechat-preview-inner {
+    max-width: 677px;
+    margin: 0 auto;
+}
+
+
 

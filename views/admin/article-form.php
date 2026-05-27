@@ -40,6 +40,8 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
             <a class="ghost-link" href="<?= e(url('admin/articles')) ?>">返回列表</a>
             <?php if ($mode === 'edit' && $articleId > 0): ?>
                 <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/preview')) ?>" target="_blank" rel="noopener">预览</a>
+                <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/social')) ?>">社交分发</a>
+                <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/wechat-export')) ?>">微信版面</a>
             <?php endif; ?>
         </div>
     </div>

@@ -347,6 +347,123 @@ if (preg_match('#^admin/articles/(\d+)/edit$#', $route, $matches)) {
     exit;
 }
 
+if ($route === 'admin/social') {
+    require_admin();
+    $filters = [
+        'channel' => (string) ($_GET['channel'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+    ];
+    render_page('admin/social', [
+        'site' => $site,
+        'categories' => $categories,
+        'posts' => social_posts_index($filters),
+        'channels' => social_channels(),
+        'statusOptions' => social_post_status_options(),
+        'statusCounts' => social_status_counts(),
+        'filters' => $filters,
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    render_page('admin/article-social', [
+        'site' => $site,
+        'categories' => $categories,
+        'article' => $article,
+        'posts' => social_posts_for_article($articleId),
+        'channels' => social_channels(),
+        'statusOptions' => social_post_status_options(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/social/([a-z_]+)/generate$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $channel = (string) $matches[2];
+    $result = generate_social_caption($articleId, $channel);
+    $flash = $result['ok'] ? ('已为 ' . $channel . ' 生成新文案。') : ($result['message'] ?? 'AI 生成失败。');
+    header('Location: ' . url('admin/articles/' . $articleId . '/social') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/social/([a-z_]+)/save$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $channel = (string) $matches[2];
+    $result = save_social_post($articleId, $channel, $_POST);
+    $flash = $result['ok'] ? '已保存。' : ($result['message'] ?? '保存失败。');
+    header('Location: ' . url('admin/articles/' . $articleId . '/social') . '?flash=' . rawurlencode($flash) . '#ch-' . $channel);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/social/([a-z_]+)/status$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $channel = (string) $matches[2];
+    $next = (string) ($_POST['status'] ?? '');
+    $result = update_social_post_status($articleId, $channel, $next);
+    $flash = $result['ok'] ? ('状态已更新为 ' . $next) : ($result['message'] ?? '更新失败。');
+    header('Location: ' . url('admin/articles/' . $articleId . '/social') . '?flash=' . rawurlencode($flash) . '#ch-' . $channel);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/social/([a-z_]+)/delete$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $channel = (string) $matches[2];
+    delete_social_post($articleId, $channel);
+    header('Location: ' . url('admin/articles/' . $articleId . '/social') . '?flash=' . rawurlencode('已删除 ' . $channel . ' 的文案。'));
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/wechat-export$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    // Enrich with author + category for the export template.
+    $pdo = db();
+    if ($pdo instanceof PDO) {
+        try {
+            $statement = $pdo->prepare("SELECT a.name AS author_name, c.name AS category_name
+                FROM articles ar
+                LEFT JOIN authors a ON a.id = ar.author_id
+                LEFT JOIN categories c ON c.id = ar.category_id
+                WHERE ar.id = :id LIMIT 1");
+            $statement->execute(['id' => $articleId]);
+            $extra = $statement->fetch();
+            if ($extra) {
+                $article = array_merge($article, $extra);
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+    render_page('admin/article-wechat-export', [
+        'site' => $site,
+        'categories' => $categories,
+        'article' => $article,
+        'wechatHtml' => render_wechat_article_html($article),
+    ]);
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/claims/add$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_admin();
     $articleId = (int) $matches[1];

@@ -21,7 +21,7 @@ function database_diagnostics(): array
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
-        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims',
+        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -164,6 +164,10 @@ function admin_smoke_checks(): array
     if (function_exists('newsletter_theme_blocks')) {
         $checks[] = ['name' => 'Newsletter theme blocks', 'ok' => true, 'detail' => count(newsletter_theme_blocks()) . ' themes available'];
     }
+    if (function_exists('social_channels')) {
+        ensure_social_posts_schema();
+        $checks[] = ['name' => 'Social distribution', 'ok' => count(social_channels()) >= 5, 'detail' => count(social_channels()) . ' channels · ' . db_count('social_posts') . ' posts'];
+    }
 
     return $checks;
 }
@@ -175,7 +179,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }
