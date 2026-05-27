@@ -3334,6 +3334,163 @@ main {
 }
 
 /* =============================================================
+   AI generation progress modal (non-dismissible while running)
+   ============================================================= */
+.mt-ai-progress-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.78);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+.mt-ai-progress-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mt-ai-progress-modal {
+    width: min(520px, 100%);
+    background: var(--paper-strong);
+    border: 2px solid var(--ink);
+    box-shadow: 12px 12px 0 var(--ink);
+    transform: scale(0.96) translateY(12px);
+    transition: transform 0.22s ease;
+    overflow: hidden;
+}
+
+.mt-ai-progress-backdrop.is-open .mt-ai-progress-modal {
+    transform: scale(1) translateY(0);
+}
+
+.mt-ai-progress-head {
+    padding: 22px 26px 18px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--white);
+    position: relative;
+}
+
+.mt-ai-progress-head .eyebrow {
+    margin: 0 0 6px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--lime);
+    font-weight: 900;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mt-ai-progress-head .eyebrow::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--lime);
+    border-radius: 50%;
+    animation: mt-ai-pulse 1s ease-in-out infinite;
+}
+
+@keyframes mt-ai-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.7); }
+}
+
+.mt-ai-progress-head h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.3;
+}
+
+.mt-ai-progress-body {
+    padding: 22px 26px;
+}
+
+.mt-ai-progress-status {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    min-height: 48px;
+    margin: 0 0 14px;
+    transition: opacity 0.18s ease;
+}
+
+.mt-ai-progress-status.is-changing {
+    opacity: 0.3;
+}
+
+.mt-ai-progress-bar {
+    height: 14px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+}
+
+.mt-ai-progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -40%;
+    width: 40%;
+    background: linear-gradient(90deg, transparent 0%, var(--lime) 30%, var(--lime) 70%, transparent 100%);
+    animation: mt-ai-bar-slide 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes mt-ai-bar-slide {
+    0% { left: -40%; }
+    100% { left: 100%; }
+}
+
+.mt-ai-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.mt-ai-progress-meta .mt-ai-timer {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 900;
+    color: var(--ink);
+    font-size: 14px;
+}
+
+.mt-ai-progress-foot {
+    padding: 14px 26px;
+    border-top: 2px dashed var(--ink);
+    background: var(--paper);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+    .mt-ai-progress-head {
+        padding: 18px 20px 14px;
+    }
+    .mt-ai-progress-body {
+        padding: 18px 20px;
+    }
+    .mt-ai-progress-foot {
+        padding: 12px 20px;
+    }
+}
+
+/* =============================================================
    W5D3 AI Draft Queue
    ============================================================= */
 .ai-draft-queue {

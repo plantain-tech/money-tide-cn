@@ -35,7 +35,10 @@ $totalChecks = count($factChecks);
         <div class="tone-preset-bar">
             <span class="tone-preset-label">一键调整正文语气：</span>
             <?php foreach ($tonePresets as $key => $preset): ?>
-                <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/tone')) ?>">
+                <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/tone')) ?>"
+                      data-ai-progress
+                      data-ai-progress-title="正在调整正文语气"
+                      data-ai-progress-phases='["正在读取当前草稿","正在拼装提示词与上下文","正在调用栏目机器人","模型正在重写正文","正在保存版本快照","即将刷新页面"]'>
                     <input type="hidden" name="preset" value="<?= e($key) ?>">
                     <button type="submit" class="button button-small button-ghost"
                             data-confirm="把正文重写为「<?= e($preset['label']) ?>」？"
@@ -57,7 +60,10 @@ $totalChecks = count($factChecks);
                 <section class="ai-rewrite-block">
                     <header class="ai-rewrite-head">
                         <h2><?= e($meta['label']) ?></h2>
-                        <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/rewrite')) ?>" class="ai-rewrite-form">
+                        <form method="post" action="<?= e(url('admin/ai-drafts/' . $draft['id'] . '/rewrite')) ?>" class="ai-rewrite-form"
+                              data-ai-progress
+                              data-ai-progress-title="正在重写「<?= e($meta['label']) ?>」"
+                              data-ai-progress-phases='["正在读取草稿当前版本","正在拼装提示词与上下文","正在调用栏目机器人","模型正在生成新内容","正在保存版本快照","即将刷新页面"]'>
                             <input type="hidden" name="target" value="<?= e($key) ?>">
                             <input type="text" name="instruction" placeholder="改写说明（可选）" maxlength="200">
                             <button type="submit" class="button button-small">重写</button>

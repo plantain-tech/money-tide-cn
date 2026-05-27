@@ -435,3 +435,161 @@ function showFormMessage(form, message, isSuccess) {
     window.moneyTideConfirm = openModal;
 })();
 
+/* =============================================================
+   AI generation progress modal (non-dismissible).
+   Any form with data-ai-progress shows a blocking modal on submit
+   and lets the form post naturally. The modal stays visible until
+   the server responds and the page navigates.
+   ============================================================= */
+(function () {
+    var backdrop;
+    var titleEl;
+    var statusEl;
+    var timerEl;
+    var stepEl;
+    var footEl;
+    var startedAt = 0;
+    var stepInterval = null;
+    var timerInterval = null;
+    var blockKeyHandler;
+    var defaultPhases = [
+        '正在加载模板和上下文',
+        '正在调用 AI 模型',
+        '模型正在生成内容',
+        '正在结构化返回结果',
+        '正在保存到数据库',
+        '即将刷新页面',
+    ];
+
+    function ensureModal() {
+        if (backdrop) return;
+        backdrop = document.createElement('div');
+        backdrop.className = 'mt-ai-progress-backdrop';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+        backdrop.setAttribute('aria-labelledby', 'mt-ai-progress-title');
+        backdrop.innerHTML = '\n<div class="mt-ai-progress-modal">\n  <div class="mt-ai-progress-head">\n    <p class="eyebrow">AI 生成中</p>\n    <h2 id="mt-ai-progress-title">AI 正在工作</h2>\n  </div>\n  <div class="mt-ai-progress-body">\n    <p class="mt-ai-progress-status" id="mt-ai-progress-status"></p>\n    <div class="mt-ai-progress-bar" role="progressbar" aria-valuetext="processing"></div>\n    <div class="mt-ai-progress-meta">\n      <span id="mt-ai-progress-step">processing</span>\n      <span class="mt-ai-timer" id="mt-ai-progress-timer">0s</span>\n    </div>\n  </div>\n  <div class="mt-ai-progress-foot" id="mt-ai-progress-foot">\n    请勿关闭页面或后退。AI 调用通常需要 20–90 秒，完成后会自动跳转。\n  </div>\n</div>';
+        document.body.appendChild(backdrop);
+        titleEl = backdrop.querySelector('#mt-ai-progress-title');
+        statusEl = backdrop.querySelector('#mt-ai-progress-status');
+        timerEl = backdrop.querySelector('#mt-ai-progress-timer');
+        stepEl = backdrop.querySelector('#mt-ai-progress-step');
+        footEl = backdrop.querySelector('#mt-ai-progress-foot');
+
+        // Block Escape entirely while progress modal is open.
+        blockKeyHandler = function (event) {
+            if (!backdrop.classList.contains('is-open')) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        };
+        document.addEventListener('keydown', blockKeyHandler, true);
+
+        // Block backdrop clicks — they do nothing.
+        backdrop.addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
+    }
+
+    function fmtElapsed(seconds) {
+        if (seconds < 60) return seconds + 's';
+        var m = Math.floor(seconds / 60);
+        var s = seconds % 60;
+        return m + 'm ' + (s < 10 ? '0' + s : s) + 's';
+    }
+
+    function setStatus(text) {
+        if (!statusEl) return;
+        statusEl.classList.add('is-changing');
+        setTimeout(function () {
+            statusEl.textContent = text;
+            statusEl.classList.remove('is-changing');
+        }, 140);
+    }
+
+    function startProgress(options) {
+        ensureModal();
+        var opts = options || {};
+        titleEl.textContent = opts.title || 'AI 正在工作';
+        var phases = opts.phases && opts.phases.length ? opts.phases : defaultPhases;
+        statusEl.textContent = phases[0];
+        stepEl.textContent = '1 / ' + phases.length;
+        timerEl.textContent = '0s';
+        footEl.textContent = opts.foot || '请勿关闭页面或后退。AI 调用通常需要 20–90 秒，完成后会自动跳转。';
+        startedAt = Date.now();
+        backdrop.classList.add('is-open');
+
+        var phaseIndex = 0;
+        // Rotate through phases on a slow, slightly-jittered cadence.
+        var phaseDurations = [3000, 6000, 12000, 12000, 6000, 99999];
+        var scheduleNextPhase = function () {
+            if (phaseIndex >= phases.length - 1) return;
+            var jitter = (Math.random() * 1200) - 400;
+            stepInterval = setTimeout(function () {
+                phaseIndex++;
+                setStatus(phases[phaseIndex]);
+                stepEl.textContent = (phaseIndex + 1) + ' / ' + phases.length;
+                scheduleNextPhase();
+            }, (phaseDurations[phaseIndex] || 6000) + jitter);
+        };
+        scheduleNextPhase();
+
+        timerInterval = setInterval(function () {
+            var elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            timerEl.textContent = fmtElapsed(elapsed);
+            // After 90s, soften the footer copy.
+            if (elapsed === 90) {
+                footEl.textContent = '比平常稍慢一些，AI 服务偶尔需要更长时间。请继续等待，不要刷新或后退。';
+            }
+            if (elapsed === 180) {
+                footEl.textContent = 'AI 还在处理。如果一直停在这里，可以打开新标签页查看 /admin/diagnostics。';
+            }
+        }, 1000);
+
+        // Prevent user from navigating away accidentally.
+        window.addEventListener('beforeunload', noop);
+    }
+
+    function noop() {}
+
+    function bindForm(form) {
+        if (form.dataset.aiProgressBound === '1') return;
+        form.dataset.aiProgressBound = '1';
+        form.addEventListener('submit', function () {
+            var opts = {
+                title: form.getAttribute('data-ai-progress-title') || 'AI 正在工作',
+                foot: form.getAttribute('data-ai-progress-foot') || '',
+            };
+            var phasesAttr = form.getAttribute('data-ai-progress-phases');
+            if (phasesAttr) {
+                try {
+                    var parsed = JSON.parse(phasesAttr);
+                    if (Array.isArray(parsed) && parsed.length) opts.phases = parsed;
+                } catch (_) {}
+            }
+            startProgress(opts);
+
+            // Disable every submit button in the form so users can't double-fire.
+            form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(function (btn) {
+                btn.disabled = true;
+                btn.setAttribute('aria-busy', 'true');
+            });
+            // Let the form post normally — modal stays until page navigation completes.
+        }, false);
+    }
+
+    function init() {
+        document.querySelectorAll('form[data-ai-progress]').forEach(bindForm);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    window.moneyTideAiProgress = startProgress;
+})();
+
+

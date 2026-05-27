@@ -22,7 +22,11 @@
         </div>
     <?php endif; ?>
 
-    <form class="cms-form" method="post" action="<?= e(url('admin/research-desk/new')) ?>">
+    <form class="cms-form" method="post" action="<?= e(url('admin/research-desk/new')) ?>"
+          data-ai-progress
+          data-ai-progress-title="正在生成研究简报"
+          data-ai-progress-phases='["正在解析来源链接","正在拼装研究指令","正在调用研究台模型","模型正在整理事实与角度","正在保存研究简报","即将打开简报详情"]'
+          data-ai-progress-foot="研究简报通常需要 60–90 秒。请勿关闭页面。">
         <div class="cms-form-grid">
             <label>
                 栏目

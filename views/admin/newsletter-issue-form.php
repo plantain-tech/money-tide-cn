@@ -97,14 +97,20 @@ $flash = $flash ?? '';
             <h2>AI 早报助理</h2>
             <p><small>基于本期已加入的文章生成开场白、每篇推荐语，或追加主题板块到开场白尾部。每次调用消耗 1 个 AI 额度。</small></p>
             <div class="ai-assistant-actions">
-                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-intro')) ?>">
+                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-intro')) ?>"
+                      data-ai-progress
+                      data-ai-progress-title="正在生成本期开场白"
+                      data-ai-progress-phases='["正在读取本期文章列表","正在拼装开场白指令","正在调用总编辑模型","模型正在写 2-3 句导读","正在保存到 intro 字段","即将刷新页面"]'>
                     <button type="submit" class="button button-small"
                             data-confirm="让 AI 生成本期开场白？"
                             data-confirm-sub="会基于本期已加入的文章生成 2-3 句导读，覆盖当前的 intro 字段。"
                             data-confirm-title="生成开场白"
                             data-confirm-confirm="生成">生成开场白</button>
                 </form>
-                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-blurbs')) ?>">
+                <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-blurbs')) ?>"
+                      data-ai-progress
+                      data-ai-progress-title="正在为每篇文章生成推荐语"
+                      data-ai-progress-phases='["正在加载本期文章","正在为每篇文章准备摘要","正在调用编辑助理模型","模型正在写多条推荐语","正在批量保存到 blurb 字段","即将刷新页面"]'>
                     <button type="submit" class="button button-small"
                             data-confirm="让 AI 为本期每篇文章生成推荐语？"
                             data-confirm-sub="覆盖现有 blurb，本身只在本期可见，不影响原文章。"
@@ -116,7 +122,10 @@ $flash = $flash ?? '';
             <div class="ai-theme-block-grid">
                 <p class="ai-theme-block-label">追加主题段落到开场白：</p>
                 <?php foreach (newsletter_theme_blocks() as $themeKey => $themeMeta): ?>
-                    <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-theme')) ?>">
+                    <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/ai-theme')) ?>"
+                          data-ai-progress
+                          data-ai-progress-title="正在生成「<?= e((string) $themeMeta['label']) ?>」板块"
+                          data-ai-progress-phases='["正在筛选近 96 小时文章","正在按主题挑选素材","正在调用栏目编辑模型","模型正在产出板块段落","正在追加到 intro 字段","即将刷新页面"]'>
                         <input type="hidden" name="theme" value="<?= e($themeKey) ?>">
                         <button type="submit" class="button button-small button-ghost"
                                 data-confirm="追加「<?= e((string) $themeMeta['label']) ?>」段落到开场白？"

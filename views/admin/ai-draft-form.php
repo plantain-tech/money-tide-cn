@@ -24,7 +24,11 @@
         </div>
     <?php endif; ?>
 
-    <form class="cms-form" method="post" action="<?= e(url('admin/ai-drafts/new')) ?>" data-ai-draft-form>
+    <form class="cms-form" method="post" action="<?= e(url('admin/ai-drafts/new')) ?>" data-ai-draft-form
+          data-ai-progress
+          data-ai-progress-title="正在生成 AI 草稿"
+          data-ai-progress-phases='["正在加载栏目机器人配置","正在抓取来源链接元信息","正在拼装编辑指令","模型正在起草文章","正在结构化返回的 JSON","正在保存草稿到数据库"]'
+          data-ai-progress-foot="正在生成完整草稿，通常需要 60–90 秒。请勿关闭页面或后退。">
         <div class="cms-form-grid">
             <label>
                 栏目机器人

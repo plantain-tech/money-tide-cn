@@ -23,7 +23,11 @@
     <?php endif; ?>
 
     <div class="admin-two-column">
-        <form class="cms-form" method="post" action="<?= e(url('admin/ai-intake')) ?>" data-ai-draft-form>
+        <form class="cms-form" method="post" action="<?= e(url('admin/ai-intake')) ?>" data-ai-draft-form
+              data-ai-progress
+              data-ai-progress-title="正在生成编辑简报"
+              data-ai-progress-phases='["正在分析选题与来源","正在选择目标栏目机器人","正在评估紧急程度与读者画像","模型正在产出简报结构","正在保存到 story intake","即将打开简报"]'
+              data-ai-progress-foot="生成编辑简报通常需要 45–90 秒。完成后会自动跳转到简报详情页。">
             <div class="cms-form-grid">
                 <label>
                     目标机器人
