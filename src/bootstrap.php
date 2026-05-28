@@ -31,6 +31,7 @@ require_once __DIR__ . '/short_format.php';
 require_once __DIR__ . '/social_analytics.php';
 require_once __DIR__ . '/discovery.php';
 require_once __DIR__ . '/editorial_calendar.php';
+require_once __DIR__ . '/reactions.php';
 require_once __DIR__ . '/diagnostics.php';
 require_once __DIR__ . '/content.php';
 

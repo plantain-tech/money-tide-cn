@@ -18,7 +18,7 @@ $totalChecks = count($factChecks);
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin/ai-drafts')) ?>">草稿列表</a>
-            <a class="ghost-link" href="<?= e(url('admin/ai-templates')) ?>">AI Task Templates</a>
+            <a class="ghost-link" href="<?= e(url('admin/ai-templates')) ?>">AI 任务模板</a>
         </div>
     </div>
 

@@ -14,15 +14,15 @@
 
     <div class="growth-analytics-grid">
         <div>
-            <span>Active subscribers</span>
+            <span>活跃订阅者</span>
             <strong><?= e((string) ($analytics['totals']['active'] ?? 0)) ?></strong>
         </div>
         <div>
-            <span>New today</span>
+            <span>今日新增</span>
             <strong><?= e((string) ($analytics['totals']['today'] ?? 0)) ?></strong>
         </div>
         <div>
-            <span>Referral signups</span>
+            <span>邀请注册</span>
             <strong><?= e((string) ($analytics['totals']['referrals'] ?? 0)) ?></strong>
         </div>
     </div>

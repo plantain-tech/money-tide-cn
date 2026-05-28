@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Editorial Calendar - 钱潮 Money Tide';
+$pageTitle = '编辑日历 - 钱潮 Money Tide';
 $eventTypeLabels = ['article' => '文章', 'newsletter' => '早报'];
 $statusLabels = [
     'draft' => '草稿',
@@ -42,8 +42,8 @@ $renderEvent = static function (array $event) use ($eventTypeLabels, $statusLabe
 <section class="admin-shell calendar-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 7 · Day 3</p>
-            <h1>Editorial Calendar</h1>
+            <p class="eyebrow">第 7 周 · 第 3 天</p>
+            <h1>编辑日历</h1>
             <p>按发布时间查看文章，按计划/发送时间查看 newsletter，并快速跳转到编辑页。</p>
         </div>
         <div class="admin-actions">

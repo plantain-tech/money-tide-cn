@@ -78,7 +78,7 @@ function save_monetization_settings(array $input): array
     ensure_monetization_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
-        return ['ok' => false, 'message' => 'Database unavailable.'];
+        return ['ok' => false, 'message' => '数据库暂不可用。'];
     }
 
     $allowedModes = ['off', 'soft_preview'];
@@ -97,9 +97,9 @@ function save_monetization_settings(array $input): array
         foreach ($values as $key => $value) {
             $statement->execute(['k' => $key, 'v' => $value]);
         }
-        return ['ok' => true, 'message' => 'Settings saved.'];
+        return ['ok' => true, 'message' => '设置已保存。'];
     } catch (Throwable $exception) {
-        return ['ok' => false, 'message' => 'Save failed: ' . $exception->getMessage()];
+        return ['ok' => false, 'message' => '保存失败：' . $exception->getMessage()];
     }
 }
 
@@ -139,12 +139,12 @@ function seo_article_checklist(array $article): array
     $slug = (string) ($article['slug'] ?? '');
 
     return [
-        ['label' => 'SEO title fallback available', 'passed' => $seoTitle !== '' || $title !== ''],
-        ['label' => 'Description between 60 and 180 characters', 'passed' => mb_strlen($description, 'UTF-8') >= 40 && mb_strlen($description, 'UTF-8') <= 220],
-        ['label' => 'Canonical slug is valid', 'passed' => (bool) preg_match('/^[a-z0-9-]+$/', $slug)],
-        ['label' => 'Social image available', 'passed' => $image !== '' || function_exists('default_og_image')],
-        ['label' => 'Hero alt text available', 'passed' => trim((string) ($article['hero_image_alt'] ?? '')) !== '' || $title !== ''],
-        ['label' => 'Published date available', 'passed' => !empty($article['published_at']) || (string) ($article['status'] ?? '') !== 'published'],
+        ['label' => 'SEO 标题有可用兜底', 'passed' => $seoTitle !== '' || $title !== ''],
+        ['label' => '描述长度适合搜索展示', 'passed' => mb_strlen($description, 'UTF-8') >= 40 && mb_strlen($description, 'UTF-8') <= 220],
+        ['label' => 'Canonical slug 格式正确', 'passed' => (bool) preg_match('/^[a-z0-9-]+$/', $slug)],
+        ['label' => '社交分享图可用', 'passed' => $image !== '' || function_exists('default_og_image')],
+        ['label' => '头图 alt 文案可用', 'passed' => trim((string) ($article['hero_image_alt'] ?? '')) !== '' || $title !== ''],
+        ['label' => '发布日期可用', 'passed' => !empty($article['published_at']) || (string) ($article['status'] ?? '') !== 'published'],
     ];
 }
 

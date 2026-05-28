@@ -1,4 +1,4 @@
-<?php $pageTitle = 'AI Story Intake - 钱潮 Money Tide'; ?>
+<?php $pageTitle = 'AI 选题录入 - 钱潮 Money Tide'; ?>
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>

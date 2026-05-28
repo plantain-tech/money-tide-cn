@@ -4,18 +4,18 @@
         <div>
             <p class="eyebrow">AI 工作流</p>
             <h1>AI 任务模板</h1>
-            <p>这里管理“做什么任务”的提示词。栏目机器人的身份、语气、读者和风险规则请到 AI Bots 管理。</p>
+            <p>这里管理“做什么任务”的提示词。栏目机器人的身份、语气、读者和风险规则请到 AI 编辑机器人管理。</p>
         </div>
         <div class="admin-actions">
-            <a class="ghost-link" href="<?= e(url('admin/ai-bots')) ?>">AI Bots</a>
-            <a class="ghost-link" href="<?= e(url('admin/ai-intake')) ?>">Story Intake</a>
+            <a class="ghost-link" href="<?= e(url('admin/ai-bots')) ?>">AI 编辑机器人</a>
+            <a class="ghost-link" href="<?= e(url('admin/ai-intake')) ?>">选题录入</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
         </div>
     </div>
 
     <div class="status-banner is-ready">
         <strong>定位已拆分</strong>
-        <span>AI Bots = 谁来写；AI 任务模板 = 执行什么工作，例如起草、改写、SEO、newsletter、社交文案和事实核查。</span>
+        <span>AI 编辑机器人 = 谁来写；AI 任务模板 = 执行什么工作，例如起草、改写、SEO、早报、社交文案和事实核查。</span>
     </div>
 
     <?php if ($flash !== ''): ?>

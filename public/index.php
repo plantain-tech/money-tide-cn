@@ -29,6 +29,14 @@ if ($route === 'api/newsletter/subscribe' && ($_SERVER['REQUEST_METHOD'] ?? 'GET
     exit;
 }
 
+if ($route === 'api/article/react' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $result = record_reaction((int) ($_POST['article_id'] ?? 0), (string) ($_POST['reaction'] ?? ''));
+    http_response_code($result['ok'] ? 200 : 422);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'api/analytics/event' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
     $result = record_public_event_from_request($_POST);
@@ -125,6 +133,7 @@ if ($route === 'admin/analytics') {
         'categories' => $categories,
         'analytics' => analytics_summary(),
         'externalAnalytics' => external_analytics_status(),
+        'reactions' => reaction_analytics(),
     ]);
     exit;
 }
@@ -1895,6 +1904,9 @@ if (strpos($route, 'article/') === 0) {
         'monetization' => monetization_settings(),
         'shortFormat' => $shortFormat,
         'socialImage' => function_exists('article_social_image_url') ? article_social_image_url($article) : ($article['hero_image'] ?? ''),
+        'articleDbId' => $articleDbId,
+        'reactionCounts' => reaction_counts_for_article($articleDbId),
+        'reactionsActive' => reactions_by_voter($articleDbId),
     ]);
     exit;
 }

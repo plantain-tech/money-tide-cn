@@ -2,9 +2,9 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Day 3 工作台</p>
+            <p class="eyebrow">工作台</p>
             <h1>钱潮编辑后台</h1>
-            <p>欢迎，<?= e($user['name'] ?? 'Editor') ?>。今天可以创建、编辑和发布文章。</p>
+            <p>欢迎，<?= e($user['name'] ?? '编辑') ?>。今天可以创建、编辑和发布文章。</p>
         </div>
         <a class="ghost-link" href="<?= e(url('admin/logout')) ?>">退出</a>
     </div>
@@ -85,7 +85,7 @@
             <span>录入标题、摘要、正文和发布状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/calendar')) ?>">
-            <strong>Editorial Calendar</strong>
+            <strong>编辑日历</strong>
             <span>按月/周查看文章发布时间与 newsletter 排期，并快速进入编辑页。</span>
         </a>
         <a class="admin-module" href="<?= e(url('subscribe')) ?>">
@@ -105,20 +105,20 @@
             <span>查看栏目机器人生成的新闻草稿。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/ai-bots')) ?>">
-            <strong>AI Bots</strong>
-            <span>Manage section bots, tone, target reader, source rules, risk rules, and active status.</span>
+            <strong>AI 编辑机器人</strong>
+            <span>管理栏目机器人、语气、目标读者、来源规则、风险规则和启用状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/ai-intake')) ?>">
-            <strong>Story Intake</strong>
-            <span>Submit a story angle and sources, then generate a structured editorial brief.</span>
+            <strong>选题录入</strong>
+            <span>提交选题角度和来源链接，生成结构化编辑简报。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts/new')) ?>">
             <strong>生成 AI 草稿</strong>
             <span>输入来源链接，生成可审核的编辑草稿。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/ai-templates')) ?>">
-            <strong>AI Task Templates</strong>
-            <span>Manage task prompts for drafting, rewriting, SEO, newsletter, social, and fact checks.</span>
+            <strong>AI 任务模板</strong>
+            <span>管理起草、改写、SEO、早报、社交文案和事实核查的任务提示词。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/research-desk')) ?>">
             <strong>研究简报</strong>
@@ -149,11 +149,11 @@
             <span>管理 premium 标记、软付费墙提示和订阅层级准备。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/week4-checklist')) ?>">
-            <strong>Week 4 QA</strong>
+            <strong>第 4 周检查</strong>
             <span>检查留存、SEO、分享、会员准备和 Week 5 backlog。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/week5-checklist')) ?>">
-            <strong>Week 5 QA</strong>
+            <strong>第 5 周检查</strong>
             <span>检查 AI 编辑部、草稿队列、事实核查、改写、newsletter 助理与 Week 6 backlog。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/social')) ?>">
@@ -161,11 +161,11 @@
             <span>跨文章查看微信、小红书、LinkedIn、X 和 newsletter 短推荐的文案与状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/social/schedule')) ?>">
-            <strong>Social Posting Queue</strong>
+            <strong>社交发布队列</strong>
             <span>查看今天、未来、逾期和未排期的社交文案，按人工节奏发布。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/newsletter/schedule')) ?>">
-            <strong>Newsletter Schedule</strong>
+            <strong>早报排期</strong>
             <span>检查今日可发送早报、未来排期和发送前 checklist。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/social-analytics')) ?>">
@@ -173,7 +173,7 @@
             <span>最常被分享的文章、分享渠道、社交回流和推荐订阅。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/week6-checklist')) ?>">
-            <strong>Week 6 QA</strong>
+            <strong>第 6 周检查</strong>
             <span>检查社交分发、AI 文案、微信导出、分享卡、60秒看懂与 Week 7 backlog。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
@@ -193,7 +193,7 @@
             <span>把订阅者、文章、发送记录等导出 CSV。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/qa-checklist')) ?>">
-            <strong>Week 3 QA</strong>
+            <strong>第 3 周检查</strong>
             <span>整周新功能上线前的检查清单。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/db-health')) ?>">

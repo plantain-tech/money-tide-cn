@@ -1,9 +1,9 @@
-<?php $pageTitle = 'Smoke Tests - 钱潮 Money Tide'; $pass = 0; $total = count($checks); foreach ($checks as $c) { if ($c['ok']) { $pass++; } } ?>
+<?php $pageTitle = '系统自检 - 钱潮 Money Tide'; $pass = 0; $total = count($checks); foreach ($checks as $c) { if ($c['ok']) { $pass++; } } ?>
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
             <p class="eyebrow">运维</p>
-            <h1>Smoke Tests</h1>
+            <h1>系统自检</h1>
             <p>关键模块快速自检；通过 <strong><?= e((string) $pass) ?>/<?= e((string) $total) ?></strong> 项。</p>
         </div>
         <div class="admin-actions">

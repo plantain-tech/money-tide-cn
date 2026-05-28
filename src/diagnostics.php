@@ -21,7 +21,7 @@ function database_diagnostics(): array
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
-        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format',
+        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format', 'article_reactions',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -191,6 +191,15 @@ function admin_smoke_checks(): array
         $feedCount = count(rss_articles(null, 10));
         $checks[] = ['name' => 'RSS feeds', 'ok' => $feedCount > 0, 'detail' => $feedCount . ' articles in all feed'];
     }
+    if (function_exists('reaction_analytics')) {
+        ensure_reactions_schema();
+        $reactions = reaction_analytics();
+        $checks[] = [
+            'name' => 'Reader reactions',
+            'ok' => count(reaction_types()) === 3 && is_array($reactions),
+            'detail' => $reactions['total_all'] . ' reactions · ' . count(reaction_types()) . ' types',
+        ];
+    }
     if (function_exists('editorial_calendar_events')) {
         $calendarFilters = calendar_filters_from_request(['view' => 'month', 'date' => date('Y-m-d')]);
         $calendarRange = calendar_range($calendarFilters['view'], $calendarFilters['date']);
@@ -209,7 +218,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format', 'article_reactions'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }

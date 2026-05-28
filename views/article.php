@@ -181,10 +181,40 @@ $schema = [
         </div>
     </div>
 
+    <?php
+        $articleDbId = $articleDbId ?? (int) ($article['id'] ?? 0);
+        $reactionCounts = $reactionCounts ?? [];
+        $reactionsActive = $reactionsActive ?? [];
+        $reactionTypes = function_exists('reaction_types') ? reaction_types() : [];
+    ?>
+    <?php if ($articleDbId > 0 && $reactionTypes): ?>
+        <section class="reaction-bar reveal-on-scroll" data-reaction-bar data-article-id="<?= e((string) $articleDbId) ?>" data-slug="<?= e($article['slug']) ?>">
+            <div class="reaction-bar-head">
+                <p class="eyebrow">这篇对你怎么样？</p>
+                <h2>一秒反馈，帮我们决定写什么</h2>
+            </div>
+            <div class="reaction-bar-buttons">
+                <?php foreach ($reactionTypes as $key => $label): ?>
+                    <?php $isActive = in_array($key, $reactionsActive, true); ?>
+                    <button
+                        type="button"
+                        class="reaction-chip<?= $isActive ? ' is-active' : '' ?>"
+                        data-reaction="<?= e($key) ?>"
+                        aria-pressed="<?= $isActive ? 'true' : 'false' ?>">
+                        <span class="reaction-chip-label"><?= e($label) ?></span>
+                        <span class="reaction-chip-count" data-reaction-count><?= e((string) (int) ($reactionCounts[$key] ?? 0)) ?></span>
+                        <span class="reaction-chip-burst" aria-hidden="true"></span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+            <p class="reaction-bar-foot" data-reaction-foot hidden>谢谢反馈，已记录。</p>
+        </section>
+    <?php endif; ?>
+
     <?php if ($readNext): ?>
         <aside class="read-next-card reveal-on-scroll">
             <div>
-                <p class="eyebrow">Read Next</p>
+            <p class="eyebrow">继续阅读</p>
                 <h2><a href="<?= e(url('article/' . $readNext['slug'])) ?>"><?= e($readNext['title']) ?></a></h2>
                 <p><?= e($readNext['brief']) ?></p>
             </div>
@@ -194,7 +224,7 @@ $schema = [
 
     <?php $tags = $tags ?? []; if ($tags): ?>
         <aside class="article-tag-bar">
-            <span class="eyebrow">Tags</span>
+            <span class="eyebrow">标签</span>
             <?php foreach ($tags as $tag): ?>
                 <a class="topic-chip" href="<?= e(url('tag/' . $tag['slug'])) ?>">#<?= e($tag['name']) ?></a>
             <?php endforeach; ?>
@@ -217,7 +247,7 @@ $schema = [
 
 <section class="related-section reveal-on-scroll">
     <div class="section-heading">
-        <p class="eyebrow">Related Articles</p>
+        <p class="eyebrow">相关阅读</p>
         <h2>相关信号</h2>
     </div>
     <?php if ($relatedArticles): ?>

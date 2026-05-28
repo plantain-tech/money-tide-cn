@@ -14,7 +14,7 @@ $flash = $flash ?? '';
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin/newsletter')) ?>">返回列表</a>
-            <a class="ghost-link" href="<?= e(url('admin/newsletter/schedule')) ?>">Schedule queue</a>
+            <a class="ghost-link" href="<?= e(url('admin/newsletter/schedule')) ?>">排期队列</a>
             <?php if ($mode === 'edit'): ?>
                 <a class="ghost-link" href="<?= e(url('admin/newsletter/' . $issueId . '/preview')) ?>" target="_blank" rel="noopener">预览邮件</a>
             <?php endif; ?>
@@ -144,9 +144,9 @@ $flash = $flash ?? '';
             <div class="workflow-actions">
                 <?php
                 $transitions = [
-                    'draft' => [['ready', '标记为 Ready'], ['scheduled', 'Mark as scheduled']],
-                    'ready' => [['draft', '回到草稿'], ['scheduled', 'Mark as scheduled'], ['sent', '直接标记为已发送']],
-                    'scheduled' => [['ready', 'Back to ready'], ['draft', '回到草稿'], ['sent', '直接标记为已发送']],
+                    'draft' => [['ready', '标记为 Ready'], ['scheduled', '标记为已排期']],
+                    'ready' => [['draft', '回到草稿'], ['scheduled', '标记为已排期'], ['sent', '直接标记为已发送']],
+                    'scheduled' => [['ready', '退回 Ready'], ['draft', '回到草稿'], ['sent', '直接标记为已发送']],
                     'sent' => [['archived', '归档']],
                     'archived' => [['draft', '恢复为草稿']],
                 ];
@@ -165,7 +165,7 @@ $flash = $flash ?? '';
         </section>
 
         <section class="newsletter-block presend-checklist">
-            <h2>Pre-send checklist</h2>
+            <h2>发送前检查</h2>
             <p><small>这是发送前的人工检查清单。系统不会因为排期自动广播。</small></p>
             <ul class="schedule-checklist">
                 <?php foreach (($checklist ?? []) as $item): ?>

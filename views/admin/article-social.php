@@ -51,7 +51,7 @@ $articleId = (int) ($article['id'] ?? 0);
                 </header>
                 <div class="social-schedule-strip">
                     <span><?= e($scheduleLabel) ?></span>
-                    <small>Manual reminder only. This will not auto-post.</small>
+                    <small>仅作人工提醒，不会自动发布。</small>
                 </div>
 
                 <div class="social-card-body">
@@ -79,7 +79,7 @@ $articleId = (int) ($article['id'] ?? 0);
                         </label>
 
                         <label class="social-field">
-                            <span class="social-field-label">Scheduled time (manual posting)</span>
+                            <span class="social-field-label">计划发布时间（人工发布）</span>
                             <input type="datetime-local" name="scheduled_at" value="<?= e($scheduledAt) ?>">
                         </label>
 

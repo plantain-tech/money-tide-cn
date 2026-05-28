@@ -5,22 +5,22 @@ declare(strict_types=1);
 function calendar_view_modes(): array
 {
     return [
-        'month' => 'Month',
-        'week' => 'Week',
+        'month' => '月视图',
+        'week' => '周视图',
     ];
 }
 
 function calendar_status_options(): array
 {
     return [
-        '' => 'All statuses',
-        'draft' => 'Draft',
-        'review' => 'Review',
+        '' => '全部状态',
+        'draft' => '草稿',
+        'review' => '审核中',
         'ready' => 'Ready',
         'scheduled' => 'Scheduled',
-        'published' => 'Published',
-        'sent' => 'Sent',
-        'archived' => 'Archived',
+        'published' => '已发布',
+        'sent' => '已发送',
+        'archived' => '已归档',
     ];
 }
 
@@ -289,4 +289,3 @@ function calendar_stats(array $events): array
     }
     return $stats;
 }
-

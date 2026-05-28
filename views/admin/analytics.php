@@ -8,7 +8,7 @@ foreach ($analytics['views_by_day'] as $row) {
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Analytics</p>
+            <p class="eyebrow">数据分析</p>
             <h1>站内分析</h1>
             <p>覆盖浏览、订阅、收藏、分享、读完率和回访读者。</p>
         </div>
@@ -100,4 +100,76 @@ foreach ($analytics['views_by_day'] as $row) {
             <?php else: ?><p><small>无数据。</small></p><?php endif; ?>
         </section>
     </div>
+
+    <?php
+        $reactions = $reactions ?? ['totals' => [], 'total_all' => 0, 'recent' => [], 'top_helpful' => [], 'top_more' => [], 'top_complex' => [], 'most_engaged' => [], 'days' => 30];
+        $reactionLabels = function_exists('reaction_types') ? reaction_types() : ['helpful' => '有帮助', 'more' => '想看更多', 'complex' => '太复杂'];
+        $reactionHints = [
+            'helpful' => '读者觉得有价值，可以多写这类选题。',
+            'more' => '读者希望看到更多延伸，适合做系列或深度跟进。',
+            'complex' => '读者觉得偏难，可考虑加“一句话看懂”或拆解。',
+        ];
+    ?>
+    <section class="analytics-panel">
+        <h2>读者反馈</h2>
+        <p><small>读者在文章页给出的一秒反馈，用来指导选题方向。共 <?= e((string) ($reactions['total_all'] ?? 0)) ?> 次反馈。</small></p>
+        <div class="admin-stat-grid">
+            <?php foreach ($reactionLabels as $key => $label): ?>
+                <div>
+                    <span><?= e($label) ?></span>
+                    <strong><?= e((string) (int) ($reactions['totals'][$key] ?? 0)) ?></strong>
+                    <small>近 <?= e((string) ($reactions['days'] ?? 30)) ?> 日 <?= e((string) (int) ($reactions['recent'][$key] ?? 0)) ?></small>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <div class="reaction-hint-list">
+            <?php foreach ($reactionLabels as $key => $label): ?>
+                <p><strong><?= e($label) ?></strong>：<?= e($reactionHints[$key] ?? '') ?></p>
+            <?php endforeach; ?>
+        </div>
+    </section>
+
+    <div class="analytics-panels">
+        <?php
+            $reactionBuckets = [
+                'top_helpful' => '“有帮助”最多',
+                'top_more' => '“想看更多”最多',
+                'top_complex' => '“太复杂”最多',
+            ];
+        ?>
+        <?php foreach ($reactionBuckets as $bucket => $heading): ?>
+            <section class="analytics-panel">
+                <h2><?= e($heading) ?></h2>
+                <?php if (!empty($reactions[$bucket])): ?>
+                    <ol class="analytics-list">
+                        <?php foreach ($reactions[$bucket] as $row): ?>
+                            <li><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) ($row['title'] ?: $row['slug'])) ?></a><span><?= e((string) $row['n']) ?></span></li>
+                        <?php endforeach; ?>
+                    </ol>
+                <?php else: ?><p><small>暂无数据。</small></p><?php endif; ?>
+            </section>
+        <?php endforeach; ?>
+    </div>
+
+    <?php if (!empty($reactions['most_engaged'])): ?>
+        <section class="analytics-panel">
+            <h2>互动最多的文章</h2>
+            <table class="admin-table reaction-table">
+                <thead>
+                    <tr><th>文章</th><th>有帮助</th><th>想看更多</th><th>太复杂</th><th>合计</th></tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reactions['most_engaged'] as $row): ?>
+                        <tr>
+                            <td><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e((string) ($row['title'] ?: $row['slug'])) ?></a></td>
+                            <td><?= e((string) (int) $row['helpful']) ?></td>
+                            <td><?= e((string) (int) $row['more']) ?></td>
+                            <td><?= e((string) (int) $row['complex']) ?></td>
+                            <td><strong><?= e((string) (int) $row['total']) ?></strong></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </section>
+    <?php endif; ?>
 </section>

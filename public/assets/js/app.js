@@ -234,6 +234,61 @@ function recordPublicEvent(eventType, slug, source) {
     }
 }
 
+document.querySelectorAll('[data-reaction-bar]').forEach((bar) => {
+    const articleId = bar.getAttribute('data-article-id') || '';
+    const slug = bar.getAttribute('data-slug') || '';
+    const foot = bar.querySelector('[data-reaction-foot]');
+    bar.querySelectorAll('.reaction-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            if (chip.classList.contains('is-loading')) {
+                return;
+            }
+            const reaction = chip.getAttribute('data-reaction') || '';
+            chip.classList.add('is-loading');
+            const body = new URLSearchParams();
+            body.set('article_id', articleId);
+            body.set('reaction', reaction);
+            body.set('slug', slug);
+            fetch('/api/article/react', {
+                method: 'POST',
+                body,
+                headers: { Accept: 'application/json' },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    chip.classList.remove('is-loading');
+                    if (!data || !data.ok) {
+                        return;
+                    }
+                    const counts = data.counts || {};
+                    bar.querySelectorAll('.reaction-chip').forEach((node) => {
+                        const key = node.getAttribute('data-reaction') || '';
+                        const countEl = node.querySelector('[data-reaction-count]');
+                        if (countEl && Object.prototype.hasOwnProperty.call(counts, key)) {
+                            countEl.textContent = String(counts[key]);
+                        }
+                    });
+                    if (data.active) {
+                        chip.classList.add('is-active');
+                        chip.setAttribute('aria-pressed', 'true');
+                        chip.classList.remove('reaction-pop');
+                        void chip.offsetWidth;
+                        chip.classList.add('reaction-pop');
+                        if (foot) {
+                            foot.hidden = false;
+                        }
+                    } else {
+                        chip.classList.remove('is-active');
+                        chip.setAttribute('aria-pressed', 'false');
+                    }
+                })
+                .catch(() => {
+                    chip.classList.remove('is-loading');
+                });
+        });
+    });
+});
+
 function startAiGenerationProgress(form) {
     const panel = form.querySelector('[data-ai-generation-panel]');
     const bar = form.querySelector('[data-ai-generation-bar]');

@@ -4959,3 +4959,158 @@ main {
         text-align: center;
     }
 }
+
+/* Week 7 Day 6: reader reactions */
+.reaction-bar {
+    margin: 36px 0;
+    padding: 26px 24px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    box-shadow: var(--shadow);
+}
+
+.reaction-bar-head .eyebrow {
+    margin: 0 0 6px;
+}
+
+.reaction-bar-head h2 {
+    margin: 0 0 18px;
+    font-size: 1.25rem;
+    line-height: 1.35;
+}
+
+.reaction-bar-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.reaction-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px;
+    border: 2px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 999px;
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+    overflow: hidden;
+}
+
+.reaction-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--ink);
+}
+
+.reaction-chip:active {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 var(--ink);
+}
+
+.reaction-chip.is-active {
+    background: var(--lime);
+    color: var(--ink);
+}
+
+.reaction-chip.is-loading {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.reaction-chip-count {
+    min-width: 1.4em;
+    text-align: center;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--paper);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+    transition: background 0.15s ease;
+}
+
+.reaction-chip.is-active .reaction-chip-count {
+    background: rgba(17, 17, 17, 0.12);
+}
+
+.reaction-chip-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.reaction-chip.reaction-pop {
+    animation: reaction-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reaction-chip.reaction-pop .reaction-chip-burst::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--ink);
+    animation: reaction-ring 0.55s ease-out forwards;
+}
+
+@keyframes reaction-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+@keyframes reaction-ring {
+    0% { opacity: 0.7; transform: scale(0.85); }
+    100% { opacity: 0; transform: scale(1.35); }
+}
+
+.reaction-bar-foot {
+    margin: 16px 0 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--muted);
+    animation: reaction-fade-in 0.3s ease;
+}
+
+@keyframes reaction-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reaction-chip,
+    .reaction-chip.reaction-pop {
+        transition: none;
+        animation: none;
+    }
+    .reaction-chip.reaction-pop .reaction-chip-burst::after {
+        animation: none;
+        opacity: 0;
+    }
+}
+
+.reaction-hint-list {
+    margin-top: 16px;
+    display: grid;
+    gap: 8px;
+}
+
+.reaction-hint-list p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.reaction-table th,
+.reaction-table td {
+    text-align: left;
+}
+
+.reaction-table td + td,
+.reaction-table th + th {
+    text-align: center;
+}
