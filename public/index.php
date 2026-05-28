@@ -129,6 +129,28 @@ if ($route === 'admin/analytics') {
     exit;
 }
 
+if ($route === 'admin/calendar') {
+    require_admin();
+    $filters = calendar_filters_from_request($_GET);
+    $range = calendar_range($filters['view'], $filters['date']);
+    $events = editorial_calendar_events($filters, $range);
+    render_page('admin/calendar', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'editors' => admin_editors(),
+        'filters' => $filters,
+        'range' => $range,
+        'events' => $events,
+        'monthDays' => calendar_month_days($range),
+        'weekDays' => calendar_week_days($range),
+        'stats' => calendar_stats($events),
+        'statusOptions' => calendar_status_options(),
+        'viewModes' => calendar_view_modes(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/monetization') {
     require_admin();
     $flash = '';

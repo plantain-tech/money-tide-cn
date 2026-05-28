@@ -183,6 +183,13 @@ function admin_smoke_checks(): array
         $feedCount = count(rss_articles(null, 10));
         $checks[] = ['name' => 'RSS feeds', 'ok' => $feedCount > 0, 'detail' => $feedCount . ' articles in all feed'];
     }
+    if (function_exists('editorial_calendar_events')) {
+        $calendarFilters = calendar_filters_from_request(['view' => 'month', 'date' => date('Y-m-d')]);
+        $calendarRange = calendar_range($calendarFilters['view'], $calendarFilters['date']);
+        $calendarEvents = editorial_calendar_events($calendarFilters, $calendarRange);
+        $calendarStats = calendar_stats($calendarEvents);
+        $checks[] = ['name' => 'Editorial calendar', 'ok' => is_array($calendarEvents), 'detail' => $calendarStats['total'] . ' items this range'];
+    }
 
     return $checks;
 }

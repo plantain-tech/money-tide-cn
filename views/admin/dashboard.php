@@ -84,6 +84,10 @@
             <strong>新建文章</strong>
             <span>录入标题、摘要、正文和发布状态。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/calendar')) ?>">
+            <strong>Editorial Calendar</strong>
+            <span>按月/周查看文章发布时间与 newsletter 排期，并快速进入编辑页。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('subscribe')) ?>">
             <strong>Newsletter</strong>
             <span>查看公开订阅入口，订阅数据已写入 MySQL。</span>

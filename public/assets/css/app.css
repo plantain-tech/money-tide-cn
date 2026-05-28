@@ -4554,3 +4554,216 @@ main {
 [data-shortformat-copy] {
     min-height: 36px;
 }
+
+/* =============================================================
+   W7D3 editorial calendar
+   ============================================================= */
+.calendar-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.calendar-summary div {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 14px 16px;
+}
+
+.calendar-summary span {
+    display: block;
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.calendar-summary strong {
+    font-size: clamp(22px, 3vw, 34px);
+    line-height: 1;
+}
+
+.calendar-filter-bar {
+    align-items: end;
+}
+
+.calendar-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    padding: 14px 0;
+    margin: 20px 0;
+}
+
+.calendar-nav strong {
+    font-size: 22px;
+}
+
+.calendar-weekdays,
+.calendar-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays span {
+    font-weight: 900;
+    text-align: center;
+    border: 2px solid var(--ink);
+    border-bottom: 0;
+    padding: 10px;
+    background: var(--ink);
+    color: var(--white);
+}
+
+.calendar-day {
+    min-height: 190px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calendar-day.is-muted {
+    background: rgba(0, 0, 0, 0.035);
+    color: var(--muted);
+}
+
+.calendar-day.is-today,
+.calendar-week-day.is-today {
+    outline: 4px solid var(--accent);
+    outline-offset: -4px;
+}
+
+.calendar-day-number {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.calendar-day-number strong {
+    font-size: 18px;
+}
+
+.calendar-day-number small {
+    border: 2px solid var(--ink);
+    background: var(--accent);
+    color: var(--ink);
+    min-width: 24px;
+    min-height: 24px;
+    display: inline-grid;
+    place-items: center;
+    font-weight: 900;
+}
+
+.calendar-day-events {
+    display: grid;
+    gap: 8px;
+}
+
+.calendar-event {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 8px;
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.calendar-event-newsletter {
+    background: linear-gradient(135deg, var(--paper-strong), rgba(224, 255, 0, 0.28));
+}
+
+.calendar-event strong,
+.calendar-event small {
+    overflow-wrap: anywhere;
+}
+
+.calendar-event-top,
+.calendar-event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-event-top span {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.calendar-event-actions a {
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.calendar-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(180px, 1fr));
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.calendar-week-day {
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    padding: 12px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.calendar-week-day h2 {
+    font-size: 16px;
+    margin: 0 0 4px;
+}
+
+.calendar-empty,
+.calendar-empty-state p {
+    color: var(--muted);
+}
+
+@media (max-width: 960px) {
+    .calendar-weekdays {
+        display: none;
+    }
+
+    .calendar-month-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .calendar-day {
+        min-height: auto;
+        border-width: 2px;
+    }
+
+    .calendar-day.is-muted {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .calendar-nav {
+        align-items: stretch;
+    }
+
+    .calendar-nav .ghost-link,
+    .calendar-nav strong {
+        width: 100%;
+        text-align: center;
+    }
+}
