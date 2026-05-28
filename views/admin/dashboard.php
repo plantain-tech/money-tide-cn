@@ -160,6 +160,10 @@
             <strong>传播分析</strong>
             <span>最常被分享的文章、分享渠道、社交回流和推荐订阅。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/week6-checklist')) ?>">
+            <strong>Week 6 QA</strong>
+            <span>检查社交分发、AI 文案、微信导出、分享卡、60秒看懂与 Week 7 backlog。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

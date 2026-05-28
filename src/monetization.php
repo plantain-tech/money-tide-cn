@@ -210,3 +210,40 @@ function week_six_backlog(): array
         ['title' => 'Production payments 集成', 'detail' => 'Stripe/Paddle 接入 + hard paywall + premium 标识 + 订阅状态同步。'],
     ];
 }
+
+function week_six_qa_checklist(): array
+{
+    return [
+        ['label' => '社交分发中心 /admin/social 加载，状态 tab 计数正确，可按渠道和关键词过滤。', 'tip' => '/admin/social'],
+        ['label' => '单篇社交工作台显示 5 个渠道卡（微信/小红书/LinkedIn/X/Newsletter 短推荐），字数计数器超限变红。', 'tip' => '/admin/articles/{id}/social'],
+        ['label' => 'AI 生成文案：首次无确认弹窗，重新生成有确认弹窗，过程显示不可关闭进度 modal。', 'tip' => '每渠道生成消耗 1 个 AI 额度'],
+        ['label' => '复制文案 / 复制文案+hashtags 按钮可用，点击后短暂显示"已复制 ✓"。', 'tip' => '粘贴到记事本验证'],
+        ['label' => '社交文案状态流转：草稿 → 可发布 → 已手动发布 → 归档，chip 颜色随之变化。', 'tip' => '下拉选择即提交'],
+        ['label' => '微信版面导出 /admin/articles/{id}/wechat-export 渲染干净版面，复制 HTML / 复制纯文本 / 查看源代码都可用。', 'tip' => '粘贴到富文本编辑器验证样式'],
+        ['label' => '分享卡片 3 种 SVG（标题卡/60秒看懂卡/金句卡）渲染，可下载、可复制地址。', 'tip' => '/admin/articles/{id}/share-cards'],
+        ['label' => '社交图覆盖保存后，文章 og:image 按 覆盖→英雄图→栏目兜底→自动卡 顺序解析。', 'tip' => '查看文章源代码 og:image'],
+        ['label' => '60秒看懂：可 AI 生成、手动编辑、复制文本、删除；前台文章页渲染速读卡 + 复制速读按钮。', 'tip' => '/admin/articles/{id}/short-format 和 /article/{slug}#short-format'],
+        ['label' => '文章页分享按钮带 UTM 参数（utm_source=渠道, utm_medium=social）；底部有读者分享提示块。', 'tip' => '查看文章源代码的 share 链接'],
+        ['label' => '传播分析 /admin/social-analytics 显示分享数、渠道、社交回流、推荐订阅。', 'tip' => '先在无痕标签里点几次分享按钮再回来看'],
+        ['label' => '移动端布局：社交卡、分享卡网格、60秒看懂卡在窄屏下单列、无横向溢出。', 'tip' => '手机或浏览器 DevTools 切到 375px 宽'],
+        ['label' => '所有删除/重置/广播按钮使用统一的品牌确认 modal（不是浏览器原生弹窗）。', 'tip' => '随便点一个删除按钮'],
+        ['label' => '生产 smoke 全部通过；release marker 已更新到 week-6 系列。', 'tip' => '/admin/smoke?format=json 与 /health.php'],
+    ];
+}
+
+function week_seven_backlog(): array
+{
+    return [
+        ['title' => '分享卡转 PNG', 'detail' => '可选：用 GD/Imagick 把 SVG 分享卡栅格化成 PNG，方便某些只接受位图的平台（小红书图文）。'],
+        ['title' => '社交发布排期', 'detail' => '给 social_posts 加 scheduled_at，配合 cron 在到点时提醒编辑（不自动发，仍人工）。'],
+        ['title' => 'Newsletter 定时自动广播', 'detail' => '基于 newsletter_issues.scheduled_at 的 cron，把 ready 期号在到点时自动发送。'],
+        ['title' => '个性化早报', 'detail' => '按 reader_preference_topics 给不同读者拼装不同文章组合的 newsletter。'],
+        ['title' => '前台 Search', 'detail' => 'title/dek/brief/body 的全文检索页，含分页和栏目过滤。'],
+        ['title' => 'Public RSS / Atom feed', 'detail' => '/feed/all.xml 和 /feed/category/{slug}.xml，方便聚合器和老读者。'],
+        ['title' => 'Comment 模块', 'detail' => '读者评论 + admin 审核队列 + 简单反垃圾。'],
+        ['title' => '编辑日历', 'detail' => '把文章和 newsletter 按时间排进月历视图，便于排期。'],
+        ['title' => '邮件真实投递上线', 'detail' => '把 EMAIL_PROVIDER 从 log 切到 Resend/Brevo/Mailgun，配置发件域名 DNS。'],
+        ['title' => 'Google OAuth 正式发布', 'detail' => '在 Google Cloud 把应用从 Testing 切到 In production，开放公众注册。'],
+        ['title' => 'Payments 与会员墙', 'detail' => 'Stripe/Paddle 接入 + 硬付费墙 + premium 内容门控。'],
+    ];
+}

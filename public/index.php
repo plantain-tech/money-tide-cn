@@ -142,6 +142,18 @@ if ($route === 'admin/week5-checklist') {
     exit;
 }
 
+if ($route === 'admin/week6-checklist') {
+    require_admin();
+    render_page('admin/week6-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'items' => week_six_qa_checklist(),
+        'backlog' => week_seven_backlog(),
+        'smokeChecks' => admin_smoke_checks(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/db-health') {
     require_admin();
     header('Content-Type: application/json; charset=utf-8');

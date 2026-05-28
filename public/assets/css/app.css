@@ -4402,5 +4402,99 @@ main {
     }
 }
 
+/* =============================================================
+   W6D7 polish — spacing, overflow, mobile guards
+   ============================================================= */
+
+/* Long SVG strings + WeChat source must never push the page wide */
+.wechat-source-block textarea,
+.share-card-frame img,
+.short-format-card,
+.social-channel-card,
+.mt-modal,
+.mt-ai-progress-modal {
+    max-width: 100%;
+}
+
+.wechat-preview-frame {
+    overflow-x: auto;
+}
+
+/* Social card head: stop the long hint from overflowing the dark panel */
+.social-card-head small {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* AI bot + social cards: textarea must respect the card width */
+.ai-bot-field textarea,
+.social-field textarea,
+.social-field input,
+.cms-form input,
+.cms-form textarea,
+.cms-form select {
+    max-width: 100%;
+}
+
+/* Admin tables: let long content wrap instead of forcing horizontal scroll */
+.admin-table small,
+.ai-draft-row-title small,
+.social-status-chip {
+    overflow-wrap: anywhere;
+}
+
+/* Copy-URL / inline action buttons keep comfortable tap targets on mobile */
+@media (max-width: 720px) {
+    .share-card-actions,
+    .social-card-actions,
+    .social-card-foot,
+    .short-format-admin-actions,
+    .wechat-export-actions {
+        gap: 10px;
+    }
+
+    .share-card-actions .button,
+    .wechat-export-actions .button {
+        flex: 1 1 auto;
+        text-align: center;
+    }
+
+    .short-format-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .short-format-head {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .short-format-card,
+    .article-share-prompt {
+        padding: 18px 16px;
+    }
+
+    .short-format-summary {
+        font-size: 17px;
+    }
+
+    .short-format-number strong {
+        font-size: 26px;
+    }
+
+    /* Stat grids: 2-up instead of cramped 4-up on phones */
+    .admin-stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Tap targets: copy buttons get min height so they're easy to hit */
+.short-format-copy,
+[data-copy-url],
+[data-copy-target],
+[data-shortformat-copy] {
+    min-height: 36px;
+}
+
 
 
