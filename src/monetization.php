@@ -247,3 +247,35 @@ function week_seven_backlog(): array
         ['title' => 'Payments 与会员墙', 'detail' => 'Stripe/Paddle 接入 + 硬付费墙 + premium 内容门控。'],
     ];
 }
+
+function week_seven_qa_checklist(): array
+{
+    return [
+        ['label' => '公开搜索可用，页头搜索框、移动菜单入口、空结果兜底和关键词高亮都正常。', 'tip' => '/search?q=AI；再试一个无结果关键词，确认会显示最新文章兜底。'],
+        ['label' => 'RSS feed 可访问，包含标题、链接、摘要、发布时间和栏目。', 'tip' => '/feed/all.xml 与 /feed/category/tech.xml。'],
+        ['label' => '文章页、首页和栏目页的 head 中包含 RSS alternate 链接。', 'tip' => '查看源代码，确认有 application/rss+xml。'],
+        ['label' => '编辑日历可以按月/周查看文章和早报，状态/栏目/编辑筛选不会造成横向溢出。', 'tip' => '/admin/calendar，在手机宽度下检查。'],
+        ['label' => '社交发布队列只做人工提醒，不会自动发帖。', 'tip' => '/admin/social/schedule，只能编辑、复制、标记状态。'],
+        ['label' => '早报排期只做发送前准备，不会自动广播。', 'tip' => '/admin/newsletter/schedule，真正发送仍必须进入期号后手动点击广播。'],
+        ['label' => '读者反馈按钮在文章页可点击，管理后台能看到“有帮助 / 想看更多 / 太复杂”的统计。', 'tip' => '/article/{slug} 与 /admin/analytics。'],
+        ['label' => '移动端搜索、日历、社交队列、早报队列、检查清单没有横向滚动或按钮文字挤压。', 'tip' => '用 375px 宽度检查 /search、/admin/calendar、/admin/social/schedule、/admin/newsletter/schedule。'],
+        ['label' => '所有高风险动作仍由人工触发：发布文章、发送早报、社交平台发布都没有自动化。', 'tip' => '发布只走 /admin/articles/{id}/status；早报广播只走 /admin/newsletter/{id}/send。'],
+        ['label' => '生产 smoke 全部通过，release marker 已更新到 week-7-day-7。', 'tip' => '/admin/smoke?format=json 与 /health.php。'],
+    ];
+}
+
+function week_eight_backlog(): array
+{
+    return [
+        ['title' => '真实邮件投递上线', 'detail' => '接入 Resend/Brevo/Mailgun，配置发件域名 DNS、退订头和发送日志，让钱潮早报真正投递到用户邮箱。'],
+        ['title' => 'Google OAuth 正式公开', 'detail' => '确认 Google Cloud OAuth consent screen 已从 Testing 切到 Production，并补齐隐私政策、服务条款链接。'],
+        ['title' => '全站性能和缓存', 'detail' => '为首页、文章页、RSS、分享卡加入更清晰的缓存策略，压缩静态资源，减少 Hostinger shared hosting 压力。'],
+        ['title' => '图片压缩与媒体治理', 'detail' => '上传图片自动限制尺寸、生成轻量版本、补齐 alt 文案检查，避免文章页加载过慢。'],
+        ['title' => '自动备份与恢复演练', 'detail' => '每日导出数据库和关键上传文件，保存到远端或下载包，并写一份恢复流程。'],
+        ['title' => '错误日志与告警', 'detail' => '把 /admin/smoke?format=json 接入监控提醒；关键 AI、邮件、数据库错误进入 admin diagnostics。'],
+        ['title' => '评论或深度反馈 Beta', 'detail' => '在现有 reactions 基础上，评估是否加短评论、审核队列和反垃圾规则。'],
+        ['title' => '个性化早报', 'detail' => '根据 reader_preference_topics 拼装不同早报版本，先做预览和人工发送，不自动群发。'],
+        ['title' => '付费会员前置验证', 'detail' => '继续保持内容可读，先测试 premium 标签、会员权益页和转化 CTA，再决定 Stripe/Paddle。'],
+        ['title' => 'Week 8 发布复盘', 'detail' => '汇总搜索词、RSS访问、阅读反馈、保存/分享和订阅来源，决定第一个增长重点。'],
+    ];
+}

@@ -176,6 +176,10 @@
             <strong>第 6 周检查</strong>
             <span>检查社交分发、AI 文案、微信导出、分享卡、60秒看懂与 Week 7 backlog。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/week7-checklist')) ?>">
+            <strong>第 7 周检查</strong>
+            <span>检查搜索、RSS、编辑日历、排期队列、读者反馈和 Week 8 backlog。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

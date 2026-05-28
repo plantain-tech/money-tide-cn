@@ -105,7 +105,7 @@ $renderEvent = static function (array $event) use ($eventTypeLabels, $statusLabe
                         <?php $renderEvent($event); ?>
                     <?php endforeach; ?>
                     <?php if (!$dayEvents): ?>
-                        <p class="calendar-empty">No scheduled items.</p>
+                        <p class="calendar-empty">暂无排期内容。</p>
                     <?php endif; ?>
                 </section>
             <?php endforeach; ?>
