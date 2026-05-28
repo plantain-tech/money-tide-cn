@@ -7,6 +7,7 @@
             <p>组装、预览、测试和广播每一期。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/newsletter/schedule')) ?>">Schedule queue</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
             <a class="button button-small" href="<?= e(url('admin/newsletter/new')) ?>">新建一期</a>
         </div>

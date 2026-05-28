@@ -427,6 +427,41 @@ if ($route === 'admin/social') {
     exit;
 }
 
+if ($route === 'admin/social/schedule') {
+    require_admin();
+    $filters = [
+        'scheduled' => (string) ($_GET['scheduled'] ?? 'today'),
+        'channel' => (string) ($_GET['channel'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+    ];
+    if (!array_key_exists($filters['scheduled'], social_schedule_segments())) {
+        $filters['scheduled'] = 'today';
+    }
+    render_page('admin/social-schedule', [
+        'site' => $site,
+        'categories' => $categories,
+        'posts' => social_scheduled_posts($filters),
+        'summary' => social_schedule_summary(),
+        'channels' => social_channels(),
+        'statusOptions' => social_post_status_options(),
+        'filters' => $filters,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/social/schedule.csv') {
+    require_admin();
+    $filters = [
+        'scheduled' => (string) ($_GET['scheduled'] ?? 'today'),
+        'channel' => (string) ($_GET['channel'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+    ];
+    export_social_schedule_csv($filters);
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
     require_admin();
     $articleId = (int) $matches[1];
@@ -966,6 +1001,33 @@ if ($route === 'admin/newsletter') {
     exit;
 }
 
+if ($route === 'admin/newsletter/schedule') {
+    require_admin();
+    $filters = [
+        'scheduled' => (string) ($_GET['scheduled'] ?? 'today'),
+        'status' => (string) ($_GET['status'] ?? ''),
+    ];
+    if (!array_key_exists($filters['scheduled'], newsletter_schedule_segments())) {
+        $filters['scheduled'] = 'today';
+    }
+    $issues = scheduled_newsletter_queue($filters);
+    foreach ($issues as &$issue) {
+        $issue['articles'] = newsletter_issue_articles((int) $issue['id']);
+        $issue['checklist'] = newsletter_presend_checklist($issue);
+    }
+    unset($issue);
+    render_page('admin/newsletter-schedule', [
+        'site' => $site,
+        'categories' => $categories,
+        'issues' => $issues,
+        'summary' => newsletter_schedule_summary(),
+        'segments' => newsletter_schedule_segments(),
+        'filters' => $filters,
+        'providerStatus' => email_provider_status(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/newsletter/new') {
     require_admin();
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -985,6 +1047,7 @@ if ($route === 'admin/newsletter/new') {
             'availableArticles' => [],
             'providerStatus' => email_provider_status(),
             'sends' => [],
+            'checklist' => [],
         ]);
         exit;
     }
@@ -999,6 +1062,7 @@ if ($route === 'admin/newsletter/new') {
         'availableArticles' => [],
         'providerStatus' => email_provider_status(),
         'sends' => [],
+        'checklist' => [],
     ]);
     exit;
 }
@@ -1038,6 +1102,7 @@ if (preg_match('#^admin/newsletter/(\d+)/edit$#', $route, $matches)) {
         'availableArticles' => publishable_articles_for_issue($issueId),
         'providerStatus' => email_provider_status(),
         'sends' => newsletter_issue_sends($issueId),
+        'checklist' => newsletter_presend_checklist($issue),
         'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
     exit;

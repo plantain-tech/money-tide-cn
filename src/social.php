@@ -69,14 +69,27 @@ function ensure_social_posts_schema(): void
             content MEDIUMTEXT NULL,
             hashtags VARCHAR(500) NULL,
             note VARCHAR(500) NULL,
+            scheduled_at DATETIME NULL,
             generated_by VARCHAR(40) NULL,
             generated_at TIMESTAMP NULL,
             posted_at TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_article_channel (article_id, channel),
-            INDEX idx_social_status (status, updated_at)
+            INDEX idx_social_status (status, updated_at),
+            INDEX idx_social_schedule (scheduled_at, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM social_posts LIKE 'scheduled_at'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec("ALTER TABLE social_posts ADD COLUMN scheduled_at DATETIME NULL AFTER note");
+            }
+        } catch (Throwable $exception) {
+        }
+        try {
+            $pdo->exec("ALTER TABLE social_posts ADD INDEX idx_social_schedule (scheduled_at, status)");
+        } catch (Throwable $exception) {
+        }
     } catch (Throwable $exception) {
     }
 }
@@ -96,6 +109,7 @@ function social_posts_for_article(int $articleId): array
             'content' => '',
             'hashtags' => '',
             'note' => '',
+            'scheduled_at' => null,
             'generated_by' => null,
             'generated_at' => null,
             'posted_at' => null,
@@ -128,7 +142,7 @@ function social_posts_index(array $filters = []): array
     if (!$pdo instanceof PDO) {
         return [];
     }
-    $sql = "SELECT s.id, s.article_id, s.channel, s.status, s.content, s.updated_at,
+    $sql = "SELECT s.id, s.article_id, s.channel, s.status, s.content, s.scheduled_at, s.posted_at, s.updated_at,
                    a.title, a.slug, c.name AS category_name
             FROM social_posts s
             INNER JOIN articles a ON a.id = s.article_id
@@ -148,7 +162,21 @@ function social_posts_index(array $filters = []): array
         $params['q_title'] = '%' . $filters['q'] . '%';
         $params['q_content'] = '%' . $filters['q'] . '%';
     }
-    $sql .= ' ORDER BY s.updated_at DESC, s.id DESC LIMIT 200';
+    if (!empty($filters['scheduled'])) {
+        if ($filters['scheduled'] === 'today') {
+            $sql .= ' AND DATE(s.scheduled_at) = CURDATE()';
+        } elseif ($filters['scheduled'] === 'upcoming') {
+            $sql .= ' AND s.scheduled_at >= NOW()';
+        } elseif ($filters['scheduled'] === 'overdue') {
+            $sql .= " AND s.scheduled_at < NOW() AND s.status IN ('draft','ready')";
+        } elseif ($filters['scheduled'] === 'unscheduled') {
+            $sql .= ' AND s.scheduled_at IS NULL';
+        }
+    }
+    $order = !empty($filters['scheduled'])
+        ? " ORDER BY COALESCE(s.scheduled_at, s.updated_at) ASC, s.id DESC"
+        : ' ORDER BY s.updated_at DESC, s.id DESC';
+    $sql .= $order . ' LIMIT 200';
     try {
         $statement = $pdo->prepare($sql);
         $statement->execute($params);
@@ -192,13 +220,15 @@ function save_social_post(int $articleId, string $channel, array $input): array
     $content = trim((string) ($input['content'] ?? ''));
     $hashtags = trim((string) ($input['hashtags'] ?? ''));
     $note = trim((string) ($input['note'] ?? ''));
+    $scheduledAt = social_normalize_datetime((string) ($input['scheduled_at'] ?? ''));
     try {
-        $statement = $pdo->prepare("INSERT INTO social_posts (article_id, channel, content, hashtags, note)
-            VALUES (:aid, :ch, :content, :hashtags, :note)
+        $statement = $pdo->prepare("INSERT INTO social_posts (article_id, channel, content, hashtags, note, scheduled_at)
+            VALUES (:aid, :ch, :content, :hashtags, :note, :scheduled_at)
             ON DUPLICATE KEY UPDATE
                 content = VALUES(content),
                 hashtags = VALUES(hashtags),
                 note = VALUES(note),
+                scheduled_at = VALUES(scheduled_at),
                 updated_at = CURRENT_TIMESTAMP");
         $statement->execute([
             'aid' => $articleId,
@@ -206,11 +236,86 @@ function save_social_post(int $articleId, string $channel, array $input): array
             'content' => $content,
             'hashtags' => $hashtags,
             'note' => $note,
+            'scheduled_at' => $scheduledAt,
         ]);
         return ['ok' => true];
     } catch (Throwable $exception) {
         return ['ok' => false, 'message' => $exception->getMessage()];
     }
+}
+
+function social_normalize_datetime(string $value): ?string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return null;
+    }
+    if (strlen($value) <= 16) {
+        $value = str_replace('T', ' ', $value) . ':00';
+    }
+    $timestamp = strtotime($value);
+    return $timestamp === false ? null : date('Y-m-d H:i:s', $timestamp);
+}
+
+function social_schedule_segments(): array
+{
+    return [
+        'today' => 'Today',
+        'upcoming' => 'Upcoming',
+        'overdue' => 'Overdue',
+        'unscheduled' => 'Unscheduled',
+    ];
+}
+
+function social_scheduled_posts(array $filters = []): array
+{
+    $filters['scheduled'] = $filters['scheduled'] ?? 'today';
+    return social_posts_index($filters);
+}
+
+function social_schedule_summary(): array
+{
+    ensure_social_posts_schema();
+    $pdo = db();
+    $summary = ['today' => 0, 'upcoming' => 0, 'overdue' => 0, 'unscheduled' => 0];
+    if (!$pdo instanceof PDO) {
+        return $summary;
+    }
+    try {
+        $summary['today'] = (int) $pdo->query("SELECT COUNT(*) FROM social_posts WHERE DATE(scheduled_at) = CURDATE()")->fetchColumn();
+        $summary['upcoming'] = (int) $pdo->query("SELECT COUNT(*) FROM social_posts WHERE scheduled_at >= NOW()")->fetchColumn();
+        $summary['overdue'] = (int) $pdo->query("SELECT COUNT(*) FROM social_posts WHERE scheduled_at < NOW() AND status IN ('draft','ready')")->fetchColumn();
+        $summary['unscheduled'] = (int) $pdo->query("SELECT COUNT(*) FROM social_posts WHERE scheduled_at IS NULL")->fetchColumn();
+    } catch (Throwable $exception) {
+    }
+    return $summary;
+}
+
+function export_social_schedule_csv(array $filters = []): bool
+{
+    $rows = social_scheduled_posts($filters);
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="social-schedule-' . date('Ymd-His') . '.csv"');
+    $output = fopen('php://output', 'w');
+    if ($output === false) {
+        return false;
+    }
+    fwrite($output, "\xEF\xBB\xBF");
+    fputcsv($output, ['scheduled_at', 'status', 'channel', 'article_title', 'category', 'content_preview', 'admin_url']);
+    foreach ($rows as $row) {
+        $channel = (string) ($row['channel'] ?? '');
+        fputcsv($output, [
+            (string) ($row['scheduled_at'] ?? ''),
+            (string) ($row['status'] ?? ''),
+            $channel,
+            (string) ($row['title'] ?? ''),
+            (string) ($row['category_name'] ?? ''),
+            mb_substr(trim((string) ($row['content'] ?? '')), 0, 240, 'UTF-8'),
+            canonical_url('admin/articles/' . (int) $row['article_id'] . '/social#ch-' . $channel),
+        ]);
+    }
+    fclose($output);
+    return true;
 }
 
 function update_social_post_status(int $articleId, string $channel, string $status): array

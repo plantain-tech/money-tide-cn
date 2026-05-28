@@ -168,6 +168,14 @@ function admin_smoke_checks(): array
         ensure_social_posts_schema();
         $checks[] = ['name' => 'Social distribution', 'ok' => count(social_channels()) >= 5, 'detail' => count(social_channels()) . ' channels · ' . db_count('social_posts') . ' posts'];
     }
+    if (function_exists('social_schedule_summary')) {
+        $summary = social_schedule_summary();
+        $checks[] = ['name' => 'Social scheduling queue', 'ok' => is_array($summary), 'detail' => ($summary['today'] ?? 0) . ' today · ' . ($summary['upcoming'] ?? 0) . ' upcoming'];
+    }
+    if (function_exists('newsletter_schedule_summary')) {
+        $summary = newsletter_schedule_summary();
+        $checks[] = ['name' => 'Newsletter scheduling queue', 'ok' => is_array($summary), 'detail' => ($summary['today'] ?? 0) . ' ready today · ' . ($summary['upcoming'] ?? 0) . ' upcoming'];
+    }
     if (function_exists('share_card_types')) {
         $checks[] = ['name' => 'Share cards', 'ok' => count(share_card_types()) >= 3, 'detail' => count(share_card_types()) . ' card templates'];
     }

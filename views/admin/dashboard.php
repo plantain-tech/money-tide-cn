@@ -160,6 +160,14 @@
             <strong>社交分发</strong>
             <span>跨文章查看微信、小红书、LinkedIn、X 和 newsletter 短推荐的文案与状态。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/social/schedule')) ?>">
+            <strong>Social Posting Queue</strong>
+            <span>查看今天、未来、逾期和未排期的社交文案，按人工节奏发布。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/newsletter/schedule')) ?>">
+            <strong>Newsletter Schedule</strong>
+            <span>检查今日可发送早报、未来排期和发送前 checklist。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/social-analytics')) ?>">
             <strong>传播分析</strong>
             <span>最常被分享的文章、分享渠道、社交回流和推荐订阅。</span>

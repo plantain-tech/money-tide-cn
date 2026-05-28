@@ -4761,9 +4761,201 @@ main {
         align-items: stretch;
     }
 
-    .calendar-nav .ghost-link,
+.calendar-nav .ghost-link,
     .calendar-nav strong {
         width: 100%;
+        text-align: center;
+    }
+}
+
+/* =============================================================
+   W7D4-D5 manual scheduling queues
+   ============================================================= */
+.social-schedule-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    padding: 9px 12px;
+    background: rgba(224, 255, 0, 0.22);
+}
+
+.social-schedule-strip span {
+    font-weight: 900;
+}
+
+.social-schedule-strip small {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.schedule-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.schedule-summary a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    color: var(--ink);
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.schedule-summary a:hover,
+.schedule-summary a.is-active {
+    background: var(--accent);
+    box-shadow: 5px 5px 0 var(--ink);
+    transform: translate(-2px, -2px);
+}
+
+.schedule-summary span {
+    font-weight: 900;
+}
+
+.schedule-summary strong {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.queue-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.queue-card {
+    display: grid;
+    grid-template-columns: 116px minmax(0, 1fr) minmax(180px, 260px);
+    gap: 16px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 16px;
+    align-items: stretch;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.queue-card:hover {
+    box-shadow: 6px 6px 0 var(--ink);
+    transform: translate(-2px, -2px);
+}
+
+.queue-card.is-overdue {
+    background: linear-gradient(135deg, var(--paper-strong), rgba(255, 90, 70, 0.12));
+}
+
+.queue-time {
+    border-right: 2px solid var(--ink);
+    padding-right: 14px;
+    display: grid;
+    align-content: center;
+    gap: 4px;
+}
+
+.queue-time strong {
+    font-size: 22px;
+    line-height: 1.05;
+}
+
+.queue-time span,
+.queue-body small {
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.queue-body h2 {
+    font-size: 20px;
+    margin: 2px 0 8px;
+}
+
+.queue-body p {
+    margin: 0;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.queue-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+}
+
+.schedule-progress {
+    height: 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    margin: 12px 0 8px;
+    overflow: hidden;
+}
+
+.schedule-progress span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+
+.schedule-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: grid;
+    gap: 8px;
+}
+
+.schedule-checklist li {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 6px 12px;
+    align-items: center;
+}
+
+.schedule-checklist li strong {
+    grid-row: span 2;
+    text-align: center;
+    background: var(--accent);
+    border: 2px solid var(--ink);
+    padding: 5px;
+}
+
+.schedule-checklist li.is-warning strong {
+    background: #ffd6cf;
+}
+
+.schedule-checklist li small {
+    color: var(--muted);
+}
+
+@media (max-width: 780px) {
+    .queue-card {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-time {
+        border-right: 0;
+        border-bottom: 2px solid var(--ink);
+        padding: 0 0 10px;
+    }
+
+    .queue-actions {
+        align-items: stretch;
+    }
+
+    .queue-actions .ghost-link {
         text-align: center;
     }
 }

@@ -7,6 +7,7 @@
             <p>跨文章查看所有社交文案。每条都对应一篇文章 × 一个渠道。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/social/schedule')) ?>">Posting queue</a>
             <a class="ghost-link" href="<?= e(url('admin/articles')) ?>">文章列表</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
         </div>
@@ -49,7 +50,7 @@
 
     <div class="admin-table">
         <div class="admin-table-row admin-table-head">
-            <span>文章</span><span>渠道</span><span>文案预览</span><span>状态</span><span>操作</span>
+            <span>文章</span><span>渠道</span><span>文案预览</span><span>Schedule</span><span>状态</span><span>操作</span>
         </div>
         <?php foreach ($posts as $row): ?>
             <?php
@@ -65,6 +66,7 @@
                 </div>
                 <span><mark><?= e((string) $meta['label']) ?></mark></span>
                 <small><?= e($preview) ?></small>
+                <span><?= !empty($row['scheduled_at']) ? e(date('Y-m-d H:i', strtotime((string) $row['scheduled_at']))) : '<small>Unscheduled</small>' ?></span>
                 <span><span class="social-status-chip is-<?= e((string) $row['status']) ?>"><?= e($statusOptions[$row['status']] ?? $row['status']) ?></span></span>
                 <div class="admin-row-actions">
                     <a href="<?= e(url('admin/articles/' . $row['article_id'] . '/social#ch-' . $ch)) ?>">编辑</a>

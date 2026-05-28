@@ -82,14 +82,27 @@ function newsletter_issues(array $filters = []): array
     if (!$pdo instanceof PDO) {
         return [];
     }
-    $sql = 'SELECT id, subject, status, scheduled_at, sent_at, recipients_count, sent_count, failed_count, created_at, updated_at
+    $sql = 'SELECT id, slug, subject, intro, outro, status, scheduled_at, sent_at, recipients_count, sent_count, failed_count, created_at, updated_at
             FROM newsletter_issues WHERE 1 = 1';
     $params = [];
     if (!empty($filters['status'])) {
         $sql .= ' AND status = :status';
         $params['status'] = $filters['status'];
     }
-    $sql .= ' ORDER BY created_at DESC, id DESC LIMIT 100';
+    if (!empty($filters['scheduled'])) {
+        if ($filters['scheduled'] === 'today') {
+            $sql .= ' AND DATE(scheduled_at) = CURDATE()';
+        } elseif ($filters['scheduled'] === 'upcoming') {
+            $sql .= ' AND scheduled_at >= NOW()';
+        } elseif ($filters['scheduled'] === 'overdue') {
+            $sql .= " AND scheduled_at < NOW() AND status IN ('draft','ready','scheduled')";
+        } elseif ($filters['scheduled'] === 'unscheduled') {
+            $sql .= ' AND scheduled_at IS NULL';
+        }
+    }
+    $sql .= !empty($filters['scheduled'])
+        ? ' ORDER BY COALESCE(scheduled_at, created_at) ASC, id DESC LIMIT 100'
+        : ' ORDER BY created_at DESC, id DESC LIMIT 100';
     try {
         $statement = $pdo->prepare($sql);
         $statement->execute($params);
@@ -236,7 +249,7 @@ function generate_newsletter_slug(string $subject, ?int $ignoreId = null): strin
 
 function transition_newsletter_status(int $id, string $next): array
 {
-    $allowed = ['draft', 'ready', 'sent', 'archived'];
+    $allowed = ['draft', 'ready', 'scheduled', 'sent', 'archived'];
     if (!in_array($next, $allowed, true)) {
         return ['ok' => false, 'message' => '未知状态。'];
     }
@@ -251,6 +264,65 @@ function transition_newsletter_status(int $id, string $next): array
     } catch (Throwable $exception) {
         return ['ok' => false, 'message' => $exception->getMessage()];
     }
+}
+
+function newsletter_schedule_segments(): array
+{
+    return [
+        'today' => 'Ready today',
+        'upcoming' => 'Upcoming',
+        'overdue' => 'Overdue',
+        'unscheduled' => 'Unscheduled',
+    ];
+}
+
+function newsletter_schedule_summary(): array
+{
+    ensure_newsletter_issues_schema();
+    $pdo = db();
+    $summary = ['today' => 0, 'upcoming' => 0, 'overdue' => 0, 'unscheduled' => 0];
+    if (!$pdo instanceof PDO) {
+        return $summary;
+    }
+    try {
+        $summary['today'] = (int) $pdo->query("SELECT COUNT(*) FROM newsletter_issues WHERE DATE(scheduled_at) = CURDATE() AND status IN ('ready','scheduled')")->fetchColumn();
+        $summary['upcoming'] = (int) $pdo->query("SELECT COUNT(*) FROM newsletter_issues WHERE scheduled_at >= NOW() AND status IN ('draft','ready','scheduled')")->fetchColumn();
+        $summary['overdue'] = (int) $pdo->query("SELECT COUNT(*) FROM newsletter_issues WHERE scheduled_at < NOW() AND status IN ('draft','ready','scheduled')")->fetchColumn();
+        $summary['unscheduled'] = (int) $pdo->query("SELECT COUNT(*) FROM newsletter_issues WHERE scheduled_at IS NULL AND status IN ('draft','ready','scheduled')")->fetchColumn();
+    } catch (Throwable $exception) {
+    }
+    return $summary;
+}
+
+function scheduled_newsletter_queue(array $filters = []): array
+{
+    $filters['scheduled'] = $filters['scheduled'] ?? 'today';
+    return newsletter_issues($filters);
+}
+
+function newsletter_presend_checklist(array $issue): array
+{
+    $articles = $issue['articles'] ?? newsletter_issue_articles((int) ($issue['id'] ?? 0));
+    $scheduledAt = (string) ($issue['scheduled_at'] ?? '');
+    $intro = trim((string) ($issue['intro'] ?? ''));
+    $outro = trim((string) ($issue['outro'] ?? ''));
+    $subject = trim((string) ($issue['subject'] ?? ''));
+    $provider = function_exists('email_provider_status') ? email_provider_status() : ['ready' => false];
+
+    return [
+        ['label' => 'Subject is set', 'ok' => $subject !== '', 'tip' => 'The email needs a clear subject line.'],
+        ['label' => 'At least one article selected', 'ok' => count($articles) > 0, 'tip' => 'Add published articles before sending.'],
+        ['label' => 'Intro is written', 'ok' => $intro !== '', 'tip' => 'Use the AI assistant or write a short opening note.'],
+        ['label' => 'Footer/outro is present', 'ok' => $outro !== '', 'tip' => 'Keep unsubscribe/context language visible.'],
+        ['label' => 'Scheduled time is set', 'ok' => $scheduledAt !== '', 'tip' => 'Schedule is for manual reminders only.'],
+        ['label' => 'Status is ready or scheduled', 'ok' => in_array((string) ($issue['status'] ?? ''), ['ready', 'scheduled'], true), 'tip' => 'Move from draft to ready/scheduled before broadcast.'],
+        ['label' => 'Email provider reachable', 'ok' => !empty($provider['ready']), 'tip' => 'Log provider is acceptable for staging; real sending needs provider secrets.'],
+    ];
+}
+
+function newsletter_ready_to_send_today(): array
+{
+    return scheduled_newsletter_queue(['scheduled' => 'today']);
 }
 
 function public_newsletter_archive(int $limit = 30): array

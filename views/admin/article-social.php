@@ -33,6 +33,8 @@ $articleId = (int) ($article['id'] ?? 0);
                 $content = (string) ($post['content'] ?? '');
                 $hashtags = (string) ($post['hashtags'] ?? '');
                 $note = (string) ($post['note'] ?? '');
+                $scheduledAt = !empty($post['scheduled_at']) ? date('Y-m-d\TH:i', strtotime((string) $post['scheduled_at'])) : '';
+                $scheduleLabel = !empty($post['scheduled_at']) ? date('Y-m-d H:i', strtotime((string) $post['scheduled_at'])) : '未排期';
                 $generatedBy = (string) ($post['generated_by'] ?? '');
                 $hasContent = trim($content) !== '';
                 $contentLen = mb_strlen($content, 'UTF-8');
@@ -47,6 +49,10 @@ $articleId = (int) ($article['id'] ?? 0);
                     </div>
                     <span class="social-status-chip is-<?= e($status) ?>"><?= e($statusOptions[$status] ?? $status) ?></span>
                 </header>
+                <div class="social-schedule-strip">
+                    <span><?= e($scheduleLabel) ?></span>
+                    <small>Manual reminder only. This will not auto-post.</small>
+                </div>
 
                 <div class="social-card-body">
                     <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/social/' . $channelKey . '/save')) ?>" class="social-content-form" data-social-form>
@@ -70,6 +76,11 @@ $articleId = (int) ($article['id'] ?? 0);
                         <label class="social-field">
                             <span class="social-field-label">内部备注（可选）</span>
                             <input type="text" name="note" value="<?= e($note) ?>" placeholder="发布平台账号、计划时间、责任编辑…">
+                        </label>
+
+                        <label class="social-field">
+                            <span class="social-field-label">Scheduled time (manual posting)</span>
+                            <input type="datetime-local" name="scheduled_at" value="<?= e($scheduledAt) ?>">
                         </label>
 
                         <div class="social-card-actions">
