@@ -328,9 +328,9 @@ function call_ollama_cloud_draft_api(string $prompt): array
 
     $decoded = json_decode((string) $raw, true);
     $content = (string) ($decoded['message']['content'] ?? '');
-    $draft = json_decode($content, true);
+    $draft = robust_json_decode($content);
     if (!is_array($draft)) {
-        return ['ok' => false, 'message' => 'Ollama Cloud returned invalid JSON.'];
+        return ['ok' => false, 'message' => 'Ollama Cloud returned invalid JSON. Raw: ' . substr($content, 0, 200)];
     }
 
     return ['ok' => true, 'payload' => normalize_ai_payload($draft)];
@@ -379,9 +379,9 @@ function call_openai_draft_api(string $prompt, string $apiKey): array
 
     $decoded = json_decode((string) $raw, true);
     $text = extract_response_text(is_array($decoded) ? $decoded : []);
-    $draft = json_decode($text, true);
+    $draft = robust_json_decode($text);
     if (!is_array($draft)) {
-        return ['ok' => false, 'message' => 'OpenAI returned invalid JSON.'];
+        return ['ok' => false, 'message' => 'OpenAI returned invalid JSON. Raw: ' . substr($text, 0, 200)];
     }
 
     return ['ok' => true, 'payload' => normalize_ai_payload($draft)];
