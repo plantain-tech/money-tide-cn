@@ -14,7 +14,7 @@
     </div>
 
     <div class="status-banner <?= $ready ? 'is-ready' : 'is-warning' ?>">
-        <strong><?= $ready ? 'Ready' : 'Needs Review' ?></strong>
+        <strong><?= $ready ? '可以上线' : '需要复查' ?></strong>
         <span>Week 2 launch gate for reader experience, editorial workflow, AI agency, newsletter growth, and analytics.</span>
     </div>
 

@@ -269,10 +269,10 @@ function transition_newsletter_status(int $id, string $next): array
 function newsletter_schedule_segments(): array
 {
     return [
-        'today' => 'Ready today',
-        'upcoming' => 'Upcoming',
-        'overdue' => 'Overdue',
-        'unscheduled' => 'Unscheduled',
+        'today' => '今天待发',
+        'upcoming' => '未来排期',
+        'overdue' => '已经逾期',
+        'unscheduled' => '未排期',
     ];
 }
 
@@ -310,13 +310,13 @@ function newsletter_presend_checklist(array $issue): array
     $provider = function_exists('email_provider_status') ? email_provider_status() : ['ready' => false];
 
     return [
-        ['label' => 'Subject is set', 'ok' => $subject !== '', 'tip' => 'The email needs a clear subject line.'],
-        ['label' => 'At least one article selected', 'ok' => count($articles) > 0, 'tip' => 'Add published articles before sending.'],
-        ['label' => 'Intro is written', 'ok' => $intro !== '', 'tip' => 'Use the AI assistant or write a short opening note.'],
-        ['label' => 'Footer/outro is present', 'ok' => $outro !== '', 'tip' => 'Keep unsubscribe/context language visible.'],
-        ['label' => 'Scheduled time is set', 'ok' => $scheduledAt !== '', 'tip' => 'Schedule is for manual reminders only.'],
-        ['label' => 'Status is ready or scheduled', 'ok' => in_array((string) ($issue['status'] ?? ''), ['ready', 'scheduled'], true), 'tip' => 'Move from draft to ready/scheduled before broadcast.'],
-        ['label' => 'Email provider reachable', 'ok' => !empty($provider['ready']), 'tip' => 'Log provider is acceptable for staging; real sending needs provider secrets.'],
+        ['label' => '邮件标题已填写', 'ok' => $subject !== '', 'tip' => '早报需要一个清晰的邮件标题。'],
+        ['label' => '至少选择一篇文章', 'ok' => count($articles) > 0, 'tip' => '发送前请先加入已发布文章。'],
+        ['label' => '开场导语已填写', 'ok' => $intro !== '', 'tip' => '可以使用 AI 助手生成，也可以手动写一段简短导语。'],
+        ['label' => '页脚/结尾已保留', 'ok' => $outro !== '', 'tip' => '请保留退订和上下文说明。'],
+        ['label' => '排期时间已设置', 'ok' => $scheduledAt !== '', 'tip' => '排期只用于人工提醒，不会自动发送。'],
+        ['label' => '状态为可发送或已排期', 'ok' => in_array((string) ($issue['status'] ?? ''), ['ready', 'scheduled'], true), 'tip' => '广播前请先从草稿推进到可发送或已排期。'],
+        ['label' => '邮件服务可用', 'ok' => !empty($provider['ready']), 'tip' => '测试期可以使用日志模式；真实发送需要配置邮件服务密钥。'],
     ];
 }
 

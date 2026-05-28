@@ -144,9 +144,9 @@ $flash = $flash ?? '';
             <div class="workflow-actions">
                 <?php
                 $transitions = [
-                    'draft' => [['ready', '标记为 Ready'], ['scheduled', '标记为已排期']],
+                    'draft' => [['ready', '标记为可发送'], ['scheduled', '标记为已排期']],
                     'ready' => [['draft', '回到草稿'], ['scheduled', '标记为已排期'], ['sent', '直接标记为已发送']],
-                    'scheduled' => [['ready', '退回 Ready'], ['draft', '回到草稿'], ['sent', '直接标记为已发送']],
+                    'scheduled' => [['ready', '退回可发送'], ['draft', '回到草稿'], ['sent', '直接标记为已发送']],
                     'sent' => [['archived', '归档']],
                     'archived' => [['draft', '恢复为草稿']],
                 ];

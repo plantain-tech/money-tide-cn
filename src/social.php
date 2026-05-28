@@ -21,22 +21,22 @@ function social_channels(): array
             'label' => '小红书',
             'limit' => 1000,
             'hint' => '钩子开头 + 短段落 + 3-5 个 hashtag。',
-            'tone' => '更生活化、口语化，加 emoji。',
+            'tone' => '更生活化、口语化，可以加 emoji。',
         ],
         'linkedin' => [
             'label' => 'LinkedIn',
             'limit' => 1500,
-            'hint' => '中英混排可，专业商业语气，最后留行动建议。',
-            'tone' => '稳重、专业、为决策者解释影响。',
+            'hint' => '中英混排可以，专业商业语气，最后留行动建议。',
+            'tone' => '稳重、专业，为决策者解释影响。',
         ],
         'twitter' => [
             'label' => 'X / Twitter',
             'limit' => 280,
             'hint' => '一句钩子 + 关键数字或洞察，必要时加 1-2 个 hashtag。',
-            'tone' => '紧凑、点到为止、英文 OK。',
+            'tone' => '紧凑、点到为止，英文 OK。',
         ],
         'email_short' => [
-            'label' => 'Newsletter 短推荐',
+            'label' => '早报短推荐',
             'limit' => 280,
             'hint' => '2-3 句，引出本文核心结论。',
             'tone' => '克制、与早报整体口吻一致。',
@@ -50,7 +50,7 @@ function social_post_status_options(): array
         'draft' => '草稿',
         'ready' => '可发布',
         'posted' => '已手动发布',
-        'archived' => '归档',
+        'archived' => '已归档',
     ];
 }
 
@@ -260,10 +260,10 @@ function social_normalize_datetime(string $value): ?string
 function social_schedule_segments(): array
 {
     return [
-        'today' => 'Today',
-        'upcoming' => 'Upcoming',
-        'overdue' => 'Overdue',
-        'unscheduled' => 'Unscheduled',
+        'today' => '今天待发',
+        'upcoming' => '未来排期',
+        'overdue' => '已经逾期',
+        'unscheduled' => '未排期',
     ];
 }
 

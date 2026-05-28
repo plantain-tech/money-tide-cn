@@ -4,10 +4,10 @@ $eventTypeLabels = ['article' => '文章', 'newsletter' => '早报'];
 $statusLabels = [
     'draft' => '草稿',
     'review' => '审核',
-    'ready' => 'Ready',
-    'scheduled' => 'Scheduled',
+    'ready' => '可发布',
+    'scheduled' => '已排期',
     'published' => '已发布',
-    'sent' => 'Sent',
+    'sent' => '已发送',
     'archived' => '已归档',
 ];
 $calendarUrl = static function (array $override = []) use ($filters): string {

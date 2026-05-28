@@ -37,7 +37,7 @@ $queueUrl = static function (array $override = []) use ($filters): string {
         <input type="hidden" name="scheduled" value="<?= e($filters['scheduled']) ?>">
         <select name="status">
             <option value="">全部状态</option>
-            <?php foreach (['draft' => '草稿', 'ready' => 'Ready', 'scheduled' => '已排期', 'sent' => '已发送', 'archived' => '已归档'] as $value => $label): ?>
+            <?php foreach (['draft' => '草稿', 'ready' => '可发送', 'scheduled' => '已排期', 'sent' => '已发送', 'archived' => '已归档'] as $value => $label): ?>
                 <option value="<?= e($value) ?>" <?= $filters['status'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
