@@ -168,6 +168,10 @@
             <strong>早报排期</strong>
             <span>检查今日可发送早报、未来排期和发送前 checklist。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/email-delivery')) ?>">
+            <strong>邮件投递</strong>
+            <span>配置免费邮件服务、检查发件域名、发送生产测试邮件并确认退订链接。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/social-analytics')) ?>">
             <strong>传播分析</strong>
             <span>最常被分享的文章、分享渠道、社交回流和推荐订阅。</span>

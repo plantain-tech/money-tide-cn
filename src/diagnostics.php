@@ -124,6 +124,14 @@ function admin_smoke_checks(): array
         $email = email_provider_status();
         $checks[] = ['name' => 'Email provider', 'ok' => $email['ready'], 'detail' => $email['provider'] . ' · ' . ($email['from_address'] ?: 'no from')];
     }
+    if (function_exists('email_delivery_status')) {
+        $emailDelivery = email_delivery_status();
+        $checks[] = [
+            'name' => 'Email delivery setup',
+            'ok' => isset($emailDelivery['checks']) && count($emailDelivery['checks']) >= 6,
+            'detail' => ($emailDelivery['ready_for_real_send'] ? 'real send ready' : 'setup guide ready') . ' · ' . $emailDelivery['provider'],
+        ];
+    }
 
     if (function_exists('reader_account_data')) {
         $readerCount = db_count('users', "role = 'reader'");

@@ -18,6 +18,7 @@ require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/launch.php';
 require_once __DIR__ . '/analytics.php';
 require_once __DIR__ . '/newsletter_issues.php';
+require_once __DIR__ . '/email_delivery.php';
 require_once __DIR__ . '/ai_sources.php';
 require_once __DIR__ . '/ai_quality.php';
 require_once __DIR__ . '/newsletter_ai.php';

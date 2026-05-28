@@ -513,14 +513,16 @@ function email_provider_status(): array
     $apiKey = (string) app_config('email.api_key', '');
     $from = (string) app_config('email.from_address', '');
     $ready = $provider === 'log' || ($apiKey !== '' && $from !== '');
+    $realProvider = $provider !== 'log';
     return [
         'provider' => $provider,
         'from_address' => $from,
         'from_name' => (string) app_config('email.from_name', '钱潮 Money Tide'),
         'ready' => $ready,
+        'real_provider' => $realProvider,
         'message' => $ready
-            ? ('使用 ' . $provider . ($provider === 'log' ? '（不会真正发送，只记录）' : ''))
-            : '请在部署 Secrets 配置 EMAIL_PROVIDER、EMAIL_API_KEY、EMAIL_FROM。',
+            ? ($realProvider ? '真实邮件投递已配置：' . $provider : '当前是 log 模式：只记录，不会真正发送。')
+            : '请在部署 Secrets 配置 EMAIL_PROVIDER、EMAIL_API_KEY、EMAIL_FROM_ADDRESS。',
     ];
 }
 

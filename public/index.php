@@ -138,6 +138,31 @@ if ($route === 'admin/analytics') {
     exit;
 }
 
+if ($route === 'admin/email-delivery') {
+    require_admin();
+    $flash = '';
+    $errors = [];
+    $testResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $testResult = send_email_delivery_test((string) ($_POST['test_email'] ?? ''));
+        if (!empty($testResult['ok'])) {
+            $flash = (string) ($testResult['message'] ?? '测试邮件已处理。');
+        } else {
+            $errors[] = (string) ($testResult['message'] ?? '测试邮件发送失败。');
+        }
+    }
+    render_page('admin/email-delivery', [
+        'site' => $site,
+        'categories' => $categories,
+        'status' => email_delivery_status(),
+        'catalog' => email_provider_catalog(),
+        'flash' => $flash,
+        'errors' => $errors,
+        'testResult' => $testResult,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/calendar') {
     require_admin();
     $filters = calendar_filters_from_request($_GET);
