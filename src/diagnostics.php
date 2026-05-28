@@ -175,6 +175,14 @@ function admin_smoke_checks(): array
         ensure_short_format_schema();
         $checks[] = ['name' => 'Short format (60秒看懂)', 'ok' => true, 'detail' => db_count('article_short_format') . ' cards'];
     }
+    if (function_exists('search_articles')) {
+        $sample = search_articles('AI', 5);
+        $checks[] = ['name' => 'Public search', 'ok' => is_array($sample), 'detail' => count($sample) . ' sample results for AI'];
+    }
+    if (function_exists('rss_articles')) {
+        $feedCount = count(rss_articles(null, 10));
+        $checks[] = ['name' => 'RSS feeds', 'ok' => $feedCount > 0, 'detail' => $feedCount . ' articles in all feed'];
+    }
 
     return $checks;
 }

@@ -29,6 +29,7 @@ require_once __DIR__ . '/social.php';
 require_once __DIR__ . '/share_cards.php';
 require_once __DIR__ . '/short_format.php';
 require_once __DIR__ . '/social_analytics.php';
+require_once __DIR__ . '/discovery.php';
 require_once __DIR__ . '/diagnostics.php';
 require_once __DIR__ . '/content.php';
 

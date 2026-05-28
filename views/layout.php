@@ -25,6 +25,10 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="<?= e($pageDescription) ?>">
     <link rel="canonical" href="<?= e($canonicalUrl) ?>">
+    <link rel="alternate" type="application/rss+xml" title="钱潮 Money Tide 最新文章" href="<?= e(canonical_url('feed/all.xml')) ?>">
+    <?php if (!empty($category['slug'])): ?>
+        <link rel="alternate" type="application/rss+xml" title="钱潮 <?= e((string) $category['name']) ?> RSS" href="<?= e(canonical_url('feed/category/' . $category['slug'] . '.xml')) ?>">
+    <?php endif; ?>
     <meta property="og:site_name" content="钱潮 Money Tide">
     <meta property="og:type" content="<?= e($ogType) ?>">
     <meta property="og:title" content="<?= e($pageTitle) ?>">
@@ -64,6 +68,9 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
             <?php endforeach; ?>
         </nav>
         <div class="header-actions">
+            <form class="header-search" method="get" action="<?= e(url('search')) ?>" role="search">
+                <input type="search" name="q" placeholder="搜索" value="<?= e((string) ($_GET['q'] ?? '')) ?>" aria-label="搜索文章">
+            </form>
             <a class="ghost-link" href="<?= e(url('latest')) ?>">最新</a>
             <a class="ghost-link" href="<?= e(url('topics')) ?>">话题</a>
             <a class="ghost-link" href="<?= e(url('newsletter')) ?>">早报</a>
@@ -90,6 +97,8 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
             <a href="<?= e(url('editorial-standards')) ?>">编辑标准</a>
             <a href="<?= e(url('disclaimer')) ?>">免责声明</a>
             <a href="<?= e(url('subscribe')) ?>">订阅</a>
+            <a href="<?= e(url('search')) ?>">搜索</a>
+            <a href="<?= e(url('feed/all.xml')) ?>">RSS</a>
         </nav>
     </footer>
     <?php if (strpos($currentPath, 'admin') !== 0 && $currentPath !== 'subscribe'): ?>

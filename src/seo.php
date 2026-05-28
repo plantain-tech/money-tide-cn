@@ -37,8 +37,10 @@ function emit_sitemap(array $categories, array $articles, array $tags = []): voi
     $urls = [
         ['loc' => canonical_url(), 'priority' => '1.0'],
         ['loc' => canonical_url('latest'), 'priority' => '0.8'],
+        ['loc' => canonical_url('search'), 'priority' => '0.6'],
         ['loc' => canonical_url('subscribe'), 'priority' => '0.8'],
         ['loc' => canonical_url('newsletter'), 'priority' => '0.7'],
+        ['loc' => canonical_url('feed/all.xml'), 'priority' => '0.4'],
         ['loc' => canonical_url('topics'), 'priority' => '0.7'],
         ['loc' => canonical_url('about'), 'priority' => '0.4'],
         ['loc' => canonical_url('editorial-standards'), 'priority' => '0.4'],
@@ -47,6 +49,7 @@ function emit_sitemap(array $categories, array $articles, array $tags = []): voi
 
     foreach ($categories as $category) {
         $urls[] = ['loc' => canonical_url('category/' . $category['slug']), 'priority' => '0.7'];
+        $urls[] = ['loc' => canonical_url('feed/category/' . $category['slug'] . '.xml'), 'priority' => '0.3'];
     }
     foreach ($tags as $tag) {
         $urls[] = ['loc' => canonical_url('tag/' . $tag['slug']), 'priority' => '0.6'];
@@ -100,6 +103,7 @@ function emit_robots(): void
     echo "User-agent: *\n";
     echo "Allow: /\n\n";
     echo 'Sitemap: ' . canonical_url('sitemap.xml') . "\n";
+    echo 'RSS: ' . canonical_url('feed/all.xml') . "\n";
 }
 
 function qa_checks(): array

@@ -52,6 +52,32 @@ if ($route === 'robots.txt') {
     exit;
 }
 
+if ($route === 'feed/all.xml') {
+    emit_rss_feed(
+        rss_articles(null, 50),
+        '钱潮 Money Tide - 最新文章',
+        '面向中文读者的全球财经、科技与商业简报。',
+        'feed/all.xml'
+    );
+    exit;
+}
+
+if (preg_match('#^feed/category/([a-z0-9-]+)\.xml$#', $route, $matches)) {
+    $feedCategory = find_category($matches[1]);
+    if ($feedCategory === null) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    emit_rss_feed(
+        rss_articles((string) $feedCategory['slug'], 50),
+        '钱潮 Money Tide - ' . (string) $feedCategory['name'],
+        '钱潮 Money Tide ' . (string) $feedCategory['name'] . ' 栏目的最新文章。',
+        'feed/category/' . (string) $feedCategory['slug'] . '.xml'
+    );
+    exit;
+}
+
 if ($route === 'admin/login') {
     $error = null;
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -1566,6 +1592,23 @@ if ($route === 'topics') {
         'site' => $site,
         'categories' => $categories,
         'tags' => all_tags(),
+    ]);
+    exit;
+}
+
+if ($route === 'search') {
+    $query = search_query((string) ($_GET['q'] ?? ''));
+    $results = $query !== '' ? search_articles($query, 40) : [];
+    if ($query !== '') {
+        record_search_query($query, count($results));
+    }
+    render_page('search', [
+        'site' => $site,
+        'categories' => $categories,
+        'query' => $query,
+        'results' => $results,
+        'fallbackArticles' => array_slice($articles, 0, 8),
+        'popularTags' => array_slice(all_tags(), 0, 10),
     ]);
     exit;
 }
