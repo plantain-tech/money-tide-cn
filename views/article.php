@@ -6,7 +6,8 @@ $canonicalUrl = canonical_url($canonicalPath);
 $encodedUrl = rawurlencode($canonicalUrl);
 $encodedTitle = rawurlencode($article['title']);
 $ogType = 'article';
-$ogImage = $article['hero_image'] ?? default_og_image();
+$ogImage = $socialImage ?? ($article['hero_image'] ?? default_og_image());
+$shortFormat = $shortFormat ?? null;
 $reader = $reader ?? (function_exists('reader_session') ? reader_session() : null);
 $isSaved = !empty($isSaved);
 $newsletterCta = $newsletterCta ?? newsletter_cta_for_category((string) ($article['category'] ?? ''));
@@ -58,12 +59,17 @@ $schema = [
         <?php endif; ?>
         <h1><?= e($article['title']) ?></h1>
         <p><?= e($article['dek']) ?></p>
+        <?php
+            $utmTwitter = rawurlencode(function_exists('share_utm_url') ? share_utm_url($canonicalUrl, 'twitter') : $canonicalUrl);
+            $utmLinkedin = rawurlencode(function_exists('share_utm_url') ? share_utm_url($canonicalUrl, 'linkedin') : $canonicalUrl);
+            $utmCopy = function_exists('share_utm_url') ? share_utm_url($canonicalUrl, 'copy') : $canonicalUrl;
+        ?>
         <div class="article-meta-row">
             <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?> · 作者：<?= e($article['author_name'] ?? '钱潮编辑部') ?></small>
             <div class="share-actions" aria-label="分享文章">
-                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">X</a>
-                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($encodedUrl) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">in</a>
-                <button type="button" data-share-copy="<?= e($canonicalUrl) ?>" data-share-slug="<?= e($article['slug']) ?>">复制链接</button>
+                <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($utmTwitter) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">X</a>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($utmLinkedin) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">in</a>
+                <button type="button" data-share-copy="<?= e($utmCopy) ?>" data-share-slug="<?= e($article['slug']) ?>">复制链接</button>
             </div>
         </div>
         <div class="article-retention-actions">
@@ -93,6 +99,48 @@ $schema = [
             <p><?= e($article['why']) ?></p>
         </div>
     </section>
+
+    <?php if ($shortFormat && (trim((string) ($shortFormat['summary'] ?? '')) !== '' || !empty($shortFormat['bullets']))): ?>
+        <section class="short-format-card reveal-on-scroll" id="short-format">
+            <div class="short-format-head">
+                <span class="short-format-badge">60 秒看懂</span>
+                <button type="button" class="short-format-copy" data-shortformat-copy>复制速读</button>
+            </div>
+            <?php if (trim((string) ($shortFormat['summary'] ?? '')) !== ''): ?>
+                <p class="short-format-summary"><?= e((string) $shortFormat['summary']) ?></p>
+            <?php endif; ?>
+            <?php if (!empty($shortFormat['bullets'])): ?>
+                <ul class="short-format-bullets">
+                    <?php foreach ((array) $shortFormat['bullets'] as $b): ?>
+                        <?php if (trim((string) $b) !== ''): ?><li><?= e((string) $b) ?></li><?php endif; ?>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+            <div class="short-format-meta">
+                <?php if (trim((string) ($shortFormat['key_number'] ?? '')) !== ''): ?>
+                    <div class="short-format-number">
+                        <span>关键数字</span>
+                        <strong><?= e((string) $shortFormat['key_number']) ?></strong>
+                    </div>
+                <?php endif; ?>
+                <?php if (trim((string) ($shortFormat['risk_note'] ?? '')) !== ''): ?>
+                    <div class="short-format-risk">
+                        <span>注意</span>
+                        <p><?= e((string) $shortFormat['risk_note']) ?></p>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <textarea hidden data-shortformat-text><?php
+                $sfText = '【60秒看懂】' . (string) $article['title'] . "\n\n";
+                if (trim((string) ($shortFormat['summary'] ?? '')) !== '') { $sfText .= (string) $shortFormat['summary'] . "\n\n"; }
+                foreach ((array) ($shortFormat['bullets'] ?? []) as $b) { if (trim((string) $b) !== '') { $sfText .= '· ' . (string) $b . "\n"; } }
+                if (trim((string) ($shortFormat['key_number'] ?? '')) !== '') { $sfText .= "\n关键数字：" . (string) $shortFormat['key_number']; }
+                if (trim((string) ($shortFormat['risk_note'] ?? '')) !== '') { $sfText .= "\n注意：" . (string) $shortFormat['risk_note']; }
+                $sfText .= "\n\n" . $canonicalUrl;
+                echo e($sfText);
+            ?></textarea>
+        </section>
+    <?php endif; ?>
 
     <div class="article-content-layout">
         <aside class="article-side-rail" aria-label="阅读工具">
@@ -152,6 +200,19 @@ $schema = [
             <?php endforeach; ?>
         </aside>
     <?php endif; ?>
+
+    <aside class="article-share-prompt reveal-on-scroll">
+        <div>
+            <p class="eyebrow">觉得有用？</p>
+            <h2>把这篇分享给会用到的人</h2>
+            <p>转发给同事或朋友，或复制带追踪参数的链接，方便我们了解内容传播。</p>
+        </div>
+        <div class="article-share-prompt-actions">
+            <a class="button button-small" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($utmTwitter) ?>" data-share-event="<?= e($article['slug']) ?>">分享到 X</a>
+            <a class="button button-small button-ghost" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($utmLinkedin) ?>" data-share-event="<?= e($article['slug']) ?>">分享到 LinkedIn</a>
+            <button class="button button-small button-ghost" type="button" data-share-copy="<?= e($utmCopy) ?>" data-share-slug="<?= e($article['slug']) ?>">复制链接</button>
+        </div>
+    </aside>
 </article>
 
 <section class="related-section reveal-on-scroll">

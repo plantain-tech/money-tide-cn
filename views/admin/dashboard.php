@@ -156,6 +156,10 @@
             <strong>社交分发</strong>
             <span>跨文章查看微信、小红书、LinkedIn、X 和 newsletter 短推荐的文案与状态。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/social-analytics')) ?>">
+            <strong>传播分析</strong>
+            <span>最常被分享的文章、分享渠道、社交回流和推荐订阅。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

@@ -21,7 +21,7 @@ function database_diagnostics(): array
         'ai_usage_logs', 'article_audit_logs', 'newsletter_issues', 'newsletter_issue_articles',
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
-        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts',
+        'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -168,6 +168,13 @@ function admin_smoke_checks(): array
         ensure_social_posts_schema();
         $checks[] = ['name' => 'Social distribution', 'ok' => count(social_channels()) >= 5, 'detail' => count(social_channels()) . ' channels · ' . db_count('social_posts') . ' posts'];
     }
+    if (function_exists('share_card_types')) {
+        $checks[] = ['name' => 'Share cards', 'ok' => count(share_card_types()) >= 3, 'detail' => count(share_card_types()) . ' card templates'];
+    }
+    if (function_exists('ensure_short_format_schema')) {
+        ensure_short_format_schema();
+        $checks[] = ['name' => 'Short format (60秒看懂)', 'ok' => true, 'detail' => db_count('article_short_format') . ' cards'];
+    }
 
     return $checks;
 }
@@ -179,7 +186,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }

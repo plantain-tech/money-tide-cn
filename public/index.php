@@ -464,6 +464,153 @@ if (preg_match('#^admin/articles/(\d+)/wechat-export$#', $route, $matches)) {
     exit;
 }
 
+// ===== W6D4 share cards: admin preview + public SVG =====
+if (preg_match('#^admin/articles/(\d+)/share-cards$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    ensure_share_image_column();
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $override = trim((string) ($_POST['social_image_path'] ?? ''));
+        $pdo = db();
+        if ($pdo instanceof PDO) {
+            try {
+                $pdo->prepare('UPDATE articles SET social_image_path = :p WHERE id = :id')
+                    ->execute(['p' => $override !== '' ? $override : null, 'id' => $articleId]);
+                $flash = '已保存社交图覆盖。';
+                $article['social_image_path'] = $override;
+            } catch (Throwable $exception) {
+                $flash = '保存失败：' . $exception->getMessage();
+            }
+        }
+    }
+    // Provide category slug for palette
+    $pdo = db();
+    if ($pdo instanceof PDO && empty($article['category'])) {
+        try {
+            $cat = $pdo->prepare('SELECT slug, name FROM categories WHERE id = :id LIMIT 1');
+            $cat->execute(['id' => (int) $article['category_id']]);
+            $row = $cat->fetch();
+            if ($row) {
+                $article['category'] = $row['slug'];
+                $article['category_name'] = $row['name'];
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+    render_page('admin/article-share-cards', [
+        'site' => $site,
+        'categories' => $categories,
+        'article' => $article,
+        'cardTypes' => share_card_types(),
+        'shortFormat' => short_format_for_article($articleId) ?? [],
+        'currentOgImage' => article_social_image_url($article),
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
+if (preg_match('#^share-card/([a-z0-9-]+)/([a-z]+)\.svg$#', $route, $matches)) {
+    $slug = (string) $matches[1];
+    $type = (string) $matches[2];
+    if (!array_key_exists($type, share_card_types())) {
+        $type = 'headline';
+    }
+    $article = find_article($slug);
+    if ($article === null) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'not found';
+        exit;
+    }
+    $sf = [];
+    // find_article returns public shape; fetch id for short format
+    $pdo = db();
+    if ($pdo instanceof PDO) {
+        try {
+            $idStmt = $pdo->prepare('SELECT id FROM articles WHERE slug = :slug LIMIT 1');
+            $idStmt->execute(['slug' => $slug]);
+            $aid = (int) ($idStmt->fetchColumn() ?: 0);
+            if ($aid > 0) {
+                $sf = short_format_for_article($aid) ?? [];
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+    header('Content-Type: image/svg+xml; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    echo render_share_card_svg($article, $type, $sf);
+    exit;
+}
+
+// ===== W6D5 short format admin =====
+if (preg_match('#^admin/articles/(\d+)/short-format$#', $route, $matches)) {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    $flash = '';
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = save_short_format($articleId, $_POST);
+        $flash = $result['ok'] ? '已保存。' : ('保存失败：' . ($result['message'] ?? ''));
+    }
+    $sf = short_format_for_article($articleId);
+    $form = $sf ? array_merge(short_format_form_defaults(), $sf) : short_format_form_defaults();
+    if (empty($form['bullets'])) {
+        $form['bullets'] = ['', '', ''];
+    }
+    render_page('admin/article-short-format', [
+        'site' => $site,
+        'categories' => $categories,
+        'article' => $article,
+        'form' => $form,
+        'shortFormat' => $sf,
+        'exportText' => $sf ? short_format_as_text($sf, $article) : '',
+        'flash' => $flash,
+        'aiUsage' => ai_usage_summary(),
+    ]);
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/short-format/generate$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $result = generate_short_format($articleId);
+    $flash = $result['ok'] ? '已用 AI 生成 60 秒看懂。' : ($result['message'] ?? 'AI 生成失败。');
+    header('Location: ' . url('admin/articles/' . $articleId . '/short-format') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
+if (preg_match('#^admin/articles/(\d+)/short-format/delete$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    delete_short_format($articleId);
+    header('Location: ' . url('admin/articles/' . $articleId . '/short-format') . '?flash=' . rawurlencode('已删除 60 秒看懂。'));
+    exit;
+}
+
+// ===== W6D6 social analytics =====
+if ($route === 'admin/social-analytics') {
+    require_admin();
+    render_page('admin/social-analytics', [
+        'site' => $site,
+        'categories' => $categories,
+        'stats' => social_share_analytics(),
+        'channels' => social_channels(),
+    ]);
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/claims/add$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_admin();
     $articleId = (int) $matches[1];
@@ -1577,6 +1724,23 @@ if (strpos($route, 'article/') === 0) {
         record_recent_read((int) $reader['id'], $slug);
     }
     $fallbackRelated = related_articles($article);
+
+    // Resolve article id for short-format + social image.
+    $articleDbId = 0;
+    $pdoArticle = db();
+    if ($pdoArticle instanceof PDO) {
+        try {
+            $idStmt = $pdoArticle->prepare('SELECT id, social_image_path FROM articles WHERE slug = :slug LIMIT 1');
+            $idStmt->execute(['slug' => $slug]);
+            if ($idRow = $idStmt->fetch()) {
+                $articleDbId = (int) $idRow['id'];
+                $article['social_image_path'] = $idRow['social_image_path'] ?? '';
+            }
+        } catch (Throwable $exception) {
+        }
+    }
+    $shortFormat = $articleDbId > 0 ? short_format_for_article($articleDbId) : null;
+
     render_page('article', [
         'site' => $site,
         'categories' => $categories,
@@ -1587,6 +1751,8 @@ if (strpos($route, 'article/') === 0) {
         'isSaved' => is_array($reader) ? reader_has_saved_article((int) $reader['id'], (int) ($article['id'] ?? 0)) : false,
         'newsletterCta' => newsletter_cta_for_category((string) ($article['category'] ?? '')),
         'monetization' => monetization_settings(),
+        'shortFormat' => $shortFormat,
+        'socialImage' => function_exists('article_social_image_url') ? article_social_image_url($article) : ($article['hero_image'] ?? ''),
     ]);
     exit;
 }

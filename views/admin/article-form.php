@@ -41,6 +41,8 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
             <?php if ($mode === 'edit' && $articleId > 0): ?>
                 <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/preview')) ?>" target="_blank" rel="noopener">预览</a>
                 <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/social')) ?>">社交分发</a>
+                <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/short-format')) ?>">60秒看懂</a>
+                <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/share-cards')) ?>">分享卡片</a>
                 <a class="ghost-link" href="<?= e(url('admin/articles/' . $articleId . '/wechat-export')) ?>">微信版面</a>
             <?php endif; ?>
         </div>

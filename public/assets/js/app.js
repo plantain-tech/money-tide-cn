@@ -166,6 +166,38 @@ document.querySelectorAll('[data-share-event]').forEach((link) => {
     });
 });
 
+// 60秒看懂 copy button (public article page)
+document.querySelectorAll('[data-shortformat-copy]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+        const card = btn.closest('.short-format-card');
+        const textarea = card ? card.querySelector('[data-shortformat-text]') : null;
+        const text = textarea ? textarea.value : '';
+        if (!text) return;
+        const done = () => {
+            const original = btn.textContent;
+            btn.textContent = '已复制 ✓';
+            window.setTimeout(() => { btn.textContent = original; }, 1600);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done, () => { legacyCopy(text); done(); });
+        } else {
+            legacyCopy(text);
+            done();
+        }
+    });
+});
+
+function legacyCopy(text) {
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(input);
+}
+
 const completionMarker = document.querySelector('[data-article-complete]');
 if (completionMarker && 'IntersectionObserver' in window) {
     let completed = false;
