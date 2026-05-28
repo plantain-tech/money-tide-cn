@@ -14,7 +14,7 @@ jobs:
   deploy:
     name: Lint and deploy production
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -134,6 +134,7 @@ jobs:
           set net:timeout 90
           set mirror:parallel-transfer-count 1
           set mirror:use-pget-n 1
+          put -O "$PUBLIC_DIR" public/config.php
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./public/ "$PUBLIC_DIR"
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./src/ "${APP_DIR}src/"
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
