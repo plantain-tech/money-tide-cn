@@ -106,41 +106,39 @@ jobs:
             echo "Database secrets are not set; deploying without generated config.php."
           fi
 
-      - name: Deploy public files
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./public/
-          server-dir: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
-          timeout: 120000
-          log-level: minimal
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Deploy app source
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./src/
-          server-dir: ${{ secrets.HOSTINGER_APP_DIR }}src/
-          timeout: 120000
-          log-level: minimal
-
-      - name: Deploy views
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./views/
-          server-dir: ${{ secrets.HOSTINGER_APP_DIR }}views/
-          timeout: 120000
-          log-level: minimal
+      - name: Deploy via FTPS with lftp
+        env:
+          FTP_HOST: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          FTP_USER: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
+          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
+        run: |
+          set -e
+          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
+            echo "FTP secrets are missing; cannot deploy."
+            exit 1
+          fi
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" <<EOF
+          set ftp:ssl-allow yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ftp:passive-mode yes
+          set ssl:verify-certificate no
+          set ssl:check-hostname no
+          set net:max-retries 8
+          set net:reconnect-interval-base 8
+          set net:timeout 90
+          set mirror:parallel-transfer-count 1
+          set mirror:use-pget-n 1
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./public/ "$PUBLIC_DIR"
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./src/ "${APP_DIR}src/"
+          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
+          bye
+          EOF
 
       - name: Verify production homepage
         env:
