@@ -609,9 +609,39 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
     $error = curl_error($ch);
     curl_close($ch);
     if ($body === false || $status >= 400) {
-        return ['ok' => false, 'message' => $provider . ' HTTP ' . $status . ' ' . substr((string) $body, 0, 200) . ' ' . $error];
+        return ['ok' => false, 'message' => email_provider_error_message($provider, $status, (string) $body, $error)];
     }
     return ['ok' => true];
+}
+
+function email_provider_error_message(string $provider, int $status, string $body, string $curlError = ''): string
+{
+    $payload = json_decode($body, true);
+    $message = is_array($payload) ? (string) ($payload['message'] ?? '') : '';
+    $code = is_array($payload) ? (string) ($payload['code'] ?? '') : '';
+    $raw = $message !== '' ? $message : trim(substr($body, 0, 220));
+
+    if ($provider === 'brevo') {
+        if ($status === 403 && ($code === 'permission_denied' || stripos($raw, 'SMTP account is not yet activated') !== false)) {
+            return 'Brevo 已连接，但你的 Brevo SMTP/Transactional Email 账号尚未激活。请先在 Brevo 完成发件人或域名验证；如果仍然失败，请联系 contact@brevo.com 请求开通 SMTP/Transactional Email。';
+        }
+        if (in_array($status, [401, 403], true)) {
+            return 'Brevo 拒绝了请求。请检查 EMAIL_API_KEY 是否正确、是否复制完整，以及该 API key 是否仍有效。';
+        }
+        if (stripos($raw, 'sender') !== false || stripos($raw, 'from') !== false) {
+            return 'Brevo 不接受当前发件人地址。请在 Brevo 的 Senders, domains, IPs 中验证 EMAIL_FROM_ADDRESS 对应的邮箱或域名。';
+        }
+    }
+
+    if ($provider === 'mailgun' && in_array($status, [401, 403], true)) {
+        return 'Mailgun 拒绝了请求。请检查 EMAIL_API_KEY 和 MAILGUN_DOMAIN。';
+    }
+
+    if ($provider === 'resend' && in_array($status, [401, 403], true)) {
+        return 'Resend 拒绝了请求。请检查 EMAIL_API_KEY 和发件域名验证状态。';
+    }
+
+    return $provider . ' HTTP ' . $status . ($raw !== '' ? '：' . $raw : '') . ($curlError !== '' ? ' ' . $curlError : '');
 }
 
 function send_newsletter_test(int $issueId, string $toEmail): array

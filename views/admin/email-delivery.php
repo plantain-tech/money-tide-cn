@@ -36,8 +36,8 @@ $configuredProvider = (string) $status['provider'];
         </article>
         <article class="<?= $ready ? 'is-ready' : 'is-warning' ?>">
             <span>真实投递</span>
-            <strong><?= $ready ? '已准备好' : '尚未开启' ?></strong>
-            <p><?= $ready ? '可以发送生产测试邮件。' : '设置 Brevo secrets 并完成域名验证后开启。' ?></p>
+            <strong><?= $ready ? '配置就绪' : '尚未开启' ?></strong>
+            <p><?= $ready ? '应用配置已就绪；还需要通过测试邮件确认 Brevo 账号已激活。' : '设置 Brevo secrets 并完成域名验证后开启。' ?></p>
         </article>
         <article>
             <span>免费额度</span>
@@ -97,6 +97,7 @@ $configuredProvider = (string) $status['provider'];
             <li><strong>在 Brevo 添加发件域名。</strong><small>进入 Brevo Sender & IP / Domains，添加你要用的发件域名。</small></li>
             <li><strong>按 Brevo 页面提示添加 DNS。</strong><small>通常包括 DKIM、SPF/Return-Path 和 DMARC。具体值以 Brevo 后台给你的为准。</small></li>
             <li><strong>等待 Brevo 显示 verified。</strong><small>DNS 生效可能需要几分钟到数小时。</small></li>
+            <li><strong>确认 SMTP/Transactional Email 已激活。</strong><small>如果测试邮件提示 SMTP account is not yet activated，请联系 contact@brevo.com 请求开通。</small></li>
             <li><strong>回到本页发送生产测试邮件。</strong><small>收到邮件后，检查发件人、主题、正文、垃圾邮件箱和退订链接。</small></li>
         </ol>
     </section>
