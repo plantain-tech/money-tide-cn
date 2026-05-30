@@ -8,7 +8,7 @@
         <div class="account-stats">
             <div>
                 <span>订阅频率</span>
-                <strong><?= e((string) $account['preferences']['digest_frequency']) ?></strong>
+                <strong><?= e(reader_frequency_options()[(string) $account['preferences']['digest_frequency']] ?? (string) $account['preferences']['digest_frequency']) ?></strong>
             </div>
             <div>
                 <span>关注栏目</span>

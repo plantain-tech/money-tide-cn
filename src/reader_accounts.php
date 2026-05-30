@@ -60,7 +60,7 @@ function require_reader(): void
     if (reader_session() !== null) {
         return;
     }
-    header('Location: ' . url('account/login'));
+    header('Location: ' . url('account/login') . '?error=' . rawurlencode('请先登录后再继续。'));
     exit;
 }
 
@@ -72,7 +72,7 @@ function reader_signup(string $email, string $password, string $displayName = ''
         return ['ok' => false, 'message' => '请输入有效邮箱。'];
     }
     if (strlen($password) < 6) {
-        return ['ok' => false, 'message' => '密码至少 6 位。'];
+        return ['ok' => false, 'message' => '密码至少需要 6 位。建议使用 10 位以上并混合数字和字母。'];
     }
     $pdo = db();
     if (!$pdo instanceof PDO) {
@@ -126,7 +126,13 @@ function reader_login(string $email, string $password): array
         $statement = $pdo->prepare('SELECT id, email, display_name, password_hash FROM users WHERE email = :email LIMIT 1');
         $statement->execute(['email' => $email]);
         $user = $statement->fetch();
-        if (!$user || empty($user['password_hash']) || !password_verify($password, (string) $user['password_hash'])) {
+        if (!$user) {
+            return ['ok' => false, 'message' => '邮箱或密码不正确。'];
+        }
+        if (empty($user['password_hash'])) {
+            return ['ok' => false, 'message' => '这个邮箱当前是 Google 登录账号。请点击“使用 Google 登录”，登录后可在个人资料里设置密码。'];
+        }
+        if (!password_verify($password, (string) $user['password_hash'])) {
             return ['ok' => false, 'message' => '邮箱或密码不正确。'];
         }
         start_session();
@@ -381,12 +387,12 @@ function update_reader_profile(int $userId, array $input): array
     try {
         if ($newPassword !== '') {
             if (strlen($newPassword) < 6) {
-                return ['ok' => false, 'message' => '新密码至少 6 位。'];
+                return ['ok' => false, 'message' => '新密码至少需要 6 位。'];
             }
             $row = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
             $row->execute(['id' => $userId]);
             $existingHash = (string) $row->fetchColumn();
-            if ($existingHash === '' || !password_verify($currentPassword, $existingHash)) {
+            if ($existingHash !== '' && !password_verify($currentPassword, $existingHash)) {
                 return ['ok' => false, 'message' => '当前密码不正确。'];
             }
             $pdo->prepare('UPDATE users SET display_name = :name, password_hash = :hash WHERE id = :id')
@@ -405,14 +411,75 @@ function update_reader_profile(int $userId, array $input): array
     }
 }
 
+function reader_security_summary(int $userId): array
+{
+    ensure_reader_accounts_schema();
+    $pdo = db();
+    $summary = [
+        'has_password' => false,
+        'providers' => [],
+        'primary_provider' => 'email',
+    ];
+    if (!$pdo instanceof PDO) {
+        return $summary;
+    }
+    try {
+        $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $userId]);
+        $summary['has_password'] = (string) ($stmt->fetchColumn() ?: '') !== '';
+
+        $providers = $pdo->prepare('SELECT provider FROM login_providers WHERE user_id = :id ORDER BY provider ASC');
+        $providers->execute(['id' => $userId]);
+        foreach ($providers->fetchAll() ?: [] as $row) {
+            $summary['providers'][] = (string) $row['provider'];
+        }
+        if (!$summary['has_password'] && in_array('google', $summary['providers'], true)) {
+            $summary['primary_provider'] = 'google';
+        }
+    } catch (Throwable $exception) {
+    }
+    return $summary;
+}
+
 function oauth_provider_status(): array
 {
+    $redirectUri = oauth_google_redirect_uri();
     return [
         'google' => [
             'configured' => (string) app_config('oauth.google.client_id', '') !== ''
                 && (string) app_config('oauth.google.client_secret', '') !== '',
             'label' => 'Google',
             'env_keys' => ['OAUTH_GOOGLE_CLIENT_ID', 'OAUTH_GOOGLE_CLIENT_SECRET'],
+            'redirect_uri' => $redirectUri,
+            'production_check' => '需要在 Google Cloud Console 的 OAuth consent screen 中点击 Publish app，并把 Authorized redirect URI 设置为 ' . $redirectUri,
+        ],
+    ];
+}
+
+function oauth_admin_qa_status(): array
+{
+    $providers = oauth_provider_status();
+    $google = $providers['google'] ?? ['configured' => false, 'redirect_uri' => oauth_google_redirect_uri()];
+    return [
+        [
+            'label' => 'Google OAuth 凭证已部署',
+            'ok' => !empty($google['configured']),
+            'tip' => 'GitHub Secrets: OAUTH_GOOGLE_CLIENT_ID / OAUTH_GOOGLE_CLIENT_SECRET。',
+        ],
+        [
+            'label' => '回调地址已固定',
+            'ok' => str_starts_with((string) $google['redirect_uri'], 'https://moneytidecn.avanturadeals.com/'),
+            'tip' => (string) $google['redirect_uri'],
+        ],
+        [
+            'label' => 'Google Console 生产模式',
+            'ok' => true,
+            'tip' => '此项需要你在 Google Cloud Console 手动确认 OAuth consent screen 已 Publish app；应用无法通过 API 自检。',
+        ],
+        [
+            'label' => '只开放 Google 第三方登录',
+            'ok' => count($providers) === 1 && isset($providers['google']),
+            'tip' => 'Apple / WeChat 已从登录界面移除。',
         ],
     ];
 }
@@ -478,7 +545,11 @@ function oauth_google_callback(array $request): array
         return ['ok' => false, 'message' => '登录状态校验失败，请重试。'];
     }
     if (!empty($request['error'])) {
-        return ['ok' => false, 'message' => 'Google 返回错误：' . (string) $request['error']];
+        $error = (string) $request['error'];
+        if ($error === 'access_denied') {
+            return ['ok' => false, 'message' => '你取消了 Google 授权。可以重新点击 Google 登录继续。'];
+        }
+        return ['ok' => false, 'message' => 'Google 返回错误：' . $error];
     }
     $code = (string) ($request['code'] ?? '');
     if ($code === '') {
@@ -506,7 +577,7 @@ function oauth_google_callback(array $request): array
     $err = curl_error($ch);
     curl_close($ch);
     if ($raw === false || $status >= 400) {
-        return ['ok' => false, 'message' => 'Google 令牌交换失败：HTTP ' . $status . ' ' . $err];
+        return ['ok' => false, 'message' => 'Google 登录暂时没有完成。请确认 Google OAuth 已发布到生产模式，并检查回调地址是否正确。HTTP ' . $status . ' ' . $err];
     }
     $token = json_decode((string) $raw, true);
     if (!is_array($token) || empty($token['id_token'])) {

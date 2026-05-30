@@ -1273,6 +1273,7 @@ if ($route === 'admin/oauth') {
         'site' => $site,
         'categories' => $categories,
         'providers' => oauth_provider_status(),
+        'qaChecks' => oauth_admin_qa_status(),
     ]);
     exit;
 }
@@ -1476,7 +1477,12 @@ if (preg_match('#^admin/ai-drafts/(\d+)/convert$#', $route, $matches) && ($_SERV
 // ===== Reader account routes =====
 if ($route === 'account/signup') {
     $error = '';
+    $form = ['email' => '', 'display_name' => ''];
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $form = [
+            'email' => (string) ($_POST['email'] ?? ''),
+            'display_name' => (string) ($_POST['display_name'] ?? ''),
+        ];
         $result = reader_signup(
             (string) ($_POST['email'] ?? ''),
             (string) ($_POST['password'] ?? ''),
@@ -1493,14 +1499,17 @@ if ($route === 'account/signup') {
         'categories' => $categories,
         'error' => $error,
         'oauth' => oauth_provider_status(),
+        'form' => $form,
     ]);
     exit;
 }
 
 if ($route === 'account/login') {
-    $error = '';
+    $error = (string) ($_GET['error'] ?? '');
+    $email = '';
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-        $result = reader_login((string) ($_POST['email'] ?? ''), (string) ($_POST['password'] ?? ''));
+        $email = (string) ($_POST['email'] ?? '');
+        $result = reader_login($email, (string) ($_POST['password'] ?? ''));
         if ($result['ok']) {
             header('Location: ' . url('account'));
             exit;
@@ -1512,6 +1521,7 @@ if ($route === 'account/login') {
         'categories' => $categories,
         'error' => $error,
         'oauth' => oauth_provider_status(),
+        'email' => $email,
     ]);
     exit;
 }
@@ -1540,6 +1550,7 @@ if ($route === 'account/profile') {
         'site' => $site,
         'categories' => $categories,
         'reader' => $reader,
+        'security' => reader_security_summary((int) $reader['id']),
         'flash' => $flash,
         'error' => $error,
     ]);

@@ -137,6 +137,15 @@ function admin_smoke_checks(): array
         $readerCount = db_count('users', "role = 'reader'");
         $checks[] = ['name' => 'Reader accounts', 'ok' => $readerCount >= 0, 'detail' => $readerCount . ' readers'];
     }
+    if (function_exists('oauth_provider_status')) {
+        $oauth = oauth_provider_status();
+        $google = $oauth['google'] ?? ['configured' => false, 'redirect_uri' => ''];
+        $checks[] = [
+            'name' => 'Google OAuth',
+            'ok' => !empty($google['configured']) && str_starts_with((string) ($google['redirect_uri'] ?? ''), 'https://moneytidecn.avanturadeals.com/'),
+            'detail' => (!empty($google['configured']) ? 'configured' : 'missing secrets') . ' · ' . (string) ($google['redirect_uri'] ?? ''),
+        ];
+    }
 
     if (function_exists('all_tags')) {
         $tagCount = count(all_tags());

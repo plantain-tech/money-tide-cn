@@ -1,17 +1,16 @@
-<?php $pageTitle = '登录 - 钱潮 Money Tide'; $banner = (string) ($_GET['error'] ?? ''); ?>
+<?php $pageTitle = '登录 - 钱潮 Money Tide'; ?>
 <section class="account-shell">
     <div class="account-card">
+        <p class="eyebrow">读者账户</p>
         <h1>登录</h1>
+        <p>登录后可以保存文章、管理早报偏好，并继续阅读最近打开过的内容。</p>
         <?php if ($error): ?>
             <div class="form-message form-message-error"><?= e($error) ?></div>
-        <?php endif; ?>
-        <?php if ($banner !== ''): ?>
-            <div class="status-banner is-warning"><strong>提示</strong><span><?= e($banner) ?></span></div>
         <?php endif; ?>
         <form method="post" action="<?= e(url('account/login')) ?>" class="account-form">
             <label>
                 邮箱
-                <input type="email" name="email" required autocomplete="email">
+                <input type="email" name="email" value="<?= e((string) ($email ?? '')) ?>" required autocomplete="email">
             </label>
             <label>
                 密码
@@ -23,10 +22,13 @@
         <div class="account-oauth">
             <p class="eyebrow">第三方登录</p>
             <?php foreach ($oauth as $key => $info): ?>
-                <a class="button button-small button-ghost" href="<?= e(url('account/oauth/' . $key)) ?>">
-                    使用 <?= e($info['label']) ?> 登录
-                    <?php if (!$info['configured']): ?><small>（待配置）</small><?php endif; ?>
-                </a>
+                <?php if ($info['configured']): ?>
+                    <a class="button button-small button-ghost oauth-google-button" href="<?= e(url('account/oauth/' . $key)) ?>">
+                        使用 <?= e($info['label']) ?> 继续
+                    </a>
+                <?php else: ?>
+                    <p class="account-oauth-note"><small><?= e($info['label']) ?> 登录暂未开放。</small></p>
+                <?php endif; ?>
             <?php endforeach; ?>
         </div>
 

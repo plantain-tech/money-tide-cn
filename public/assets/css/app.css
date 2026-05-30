@@ -2708,6 +2708,56 @@ main {
     color: var(--muted);
 }
 
+.oauth-google-button {
+    position: relative;
+    justify-content: center;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f0 100%);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.oauth-google-button::before {
+    content: "G";
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--ink);
+    display: inline-grid;
+    place-items: center;
+    margin-right: 8px;
+    font-weight: 950;
+    background: var(--accent);
+}
+
+.oauth-google-button:hover,
+.oauth-google-button:focus-visible {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+}
+
+.account-security-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.account-security-strip > div {
+    border: 2px solid var(--ink);
+    background: #f5ffe5;
+    padding: 12px;
+    display: grid;
+    gap: 4px;
+}
+
+.account-security-strip span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.account-security-strip strong {
+    font-size: 18px;
+}
+
 .account-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
