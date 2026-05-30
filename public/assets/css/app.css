@@ -2758,6 +2758,110 @@ main {
     font-size: 18px;
 }
 
+.cleanup-warning-block {
+    background: #fff4d6;
+}
+
+.cleanup-safe-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.cleanup-safe-list span {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 10px 12px;
+    font-weight: 800;
+}
+
+.cleanup-form {
+    display: grid;
+    gap: 22px;
+}
+
+.cleanup-option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.cleanup-option {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 16px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.cleanup-option:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+}
+
+.cleanup-option.is-recommended {
+    background: linear-gradient(135deg, #f6ffd9 0%, var(--paper-strong) 72%);
+}
+
+.cleanup-option input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+
+.cleanup-option-meta {
+    display: grid;
+    gap: 6px;
+}
+
+.cleanup-option-meta strong {
+    font-size: 18px;
+}
+
+.cleanup-option-meta small {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.cleanup-count {
+    min-width: 44px;
+    min-height: 44px;
+    border: 2px solid var(--ink);
+    background: var(--accent);
+    display: inline-grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.cleanup-confirm-block input[type="text"] {
+    width: min(100%, 420px);
+}
+
+.cleanup-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.cleanup-result-grid > div {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 14px;
+    display: grid;
+    gap: 6px;
+}
+
+.cleanup-result-grid strong {
+    font-size: 28px;
+}
+
 .account-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

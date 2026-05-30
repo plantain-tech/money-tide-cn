@@ -10,6 +10,7 @@
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
             <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">自检</a>
             <a class="ghost-link" href="<?= e(url('admin/backup')) ?>">备份</a>
+            <a class="ghost-link" href="<?= e(url('admin/launch-cleanup')) ?>">上线清理</a>
             <a class="ghost-link" href="<?= e(url('admin/exports')) ?>">导出</a>
             <a class="ghost-link" href="<?= e(url('admin/audit')) ?>">审计日志</a>
         </div>

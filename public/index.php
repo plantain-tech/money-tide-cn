@@ -1774,6 +1774,22 @@ if ($route === 'admin/diagnostics') {
     exit;
 }
 
+if ($route === 'admin/launch-cleanup') {
+    require_admin();
+    $result = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $result = launch_cleanup_execute((array) ($_POST['cleanup'] ?? []), (string) ($_POST['confirm_phrase'] ?? ''));
+    }
+    render_page('admin/launch-cleanup', [
+        'site' => $site,
+        'categories' => $categories,
+        'options' => launch_cleanup_options(),
+        'preview' => launch_cleanup_preview(),
+        'result' => $result,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/smoke') {
     require_admin();
     $smokeChecks = admin_smoke_checks();
@@ -1788,7 +1804,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-8-final',
+            'release'    => 'week-8-final-launch-cleanup',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
