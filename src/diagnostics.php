@@ -212,6 +212,31 @@ function admin_smoke_checks(): array
         $feedCount = count(rss_articles(null, 10));
         $checks[] = ['name' => 'RSS feeds', 'ok' => $feedCount > 0, 'detail' => $feedCount . ' articles in all feed'];
     }
+    // Image alt text & hero image coverage
+    if (db_is_ready()) {
+        $pdoImg = db();
+        $imgMissingAlt = 0;
+        $imgMissingHero = 0;
+        try {
+            $imgMissingAlt  = (int) $pdoImg->query("SELECT COUNT(*) FROM articles WHERE status='published' AND (hero_image_alt IS NULL OR hero_image_alt='')")->fetchColumn();
+            $imgMissingHero = (int) $pdoImg->query("SELECT COUNT(*) FROM articles WHERE status='published' AND (hero_image_path IS NULL OR hero_image_path='')")->fetchColumn();
+        } catch (Throwable $exception) {
+        }
+        $checks[] = [
+            'name' => '图片 Alt 覆盖率',
+            'ok' => $imgMissingAlt === 0,
+            'detail' => $imgMissingAlt === 0
+                ? '所有已发布文章均有图片替代文字'
+                : $imgMissingAlt . ' 篇已发布文章缺少 Alt 文字 · 请在文章编辑页补充',
+        ];
+        $checks[] = [
+            'name' => '头图覆盖率',
+            'ok' => true,
+            'detail' => $imgMissingHero === 0
+                ? '所有已发布文章已设置自定义头图'
+                : $imgMissingHero . ' 篇使用栏目默认图（可正常显示，建议补充自定义头图）',
+        ];
+    }
     if (function_exists('reaction_analytics')) {
         ensure_reactions_schema();
         $reactions = reaction_analytics();

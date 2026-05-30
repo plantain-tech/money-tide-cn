@@ -85,7 +85,7 @@ $schema = [
             <?php endif; ?>
         </div>
         <figure class="article-hero-media">
-            <img src="<?= e($ogImage) ?>" alt="<?= e($article['hero_image_alt'] ?? $article['title']) ?>" loading="eager">
+            <img src="<?= e($ogImage) ?>" alt="<?= e($article['hero_image_alt'] ?? $article['title']) ?>" loading="eager" decoding="async" fetchpriority="high">
         </figure>
     </header>
 

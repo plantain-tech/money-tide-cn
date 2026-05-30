@@ -5445,3 +5445,102 @@ main {
         box-shadow: 3px 3px 0 var(--ink);
     }
 }
+
+/* ── Week 8 Day 4: performance & media ──────────────────────────────────────── */
+
+/* Global image safety — prevent overflow, preserve aspect ratios */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Mobile touch targets — minimum 44×44px for interactive elements */
+@media (pointer: coarse) {
+    .button,
+    .ghost-link,
+    button,
+    .reaction-chip,
+    .topic-chip,
+    .pill,
+    nav a,
+    .top-nav a,
+    .header-actions a,
+    .header-actions button,
+    .admin-topbar a,
+    .admin-topbar button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+/* Media quality checklist in admin article form */
+.media-quality-checklist {
+    background: color-mix(in srgb, var(--lime), var(--paper) 75%);
+    border: 2px solid var(--ink);
+    padding: 16px 18px;
+    border-radius: 2px;
+}
+
+.media-quality-title {
+    margin: 0 0 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.media-quality-checklist ul {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+}
+
+.media-quality-checklist li {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--ink);
+}
+
+/* Field hints below inputs */
+label > small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 400;
+}
+
+/* Required field marker */
+.field-required {
+    color: var(--red);
+    margin-left: 2px;
+    cursor: help;
+}
+
+/* Media preview: stable aspect ratio prevents layout shift */
+.media-preview img {
+    aspect-ratio: 1200 / 630;
+    object-fit: cover;
+    width: 100%;
+}
+
+/* Article hero: stable 16/9 on mobile */
+@media (max-width: 600px) {
+    .article-hero-media img {
+        aspect-ratio: 4 / 3;
+    }
+}
+
+/* Smooth image load fade-in */
+img {
+    transition: opacity 0.2s ease;
+}
+
+img[loading="lazy"] {
+    opacity: 0;
+}
+
+img[loading="lazy"].is-loaded {
+    opacity: 1;
+}

@@ -13,12 +13,17 @@ function site_meta(): array
 
 function get_categories(): array
 {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
     $dbCategories = db_categories();
     if ($dbCategories !== null) {
-        return $dbCategories;
+        $cache = $dbCategories;
+        return $cache;
     }
 
-    return [
+    $cache = [
         ['slug' => 'markets', 'name' => '市场', 'summary' => '股票、宏观、利率、外汇与大宗商品。'],
         ['slug' => 'business', 'name' => '商业', 'summary' => '公司、财报、消费品牌与商业模式。'],
         ['slug' => 'tech', 'name' => '科技', 'summary' => 'AI、芯片、平台公司与创业趋势。'],
@@ -28,16 +33,22 @@ function get_categories(): array
         ['slug' => 'wealth', 'name' => '理财', 'summary' => '个人理财、长期投资与风险教育。'],
         ['slug' => 'global-china', 'name' => '出海', 'summary' => '中国公司全球化、品牌出海与海外市场。'],
     ];
+    return $cache;
 }
 
 function get_articles(): array
 {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
     $dbArticles = db_articles();
     if ($dbArticles !== null) {
-        return $dbArticles;
+        $cache = $dbArticles;
+        return $cache;
     }
 
-    return [
+    $cache = [
         [
             'slug' => 'fed-rate-path-global-markets',
             'category' => 'markets',
@@ -108,6 +119,7 @@ function get_articles(): array
             ],
         ],
     ];
+    return $cache;
 }
 
 function find_category(string $slug): ?array

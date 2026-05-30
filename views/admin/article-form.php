@@ -222,24 +222,36 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
 
         <section class="media-editor-panel">
             <div>
-                <p class="eyebrow">Media / SEO</p>
+                <p class="eyebrow">媒体 / SEO</p>
                 <h2>文章头图与分享卡片</h2>
-                <p>可填写外部图片 URL，或站内路径如 /assets/img/og-money-tide.svg。留空时系统会按栏目使用默认图。</p>
+                <p>填写外部图片 URL 或站内路径（如 <code>/assets/img/og-money-tide.svg</code>）。留空时系统按栏目自动选用默认图。</p>
+            </div>
+            <div class="media-quality-checklist">
+                <p class="media-quality-title">📐 头图规格建议</p>
+                <ul>
+                    <li>推荐尺寸：<strong>1200 × 630 px</strong>（宽高比 1.91:1，符合 OG / Twitter 规范）</li>
+                    <li>格式：.jpg / .png / .webp — 建议压缩到 <strong>200 KB 以内</strong></li>
+                    <li>避免在图片内嵌入重要文字（分享预览会被裁剪）</li>
+                    <li>替代文字（Alt）是 SEO 和无障碍的必填项，请勿留空</li>
+                    <li>Alt 文字不超过 125 字符，描述图片内容，不以"图片：""图示："开头</li>
+                </ul>
             </div>
             <div class="media-preview">
                 <?php if ($heroPreview !== ''): ?>
-                    <img src="<?= e($heroPreview) ?>" alt="<?= e((string) ($form['hero_image_alt'] ?? $form['title'] ?? '')) ?>">
+                    <img src="<?= e($heroPreview) ?>" alt="<?= e((string) ($form['hero_image_alt'] ?? $form['title'] ?? '')) ?>" loading="lazy" decoding="async">
                 <?php else: ?>
                     <span>使用栏目默认图</span>
                 <?php endif; ?>
             </div>
             <label>
-                Hero image URL / path
-                <input type="text" name="hero_image_path" value="<?= e((string) ($form['hero_image_path'] ?? '')) ?>" placeholder="https://... 或 /assets/img/...">
+                头图 URL / 路径
+                <input type="text" name="hero_image_path" value="<?= e((string) ($form['hero_image_path'] ?? '')) ?>" placeholder="https://example.com/image.jpg 或 /assets/img/...">
+                <small>推荐 1200×630 px · JPG / PNG / WebP · 200 KB 以内</small>
             </label>
             <label>
-                图片替代文字
-                <input type="text" name="hero_image_alt" value="<?= e((string) ($form['hero_image_alt'] ?? '')) ?>" placeholder="用于无障碍和图片加载失败时显示">
+                图片替代文字（Alt）<span class="field-required" title="建议必填">*</span>
+                <input type="text" name="hero_image_alt" value="<?= e((string) ($form['hero_image_alt'] ?? '')) ?>" placeholder="简短描述图片内容，不超过 125 字符">
+                <small>影响搜索引擎抓取和屏幕阅读器用户体验</small>
             </label>
             <label>
                 SEO 标题

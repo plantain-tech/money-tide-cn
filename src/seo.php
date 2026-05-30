@@ -33,6 +33,8 @@ function seo_description(string $primary, string $fallback = ''): string
 function emit_sitemap(array $categories, array $articles, array $tags = []): void
 {
     header('Content-Type: application/xml; charset=utf-8');
+    header('Cache-Control: public, max-age=600');
+    header('Vary: Accept-Encoding');
 
     $urls = [
         ['loc' => canonical_url(), 'priority' => '1.0'],
@@ -100,6 +102,7 @@ function sitemap_date(string $date): string
 function emit_robots(): void
 {
     header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
     echo "User-agent: *\n";
     echo "Allow: /\n\n";
     echo 'Sitemap: ' . canonical_url('sitemap.xml') . "\n";

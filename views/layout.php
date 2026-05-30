@@ -16,12 +16,16 @@ $schema = $schema ?? [
 $gaMeasurementId = (string) app_config('analytics.ga_measurement_id', '');
 $plausibleDomain = (string) app_config('analytics.plausible_domain', '');
 $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/', '/');
+// Cache-busting version strings — update automatically when files change on disk.
+$cssVersion = @filemtime(APP_BASE_PATH . '/public/assets/css/app.css') ?: '1';
+$jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
 ?>
 <!doctype html>
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="<?= e($pageDescription) ?>">
     <link rel="canonical" href="<?= e($canonicalUrl) ?>">
@@ -40,7 +44,14 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
     <meta name="twitter:description" content="<?= e($pageDescription) ?>">
     <meta name="twitter:image" content="<?= e($ogImage) ?>">
     <meta name="theme-color" content="#dcff00">
-    <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
+    <?php if ($gaMeasurementId !== ''): ?>
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+        <link rel="preconnect" href="https://www.googletagmanager.com">
+    <?php endif; ?>
+    <?php if ($plausibleDomain !== ''): ?>
+        <link rel="dns-prefetch" href="https://plausible.io">
+    <?php endif; ?>
+    <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=<?= $cssVersion ?>">
     <script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
     <?php if ($plausibleDomain !== ''): ?>
         <script defer data-domain="<?= e($plausibleDomain) ?>" src="https://plausible.io/js/script.js"></script>
@@ -120,6 +131,6 @@ $currentPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '
         </aside>
     <?php endif; ?>
     <button class="back-to-top" type="button" data-back-to-top aria-label="返回顶部">↑</button>
-    <script src="<?= e(asset('js/app.js')) ?>"></script>
+    <script src="<?= e(asset('js/app.js')) ?>?v=<?= $jsVersion ?>"></script>
 </body>
 </html>

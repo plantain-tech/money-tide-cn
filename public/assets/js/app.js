@@ -680,3 +680,24 @@ function showFormMessage(form, message, isSuccess) {
 })();
 
 
+
+// Week 8 Day 4: lazy image fade-in observer
+if ('IntersectionObserver' in window) {
+    var lazyImgObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var img = entry.target;
+                img.classList.add('is-loaded');
+                lazyImgObserver.unobserve(img);
+            }
+        });
+    }, { rootMargin: '200px' });
+    document.querySelectorAll('img[loading="lazy"]').forEach(function(img) {
+        if (img.complete) {
+            img.classList.add('is-loaded');
+        } else {
+            img.addEventListener('load', function() { img.classList.add('is-loaded'); });
+            lazyImgObserver.observe(img);
+        }
+    });
+}

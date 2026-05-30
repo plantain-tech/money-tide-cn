@@ -124,6 +124,21 @@ function rss_articles(?string $categorySlug = null, int $limit = 40): array
 function emit_rss_feed(array $articles, string $title, string $description, string $path): void
 {
     header('Content-Type: application/rss+xml; charset=utf-8');
+    header('Cache-Control: public, max-age=3600');
+    header('Vary: Accept-Encoding');
+    // Last-Modified: use the latest article's publish date if available
+    if (!empty($articles)) {
+        $latestTs = 0;
+        foreach ($articles as $a) {
+            $ts = strtotime((string) ($a['published_at'] ?? '')) ?: 0;
+            if ($ts > $latestTs) {
+                $latestTs = $ts;
+            }
+        }
+        if ($latestTs > 0) {
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $latestTs) . ' GMT');
+        }
+    }
     $self = canonical_url($path);
     $home = canonical_url();
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";

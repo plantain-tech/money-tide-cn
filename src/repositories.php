@@ -19,6 +19,10 @@ function db_categories(): ?array
 
 function ensure_editorial_schema(): void
 {
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
     $pdo = db();
     if (!$pdo instanceof PDO) {
         return;
@@ -70,6 +74,7 @@ function ensure_editorial_schema(): void
             'slug' => 'money-tide-editors',
             'bio' => '钱潮 Money Tide 编辑团队。',
         ]);
+        $ensured = true;
     } catch (Throwable $exception) {
     }
 }
