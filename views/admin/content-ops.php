@@ -2,6 +2,8 @@
 $pageTitle = '内容运营 - 钱潮 Money Tide';
 $seoPass = count(array_filter($seoHealth, static fn (array $c): bool => $c['ok']));
 $seoTotal = count($seoHealth);
+$missingAlt = $missingAlt ?? 0;
+$flash = $flash ?? '';
 ?>
 <section class="admin-shell">
     <div class="admin-topbar">
@@ -16,6 +18,26 @@ $seoTotal = count($seoHealth);
             <a class="ghost-link" href="<?= e(url('admin/analytics')) ?>">数据分析</a>
         </div>
     </div>
+
+    <?php if ($flash !== ''): ?>
+        <div class="status-banner is-ready"><strong>完成</strong><span><?= e($flash) ?></span></div>
+    <?php endif; ?>
+
+    <?php if ($missingAlt > 0): ?>
+        <div class="alt-backfill-banner">
+            <div>
+                <strong>⚡ 一键补充图片替代文字</strong>
+                <p>当前有 <strong><?= e((string) $missingAlt) ?></strong> 篇已发布文章缺少图片 Alt 文字。点击下方按钮会用文章标题作为默认 Alt 填充（只填空白项，不覆盖已有内容），可立即让 SEO 与 Alt 检查通过；之后仍可在文章编辑页改成更贴切的描述。</p>
+            </div>
+            <form method="post" action="<?= e(url('admin/content-ops/backfill-alt')) ?>">
+                <button class="button" type="submit"
+                    data-confirm="确认为 <?= e((string) $missingAlt) ?> 篇文章补充 Alt 文字？"
+                    data-confirm-sub="将用各文章标题作为默认 Alt，只填充空白项，不会覆盖已有 Alt。"
+                    data-confirm-title="一键补充 Alt 文字"
+                    data-confirm-confirm="确认补充">一键补充 Alt（<?= e((string) $missingAlt) ?> 篇）</button>
+            </form>
+        </div>
+    <?php endif; ?>
 
     <!-- ── SEO / 技术健康快照 ─────────────────────────────────────────────── -->
     <section class="newsletter-block">

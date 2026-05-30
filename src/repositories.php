@@ -184,6 +184,51 @@ function record_article_audit(int $articleId, string $action, ?string $fromStatu
     }
 }
 
+/**
+ * Count published articles missing hero image Alt text.
+ */
+function count_articles_missing_alt(): int
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return 0;
+    }
+    try {
+        return (int) $pdo->query("SELECT COUNT(*) FROM articles WHERE status='published' AND (hero_image_alt IS NULL OR hero_image_alt='')")->fetchColumn();
+    } catch (Throwable $exception) {
+        return 0;
+    }
+}
+
+/**
+ * One-time safe backfill: fill EMPTY hero_image_alt with the article title.
+ * Never overwrites existing Alt text. Returns count updated.
+ */
+function backfill_missing_image_alt(): array
+{
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return ['ok' => false, 'updated' => 0, 'message' => '数据库未连接。'];
+    }
+    try {
+        $before = count_articles_missing_alt();
+        $statement = $pdo->prepare("UPDATE articles
+            SET hero_image_alt = title
+            WHERE status='published' AND (hero_image_alt IS NULL OR hero_image_alt='') AND title <> ''");
+        $statement->execute();
+        $updated = $statement->rowCount();
+        return [
+            'ok' => true,
+            'updated' => $updated,
+            'message' => $updated > 0
+                ? ('已为 ' . $updated . ' 篇文章补充图片替代文字（使用文章标题作为默认值，可随时在文章编辑页改成更贴切的描述）。')
+                : '没有需要补充的文章，所有已发布文章都已有图片替代文字。',
+        ];
+    } catch (Throwable $exception) {
+        return ['ok' => false, 'updated' => 0, 'message' => '补充失败：' . $exception->getMessage()];
+    }
+}
+
 function article_media_url(array $article): string
 {
     $image = trim((string) ($article['hero_image_path'] ?? ''));

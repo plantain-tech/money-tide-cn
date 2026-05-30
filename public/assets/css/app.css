@@ -6211,3 +6211,24 @@ img[loading="lazy"].is-loaded {
     .milestone-hero-stats strong { font-size: 1.5rem; }
     .milestone-cta { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Alt backfill banner ────────────────────────────────────────────────────── */
+.alt-backfill-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    border: 2px solid var(--ink);
+    background: color-mix(in srgb, var(--lime), var(--paper-strong) 60%);
+    box-shadow: var(--shadow);
+}
+.alt-backfill-banner strong { font-size: 1.02rem; display: block; margin-bottom: 4px; }
+.alt-backfill-banner p { margin: 0; font-size: 0.9rem; line-height: 1.6; max-width: 70ch; }
+.alt-backfill-banner form { flex-shrink: 0; }
+@media (max-width: 640px) {
+    .alt-backfill-banner { flex-direction: column; align-items: flex-start; }
+    .alt-backfill-banner .button { width: 100%; }
+}

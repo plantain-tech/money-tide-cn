@@ -1788,7 +1788,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-8-day-7-launch-ready',
+            'release'    => 'week-8-final',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -1824,6 +1824,14 @@ if ($route === 'admin/backup') {
     exit;
 }
 
+if ($route === 'admin/content-ops/backfill-alt' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $result = backfill_missing_image_alt();
+    $flash = (string) ($result['message'] ?? '');
+    header('Location: ' . url('admin/content-ops') . '?flash=' . rawurlencode($flash));
+    exit;
+}
+
 if ($route === 'admin/content-ops') {
     require_admin();
     render_page('admin/content-ops', [
@@ -1833,6 +1841,8 @@ if ($route === 'admin/content-ops') {
         'dailyChecklist' => content_ops_daily_checklist(),
         'weeklyRhythm' => content_ops_weekly_rhythm(),
         'seoHealth' => seo_health_snapshot(),
+        'missingAlt' => count_articles_missing_alt(),
+        'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
     exit;
 }
