@@ -59,7 +59,8 @@ $queueUrl = static function (array $override = []) use ($filters): string {
                     <span><?= $scheduledAt ? e(date('H:i', $scheduledAt)) : '未设置时间' ?></span>
                 </div>
                 <div class="queue-body">
-                    <p class="eyebrow">Newsletter · <?= e((string) $issue['status']) ?></p>
+                    <?php $statusZh = ['draft' => '草稿', 'ready' => '可发送', 'scheduled' => '已排期', 'sent' => '已发送', 'archived' => '已归档']; ?>
+                    <p class="eyebrow">早报 · <?= e($statusZh[(string) $issue['status']] ?? (string) $issue['status']) ?></p>
                     <h2><?= e((string) $issue['subject']) ?></h2>
                     <p><?= e((string) ($issue['intro'] ?? '')) ?></p>
                     <div class="schedule-progress">

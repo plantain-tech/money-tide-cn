@@ -16,8 +16,8 @@ foreach ($drafts as $d) {
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
-            <a class="ghost-link" href="<?= e(url('admin/ai-bots')) ?>">Bots</a>
-            <a class="ghost-link" href="<?= e(url('admin/ai-intake')) ?>">选题 Intake</a>
+            <a class="ghost-link" href="<?= e(url('admin/ai-bots')) ?>">机器人</a>
+            <a class="ghost-link" href="<?= e(url('admin/ai-intake')) ?>">选题录入</a>
             <a class="button button-small" href="<?= e(url('admin/ai-drafts/new')) ?>">生成草稿</a>
         </div>
     </div>

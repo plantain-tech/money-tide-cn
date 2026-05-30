@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Week 5 QA - 钱潮 Money Tide';
+$pageTitle = '第 5 周检查 - 钱潮 Money Tide';
 $pass = 0;
 $total = count($smokeChecks);
 foreach ($smokeChecks as $c) {
@@ -11,24 +11,24 @@ foreach ($smokeChecks as $c) {
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 5 AI Newsroom</p>
-            <h1>Week 5 完成签收</h1>
-            <p>覆盖 AI 编辑机器人、选题 Intake、草稿队列、事实核查、改写工具、newsletter 助理和进度 modal。</p>
+            <p class="eyebrow">第 5 周 · AI 编辑部</p>
+            <h1>第 5 周完成签收</h1>
+            <p>覆盖 AI 编辑机器人、选题录入、草稿队列、事实核查、改写工具、早报助理和进度提示。</p>
         </div>
         <div class="admin-actions">
-            <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">Smoke</a>
+            <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">系统自检</a>
             <a class="ghost-link" href="<?= e(url('admin/diagnostics')) ?>">诊断</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
         </div>
     </div>
 
     <div class="status-banner <?= $pass === $total ? 'is-ready' : 'is-warning' ?>">
-        <strong>Smoke 自检：<?= e((string) $pass) ?>/<?= e((string) $total) ?></strong>
+        <strong>系统自检：<?= e((string) $pass) ?>/<?= e((string) $total) ?></strong>
         <span><?= $pass === $total ? '所有核心模块运转正常。' : '有未通过项，请去 /admin/smoke 查看详情。' ?></span>
     </div>
 
     <section class="newsletter-block">
-        <h2>Week 5 完成定义 (Definition of Done)</h2>
+        <h2>第 5 周完成定义</h2>
         <ol class="qa-list">
             <li><strong>管理员可管理 AI 编辑机器人。</strong><small>/admin/ai-bots — 名称 / 语气 / 目标读者 / 来源规则 / 风险规则 / 提示词模板 / 启用状态</small></li>
             <li><strong>管理员可提交选题与来源。</strong><small>/admin/ai-intake — 选择 bot、紧急程度、目标读者、来源链接</small></li>
@@ -43,7 +43,7 @@ foreach ($smokeChecks as $c) {
     </section>
 
     <section class="newsletter-block">
-        <h2>Week 5 QA 自查清单</h2>
+        <h2>第 5 周 QA 自查清单</h2>
         <ol class="qa-list">
             <?php foreach ($items as $item): ?>
                 <li>
@@ -55,7 +55,7 @@ foreach ($smokeChecks as $c) {
     </section>
 
     <section class="newsletter-block">
-        <h2>Week 6 Backlog</h2>
+        <h2>第 6 周储备清单</h2>
         <div class="story-grid">
             <?php foreach ($backlog as $item): ?>
                 <article class="story-card interactive-card">

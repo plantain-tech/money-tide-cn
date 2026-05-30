@@ -9,7 +9,7 @@ while (count($bullets) < 3) {
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 6 · 速读</p>
+            <p class="eyebrow">第 6 周 · 速读</p>
             <h1>60 秒看懂</h1>
             <p>给这篇文章配一个可跳读、可分享的速读卡：一句话总结、3 个要点、关键数字、为什么重要、风险提示。</p>
         </div>

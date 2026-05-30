@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 6 · 社交分发</p>
+            <p class="eyebrow">第 6 周 · 社交分发</p>
             <h1>社交文案中心</h1>
             <p>跨文章查看所有社交文案。每条都对应一篇文章 × 一个渠道。</p>
         </div>
@@ -50,7 +50,7 @@
 
     <div class="admin-table">
         <div class="admin-table-row admin-table-head">
-            <span>文章</span><span>渠道</span><span>文案预览</span><span>Schedule</span><span>状态</span><span>操作</span>
+            <span>文章</span><span>渠道</span><span>文案预览</span><span>排期</span><span>状态</span><span>操作</span>
         </div>
         <?php foreach ($posts as $row): ?>
             <?php

@@ -18,7 +18,7 @@ $tabHref = static function (string $status) use ($baseQuery): string {
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">CMS</p>
+            <p class="eyebrow">内容管理</p>
             <h1>文章管理</h1>
             <p>创建、搜索、审核和发布钱潮文章。删除仅限管理员，发布和归档仅限编辑/管理员。</p>
         </div>
@@ -81,8 +81,8 @@ $tabHref = static function (string $status) use ($baseQuery): string {
             <div class="admin-table-row">
                 <div>
                     <strong><?= e($article['title']) ?></strong>
-                    <?php if (!empty($article['is_premium'])): ?><small><mark>Premium</mark></small><?php endif; ?>
-                    <small><?= e($article['slug']) ?> · <?= e((string) $article['read_time_minutes']) ?> min</small>
+                    <?php if (!empty($article['is_premium'])): ?><small><mark>会员</mark></small><?php endif; ?>
+                    <small><?= e($article['slug']) ?> · <?= e((string) $article['read_time_minutes']) ?> 分钟</small>
                     <small>作者：<?= e((string) ($article['author_name'] ?? '钱潮编辑部')) ?><?= !empty($article['editor_name']) ? ' · 责任编辑：' . e((string) $article['editor_name']) : '' ?></small>
                 </div>
                 <span><?= e($article['category_name']) ?></span>

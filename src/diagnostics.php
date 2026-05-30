@@ -246,6 +246,26 @@ function admin_smoke_checks(): array
             'detail' => $reactions['total_all'] . ' reactions · ' . count(reaction_types()) . ' types',
         ];
     }
+    // SEO / technical health (sitemap, robots, RSS, JSON-LD, OG, canonical, alt)
+    if (function_exists('seo_health_snapshot')) {
+        $seo = seo_health_snapshot();
+        $seoPass = count(array_filter($seo, static fn (array $c): bool => $c['ok']));
+        $seoTotal = count($seo);
+        $checks[] = [
+            'name' => 'SEO 与可发现性',
+            'ok' => $seoPass === $seoTotal,
+            'detail' => $seoPass . '/' . $seoTotal . ' 项正常（sitemap · robots · RSS · JSON-LD · OG · canonical · alt）',
+            'group' => 'content',
+        ];
+    }
+    if (function_exists('content_ops_daily_checklist')) {
+        $checks[] = [
+            'name' => '内容运营手册',
+            'ok' => count(daily_publishing_rhythm()) >= 5 && !empty(content_ops_daily_checklist()),
+            'detail' => count(daily_publishing_rhythm()) . ' 个发布节奏阶段 · 每日运营清单已就绪',
+            'group' => 'content',
+        ];
+    }
     // Safety audit: no auto-publish / no auto-broadcast / no auto-post
     if (function_exists('backup_safety_audit')) {
         foreach (backup_safety_audit() as $gate) {

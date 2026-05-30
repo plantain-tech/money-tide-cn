@@ -89,7 +89,7 @@
             <span>按月/周查看文章发布时间与 newsletter 排期，并快速进入编辑页。</span>
         </a>
         <a class="admin-module" href="<?= e(url('subscribe')) ?>">
-            <strong>Newsletter</strong>
+            <strong>邮件订阅</strong>
             <span>查看公开订阅入口，订阅数据已写入 MySQL。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/subscribers')) ?>">
@@ -192,6 +192,10 @@
             <strong>备份与安全</strong>
             <span>分级数据导出、安全保障审计、权限矩阵、监控集成指南。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/content-ops')) ?>">
+            <strong>内容运营</strong>
+            <span>每日发布节奏、内容运营清单、每周选题分布与 SEO 健康快照。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>
@@ -221,7 +225,7 @@
             <span>检查上线前的内容、AI、订阅和数据库状态。</span>
         </a>
         <a class="admin-module" href="<?= e(url('admin/launch-checklist')) ?>">
-            <strong>Launch Checklist</strong>
+            <strong>上线检查清单</strong>
             <span>最终确认第一周 MVP 是否可以公开试运营。</span>
         </a>
         <form class="admin-module admin-module-form" method="post" action="<?= e(url('admin/seed-launch-articles')) ?>">

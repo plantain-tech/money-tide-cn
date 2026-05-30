@@ -3,7 +3,7 @@
     <div class="admin-topbar">
         <div>
             <p class="eyebrow">钱潮早报</p>
-            <h1>Newsletter 期号</h1>
+            <h1>早报期号</h1>
             <p>组装、预览、测试和广播每一期。</p>
         </div>
         <div class="admin-actions">

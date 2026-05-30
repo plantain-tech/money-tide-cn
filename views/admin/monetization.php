@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Monetization</p>
+            <p class="eyebrow">会员变现</p>
             <h1>会员与变现准备</h1>
             <p>当前只做 premium 标记和软付费墙结构，不阻止任何读者阅读。</p>
         </div>

@@ -1824,6 +1824,19 @@ if ($route === 'admin/backup') {
     exit;
 }
 
+if ($route === 'admin/content-ops') {
+    require_admin();
+    render_page('admin/content-ops', [
+        'site' => $site,
+        'categories' => $categories,
+        'rhythm' => daily_publishing_rhythm(),
+        'dailyChecklist' => content_ops_daily_checklist(),
+        'weeklyRhythm' => content_ops_weekly_rhythm(),
+        'seoHealth' => seo_health_snapshot(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/week8-checklist') {
     require_admin();
     render_page('admin/week8-checklist', [

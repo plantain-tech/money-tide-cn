@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 5 AI Newsroom</p>
+            <p class="eyebrow">第 5 周 · AI 编辑部</p>
             <h1>AI 选题 Intake</h1>
             <p>输入选题角度、来源和目标栏目，让对应机器人先生成编辑简报，再进入草稿流程。</p>
         </div>
@@ -65,8 +65,8 @@
             <div class="ai-generation-panel" data-ai-generation-panel hidden aria-live="polite">
                 <div class="ai-generation-head">
                     <div>
-                        <span class="ai-generation-kicker">AI intake</span>
-                        <strong data-ai-generation-title>Editorial bot is preparing the brief</strong>
+                        <span class="ai-generation-kicker">AI 选题录入</span>
+                        <strong data-ai-generation-title>编辑机器人正在准备简报</strong>
                     </div>
                     <span class="ai-generation-percent" data-ai-generation-percent>0%</span>
                 </div>
@@ -74,8 +74,8 @@
                     <span data-ai-generation-bar></span>
                 </div>
                 <div class="ai-generation-meta">
-                    <span data-ai-generation-step>Reading source links and building the editorial brief.</span>
-                    <span data-ai-generation-time>0s elapsed</span>
+                    <span data-ai-generation-step>正在读取来源链接并整理编辑简报。</span>
+                    <span data-ai-generation-time>已用时 0 秒</span>
                 </div>
             </div>
             <div class="cms-form-actions">

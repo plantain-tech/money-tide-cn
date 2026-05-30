@@ -11,7 +11,7 @@ $totalCount = count($bots);
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 5 · AI Newsroom</p>
+            <p class="eyebrow">第 5 周 · AI 编辑部</p>
             <h1>AI 编辑机器人</h1>
             <p>每个核心栏目都有自己的语气、目标读者、来源要求、风险规则和提示词。这里管理的是"谁在写"，任务模板管理的是"在写什么"。</p>
         </div>
@@ -110,7 +110,7 @@ $totalCount = count($bots);
                         <h3 class="ai-bot-section-title">提示词使命</h3>
                         <div class="ai-bot-field">
                             <label for="bot-<?= e($slug) ?>-prompt">Prompt mission</label>
-                            <textarea id="bot-<?= e($slug) ?>-prompt" name="prompt_template" rows="6" data-large required placeholder="Focus on price action, macro data, rates, USD..."><?= e((string) $bot['prompt_template']) ?></textarea>
+                            <textarea id="bot-<?= e($slug) ?>-prompt" name="prompt_template" rows="6" data-large required placeholder="例如：聚焦价格走势、宏观数据、利率、美元……"><?= e((string) $bot['prompt_template']) ?></textarea>
                             <small class="ai-bot-field-hint">这段会同步进入 AI 任务模板，作为这个栏目机器人的核心 system prompt。</small>
                         </div>
                     </section>

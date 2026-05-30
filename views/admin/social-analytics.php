@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 6 · 传播</p>
+            <p class="eyebrow">第 6 周 · 传播</p>
             <h1>社交与传播分析</h1>
             <p>哪些文章被分享、走了哪些渠道、社交带来多少回流、推荐链接带来多少订阅。</p>
         </div>

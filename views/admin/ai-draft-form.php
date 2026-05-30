@@ -66,8 +66,8 @@
         <div class="ai-generation-panel" data-ai-generation-panel hidden aria-live="polite">
             <div class="ai-generation-head">
                 <div>
-                    <span class="ai-generation-kicker">AI generation</span>
-                    <strong data-ai-generation-title>Editorial bot is preparing the draft</strong>
+                    <span class="ai-generation-kicker">AI 生成中</span>
+                    <strong data-ai-generation-title>编辑机器人正在准备草稿</strong>
                 </div>
                 <span class="ai-generation-percent" data-ai-generation-percent>0%</span>
             </div>
@@ -75,8 +75,8 @@
                 <span data-ai-generation-bar></span>
             </div>
             <div class="ai-generation-meta">
-                <span data-ai-generation-step>Reading source links and building the editorial brief.</span>
-                <span data-ai-generation-time>0s elapsed</span>
+                <span data-ai-generation-step>正在读取来源链接并整理编辑简报。</span>
+                <span data-ai-generation-time>已用时 0 秒</span>
             </div>
         </div>
         <div class="cms-form-actions">

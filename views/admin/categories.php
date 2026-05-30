@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">CMS</p>
+            <p class="eyebrow">内容管理</p>
             <h1>栏目</h1>
             <p>Day 3 先查看栏目结构；编辑栏目可以放到后续迭代。</p>
         </div>

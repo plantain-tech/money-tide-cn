@@ -5799,3 +5799,224 @@ img[loading="lazy"].is-loaded {
         gap: 8px;
     }
 }
+
+/* ── Week 8 Day 6: content operations ───────────────────────────────────────── */
+.ops-section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.ops-section-head h2 { margin: 0; }
+
+.ops-health-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: 1.5px solid var(--ink);
+}
+.ops-health-badge.is-ok { background: var(--lime); }
+.ops-health-badge.is-warn { background: color-mix(in srgb, #ffcc00, var(--paper) 30%); }
+
+/* SEO health grid */
+.ops-seo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+.ops-seo-card {
+    border: 2px solid var(--ink);
+    padding: 16px;
+    background: var(--paper-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ops-seo-card.is-warn { background: color-mix(in srgb, #ffcc00, var(--paper) 78%); }
+.ops-seo-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ops-seo-card p { margin: 0; font-size: 0.88rem; line-height: 1.5; color: var(--ink); }
+
+/* Daily rhythm timeline */
+.ops-rhythm-timeline {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.ops-rhythm-block {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+}
+.ops-rhythm-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+.ops-rhythm-icon {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--lime);
+    box-shadow: 3px 3px 0 var(--ink);
+    z-index: 1;
+}
+.ops-rhythm-line {
+    flex: 1;
+    width: 3px;
+    background: var(--ink);
+    margin: 4px 0;
+    min-height: 24px;
+}
+.ops-rhythm-content {
+    padding: 0 0 28px;
+    flex: 1;
+    min-width: 0;
+}
+.ops-rhythm-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+.ops-rhythm-head strong { font-size: 1.08rem; }
+.ops-rhythm-time {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+.ops-rhythm-focus { margin: 0 0 8px; font-weight: 600; line-height: 1.5; }
+.ops-rhythm-steps { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.ops-rhythm-steps li { font-size: 0.88rem; line-height: 1.5; color: var(--muted); }
+
+/* Daily checklist columns */
+.ops-checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-top: 14px;
+}
+.ops-checklist-col h3 {
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--ink);
+    font-size: 1rem;
+}
+.ops-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ops-checklist li { margin: 0; }
+.ops-checklist label {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border: 1.5px solid var(--line);
+    background: var(--paper-strong);
+    border-radius: 4px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.ops-checklist label:hover { border-color: var(--ink); }
+.ops-check {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--ink);
+    cursor: pointer;
+}
+.ops-check:checked + span {
+    text-decoration: line-through;
+    color: var(--muted);
+}
+.ops-checklist-note { margin-top: 10px; color: var(--muted); }
+
+/* Weekly rhythm */
+.ops-week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.ops-week-card {
+    border: 2px solid var(--ink);
+    padding: 14px;
+    background: var(--paper-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ops-week-card strong {
+    font-size: 0.95rem;
+    background: var(--ink);
+    color: var(--white);
+    padding: 3px 10px;
+    border-radius: 999px;
+    align-self: flex-start;
+}
+.ops-week-card p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
+
+/* ── Week 8 Day 6: mobile polish pass ───────────────────────────────────────── */
+@media (max-width: 640px) {
+    /* Admin shell tighter gutters on phones */
+    .admin-shell {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+    /* Admin topbar: stack title and actions */
+    .admin-topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .admin-topbar .admin-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    /* Filter bars wrap and go full-width */
+    .admin-filter-bar {
+        flex-wrap: wrap;
+    }
+    .admin-filter-bar input,
+    .admin-filter-bar select {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+    /* Content-ops rhythm: keep timeline tidy */
+    .ops-rhythm-icon { width: 40px; height: 40px; font-size: 1.2rem; }
+    /* Tables that use grid rows: let them scroll horizontally instead of squishing */
+    .permission-matrix-wrap,
+    .reaction-table,
+    .admin-table {
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Headings scale down a touch */
+    .admin-topbar h1 { font-size: 1.5rem; line-height: 1.25; }
+}
+
+@media (max-width: 420px) {
+    .ops-rhythm-block { gap: 12px; }
+    .ops-rhythm-head strong { font-size: 1rem; }
+    .backup-export-card { padding: 12px; }
+    /* Prevent code/url overflow on tiny screens */
+    .monitoring-url { font-size: 0.78rem; }
+}

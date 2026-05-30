@@ -32,7 +32,7 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">CMS</p>
+            <p class="eyebrow">内容管理</p>
             <h1><?= $mode === 'edit' ? '编辑文章' : '新建文章' ?></h1>
             <p>每篇文章都应包含清晰的作者、编辑、配图、摘要和发布状态。</p>
         </div>
@@ -375,7 +375,7 @@ if ($heroPreview !== '' && !preg_match('#^https?://#i', $heroPreview)) {
 
     <?php if ($mode === 'edit' && $auditLogs): ?>
         <section class="audit-panel">
-            <p class="eyebrow">Audit Trail</p>
+            <p class="eyebrow">审计记录</p>
             <h2>状态变更记录</h2>
             <div class="audit-list">
                 <?php foreach ($auditLogs as $log): ?>

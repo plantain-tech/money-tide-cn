@@ -76,7 +76,7 @@ $ready = $pass === $total;
     </section>
 
     <section class="newsletter-block">
-        <h2>第 8 周 Backlog</h2>
+        <h2>第 8 周储备清单</h2>
         <div class="story-grid week-backlog-grid">
             <?php foreach ($backlog as $item): ?>
                 <article class="story-card interactive-card">

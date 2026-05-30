@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">CMS</p>
+            <p class="eyebrow">内容管理</p>
             <h1>启动文章</h1>
             <p><?= e($seedResult['message'] ?? '操作完成。') ?></p>
         </div>

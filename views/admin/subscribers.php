@@ -2,7 +2,7 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Newsletter</p>
+            <p class="eyebrow">邮件订阅</p>
             <h1>订阅用户</h1>
             <p>查看邮箱、来源、状态、主题偏好、邀请转化和增长入口表现。</p>
         </div>

@@ -6,7 +6,7 @@ $slug = (string) ($article['slug'] ?? '');
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 6 · 分享图</p>
+            <p class="eyebrow">第 6 周 · 分享图</p>
             <h1>分享卡片 / OG 图</h1>
             <p>每篇文章自动生成三种 SVG 分享卡。可直接保存图片用于社交媒体，或作为 Open Graph 预览图。</p>
         </div>

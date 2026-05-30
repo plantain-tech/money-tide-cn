@@ -5,7 +5,7 @@ $articleId = (int) ($article['id'] ?? 0);
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">Week 6 · 微信导出</p>
+            <p class="eyebrow">第 6 周 · 微信导出</p>
             <h1>微信版面预览</h1>
             <p>用微信公众号编辑器粘贴前的最后一步。下面是干净 HTML，行内样式，复制粘贴即可。</p>
         </div>

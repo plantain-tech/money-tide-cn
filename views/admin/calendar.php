@@ -61,25 +61,25 @@ $renderEvent = static function (array $event) use ($eventTypeLabels, $statusLabe
     </div>
 
     <form class="admin-filter-bar calendar-filter-bar" method="get" action="<?= e(url('admin/calendar')) ?>">
-        <select name="view" aria-label="View">
+        <select name="view" aria-label="视图">
             <?php foreach ($viewModes as $value => $label): ?>
                 <option value="<?= e($value) ?>" <?= $filters['view'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
-        <input type="date" name="date" value="<?= e($filters['date']) ?>" aria-label="Date">
-        <select name="status" aria-label="Status">
+        <input type="date" name="date" value="<?= e($filters['date']) ?>" aria-label="日期">
+        <select name="status" aria-label="状态">
             <?php foreach ($statusOptions as $value => $label): ?>
                 <option value="<?= e($value) ?>" <?= $filters['status'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
-        <select name="category" aria-label="Category">
-            <option value="">All categories</option>
+        <select name="category" aria-label="栏目">
+            <option value="">全部栏目</option>
             <?php foreach ($adminCategories as $category): ?>
                 <option value="<?= e((string) $category['slug']) ?>" <?= $filters['category'] === $category['slug'] ? 'selected' : '' ?>><?= e((string) $category['name']) ?></option>
             <?php endforeach; ?>
         </select>
-        <select name="editor_id" aria-label="Editor">
-            <option value="0">All editors</option>
+        <select name="editor_id" aria-label="编辑">
+            <option value="0">全部编辑</option>
             <?php foreach ($editors as $editor): ?>
                 <?php $label = trim((string) ($editor['display_name'] ?? '')) ?: (string) $editor['email']; ?>
                 <option value="<?= e((string) $editor['id']) ?>" <?= (int) $filters['editor_id'] === (int) $editor['id'] ? 'selected' : '' ?>><?= e($label) ?></option>
@@ -112,7 +112,7 @@ $renderEvent = static function (array $event) use ($eventTypeLabels, $statusLabe
         </div>
     <?php else: ?>
         <div class="calendar-weekdays" aria-hidden="true">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
         </div>
         <div class="calendar-month-grid">
             <?php foreach ($monthDays as $day): ?>

@@ -2,8 +2,8 @@
 <section class="admin-shell">
     <div class="admin-topbar">
         <div>
-            <p class="eyebrow">QA</p>
-            <h1>Week 3 检查清单</h1>
+            <p class="eyebrow">质量检查</p>
+            <h1>第 3 周检查清单</h1>
             <p>用这个清单验证整周新功能。每一项给出 URL/操作提示。</p>
         </div>
         <div class="admin-actions">
