@@ -266,6 +266,14 @@ function admin_smoke_checks(): array
             'group' => 'content',
         ];
     }
+    if (function_exists('eight_week_journey')) {
+        $checks[] = [
+            'name' => '里程碑与路线图',
+            'ok' => count(eight_week_journey()) === 8 && count(post_milestone_roadmap()) === 6,
+            'detail' => count(eight_week_journey()) . ' 周回顾 · ' . count(post_milestone_roadmap()) . ' 条路线图方向',
+            'group' => 'content',
+        ];
+    }
     // Safety audit: no auto-publish / no auto-broadcast / no auto-post
     if (function_exists('backup_safety_audit')) {
         foreach (backup_safety_audit() as $gate) {

@@ -6020,3 +6020,194 @@ img[loading="lazy"].is-loaded {
     /* Prevent code/url overflow on tiny screens */
     .monitoring-url { font-size: 0.78rem; }
 }
+
+/* ── Week 8 Day 7: milestone wrap-up ────────────────────────────────────────── */
+.milestone-hero {
+    border: 3px solid var(--ink);
+    background: var(--paper-strong);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+}
+.milestone-hero.is-ready { background: color-mix(in srgb, var(--lime), var(--paper-strong) 55%); }
+.milestone-hero.is-warning { background: color-mix(in srgb, #ffcc00, var(--paper-strong) 60%); }
+
+.milestone-hero-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.milestone-hero-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+    animation: milestone-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.milestone-hero-status strong { font-size: 1.3rem; display: block; }
+.milestone-hero-status p { margin: 2px 0 0; color: var(--muted); }
+
+.milestone-hero-stats {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+.milestone-hero-stats div { text-align: center; }
+.milestone-hero-stats strong {
+    display: block;
+    font-size: 1.8rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.milestone-hero-stats span { font-size: 0.78rem; color: var(--muted); }
+
+@keyframes milestone-pop {
+    0% { transform: scale(0.4) rotate(-12deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Readiness pillars */
+.milestone-pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+.milestone-pillar {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.milestone-pillar:hover { transform: translateY(-3px); box-shadow: 4px 4px 0 var(--ink); }
+.milestone-pillar-icon { font-size: 1.6rem; }
+.milestone-pillar strong { font-size: 1rem; }
+.milestone-pillar p { margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--muted); }
+
+/* 8-week journey */
+.milestone-journey {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+.milestone-week {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 16px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: milestone-rise 0.45s ease forwards;
+    animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes milestone-rise {
+    to { opacity: 1; transform: translateY(0); }
+}
+.milestone-week-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--ink);
+}
+.milestone-week-icon {
+    font-size: 1.6rem;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--lime);
+    flex-shrink: 0;
+}
+.milestone-week-head strong { display: block; font-size: 1.05rem; }
+.milestone-week-theme { font-size: 0.82rem; color: var(--muted); }
+.milestone-week-items { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.milestone-week-items li { font-size: 0.85rem; line-height: 1.5; }
+
+/* Wrap-up note */
+.milestone-wrapup p { line-height: 1.7; margin: 0 0 12px; }
+.milestone-wrapup p:last-child { margin-bottom: 0; }
+
+/* Post-milestone roadmap */
+.milestone-roadmap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+}
+.milestone-roadmap-card {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.milestone-roadmap-card:hover { transform: translateY(-3px); box-shadow: 6px 6px 0 var(--ink); }
+.milestone-roadmap-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.milestone-roadmap-icon {
+    font-size: 1.8rem;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--lime);
+    flex-shrink: 0;
+}
+.milestone-roadmap-pillar {
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+}
+.milestone-roadmap-head strong { font-size: 1.1rem; }
+.milestone-roadmap-card p { margin: 0; font-size: 0.88rem; line-height: 1.6; flex: 1; }
+.milestone-roadmap-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.milestone-chip {
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--white);
+}
+.milestone-chip-effort { background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); }
+
+/* CTA */
+.milestone-cta {
+    margin-top: 24px;
+    padding: 22px;
+    border: 3px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper-strong);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.milestone-cta p { margin: 0; font-size: 1.02rem; font-weight: 600; }
+
+@media (max-width: 640px) {
+    .milestone-hero { flex-direction: column; align-items: flex-start; }
+    .milestone-hero-stats { gap: 16px; }
+    .milestone-hero-stats strong { font-size: 1.5rem; }
+    .milestone-cta { flex-direction: column; align-items: flex-start; }
+}

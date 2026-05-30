@@ -1788,7 +1788,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-8-day-5-backup-monitoring',
+            'release'    => 'week-8-day-7-launch-ready',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -1845,6 +1845,20 @@ if ($route === 'admin/week8-checklist') {
         'items' => week_eight_qa_checklist(),
         'backlog' => week_nine_backlog(),
         'smokeChecks' => admin_smoke_checks(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/milestone') {
+    require_admin();
+    render_page('admin/milestone', [
+        'site' => $site,
+        'categories' => $categories,
+        'journey' => eight_week_journey(),
+        'stats' => milestone_stats(),
+        'readiness' => launch_readiness_summary(),
+        'pillars' => launch_readiness_pillars(),
+        'roadmap' => post_milestone_roadmap(),
     ]);
     exit;
 }

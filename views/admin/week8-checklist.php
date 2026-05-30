@@ -17,9 +17,10 @@ $ready = $pass === $total;
             <p>确认真实邮件投递、Google OAuth、性能缓存、备份导出和安全保障都已稳定上线。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/milestone')) ?>">里程碑回顾</a>
             <a class="ghost-link" href="<?= e(url('admin/backup')) ?>">备份</a>
             <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">系统自检</a>
-            <a class="ghost-link" href="<?= e(url('admin/email-delivery')) ?>">邮件</a>
+            <a class="ghost-link" href="<?= e(url('admin/content-ops')) ?>">内容运营</a>
         </div>
     </div>
 
@@ -44,6 +45,16 @@ $ready = $pass === $total;
             <span>D5</span>
             <strong>备份与安全</strong>
             <p>分级导出清单、安全保障审计、权限矩阵、监控友好 smoke JSON。</p>
+        </article>
+        <article class="week-release-card">
+            <span>D6</span>
+            <strong>UX / SEO / 运营</strong>
+            <p>移动端打磨、全站中文化、SEO 健康快照、内容运营手册与发布节奏。</p>
+        </article>
+        <article class="week-release-card">
+            <span>D7</span>
+            <strong>上线就绪</strong>
+            <p>里程碑回顾、8 周之路、上线就绪保障、8 周后路线图、最终签收。</p>
         </article>
     </div>
 
@@ -76,12 +87,28 @@ $ready = $pass === $total;
     </section>
 
     <section class="newsletter-block">
-        <h2>第 9 周储备清单</h2>
-        <div class="story-grid week-backlog-grid">
+        <div class="ops-section-head">
+            <h2>🧭 8 周之后的路线图</h2>
+            <a class="ghost-link" href="<?= e(url('admin/milestone')) ?>">完整里程碑回顾 →</a>
+        </div>
+        <p>基础已经牢固，下一步按这六个方向推动增长（仍然遵守"不自动对外"的底线）。</p>
+        <div class="milestone-roadmap">
             <?php foreach ($backlog as $item): ?>
-                <article class="story-card interactive-card">
-                    <h3><?= e($item['title']) ?></h3>
+                <article class="milestone-roadmap-card">
+                    <div class="milestone-roadmap-head">
+                        <span class="milestone-roadmap-icon"><?= e($item['icon'] ?? '•') ?></span>
+                        <div>
+                            <?php if (!empty($item['pillar'])): ?><span class="milestone-roadmap-pillar"><?= e($item['pillar']) ?></span><?php endif; ?>
+                            <strong><?= e($item['title']) ?></strong>
+                        </div>
+                    </div>
                     <p><?= e($item['detail']) ?></p>
+                    <?php if (!empty($item['phase'])): ?>
+                        <div class="milestone-roadmap-meta">
+                            <span class="milestone-chip"><?= e($item['phase']) ?></span>
+                            <?php if (!empty($item['effort'])): ?><span class="milestone-chip milestone-chip-effort">工作量：<?= e($item['effort']) ?></span><?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </div>

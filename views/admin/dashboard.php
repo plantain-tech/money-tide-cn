@@ -196,6 +196,10 @@
             <strong>内容运营</strong>
             <span>每日发布节奏、内容运营清单、每周选题分布与 SEO 健康快照。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/milestone')) ?>">
+            <strong>里程碑回顾</strong>
+            <span>8 周建设之路、上线就绪保障、生产自检总览与 8 周后路线图。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

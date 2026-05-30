@@ -234,20 +234,72 @@ function week_eight_qa_checklist(): array
         ['label' => 'Smoke 自检 JSON 包含 status / summary / failures 字段，可接入外部监控工具。', 'tip' => '/admin/smoke?format=json — 确认 JSON 有 "status":"ok"、"summary" 对象和 "failures" 数组。'],
         ['label' => '安全审计确认无自动发布、无自动广播、无自动社交发帖，所有高风险操作需手动触发。', 'tip' => '/admin/backup — 查看"安全保障"面板，确认 7 项 PASS。'],
         ['label' => '权限矩阵确认 writer 无法发布/删除，editor 无法删除，admin 有全部权限。', 'tip' => '/admin/backup — 查看"角色权限矩阵"，确认矩阵与实际代码逻辑一致。'],
-        ['label' => '生产 smoke 全部通过，release marker 已更新到 week-8-day-5-backup-monitoring。', 'tip' => '/admin/smoke?format=json 与 /health.php。'],
+        ['label' => '管理后台界面全部为自然中文，没有遗留英文 prompt、标题或卡片名称。', 'tip' => '随机打开 5 个后台页面，确认 eyebrow、按钮、表头、提示语都是中文。'],
+        ['label' => '移动端后台与前台都不横向溢出，按钮触控区 ≥44px，筛选栏自动换行。', 'tip' => '用 375px 宽度访问 /、/article/{slug}、/admin/articles、/admin/content-ops。'],
+        ['label' => '内容运营手册可用：每日发布节奏、每日清单、每周节奏、SEO 健康快照齐全。', 'tip' => '/admin/content-ops — 确认时间轴、清单勾选、SEO 卡片都正常。'],
+        ['label' => '生产 smoke 全部通过，release marker 已更新到 week-8-day-7-launch-ready。', 'tip' => '/admin/smoke?format=json 与 /health.php。'],
     ];
 }
 
+/**
+ * Post-8-week roadmap — six strategic pillars to pursue after the foundation
+ * is complete. Each keeps the core safety rule (nothing auto-publishes/sends).
+ */
 function week_nine_backlog(): array
 {
+    return post_milestone_roadmap();
+}
+
+function post_milestone_roadmap(): array
+{
     return [
-        ['title' => '深度读者反馈', 'detail' => '在现有 reactions 基础上，评估短评论、审核队列和反垃圾规则。先构建后台审核工具，再公开评论入口。'],
-        ['title' => '个性化早报', 'detail' => '根据 reader_preference_topics 拼装不同早报版本。先做预览和人工发送，不自动群发。'],
-        ['title' => '付费会员前置验证', 'detail' => '测试 premium 标签、会员权益页和转化 CTA。先不接支付，通过点击率验证用户意愿。'],
-        ['title' => '内容增长分析', 'detail' => '汇总搜索词、RSS 访问量、阅读反馈、保存/分享率和订阅来源，生成第一份增长报告。'],
-        ['title' => '多语言内容试验', 'detail' => '评估部分文章提供英文版的可行性，重点面向出海中国创业者受众。'],
-        ['title' => 'SEO 深化', 'detail' => '完善 schema.org 标记、内链策略和 Google Search Console 接入，追踪关键词排名。'],
-        ['title' => '电子邮件自动化', 'detail' => '欢迎邮件序列、14 天无活跃提醒、首次发布的编辑手记——不群发，全部基于用户行为触发（人工审批后执行）。'],
-        ['title' => '编辑工作台 V2', 'detail' => '拖拽排期、快速复制链接、批量状态变更，让 100 篇文章的编辑效率明显提升。'],
+        [
+            'pillar' => '付费会员',
+            'icon' => '💎',
+            'title' => 'Premium 会员体系',
+            'detail' => '把现有 premium 标签升级为真正的会员体系：会员专享文章、深度报告、无广告阅读。先用软付费墙和会员权益页验证转化意愿，再接入 Stripe / 微信支付。',
+            'phase' => '第 9–10 周',
+            'effort' => '大',
+        ],
+        [
+            'pillar' => '读者评论',
+            'icon' => '💬',
+            'title' => '评论与深度互动',
+            'detail' => '在现有"有帮助 / 想看更多 / 太复杂"反馈之上，加入短评论。先建后台审核队列与反垃圾规则，评论默认审核后可见，绝不自动放行。',
+            'phase' => '第 9 周',
+            'effort' => '中',
+        ],
+        [
+            'pillar' => '个性化',
+            'icon' => '🎯',
+            'title' => '个性化内容与早报',
+            'detail' => '基于 reader_preference_topics 与阅读历史，为每位读者拼装个性化首页板块和早报版本。先做预览 + 人工发送，验证效果后再考虑自动化（仍需人工审批）。',
+            'phase' => '第 10–11 周',
+            'effort' => '大',
+        ],
+        [
+            'pillar' => '微信生态',
+            'icon' => '🟢',
+            'title' => '微信生态深化',
+            'detail' => '从现有微信导出，扩展到公众号自动排版模板、小程序阅读入口、服务号模板消息（人工触发），把微信变成主要分发与留存渠道。',
+            'phase' => '第 11–12 周',
+            'effort' => '大',
+        ],
+        [
+            'pillar' => 'AI 编辑部',
+            'icon' => '🤖',
+            'title' => '进阶 AI 编辑部',
+            'detail' => '让栏目机器人更强：多源交叉核查、自动生成数据图表建议、选题趋势雷达、草稿质量自评打分。所有产出仍是草稿，发布权始终在编辑手里。',
+            'phase' => '第 10–12 周',
+            'effort' => '大',
+        ],
+        [
+            'pillar' => '数据分析',
+            'icon' => '📈',
+            'title' => '更强的数据分析',
+            'detail' => '从基础统计升级为增长分析：留存曲线、漏斗转化、内容主题表现、订阅来源 ROI、读者反馈与选题方向的相关性，生成每周增长报告指导决策。',
+            'phase' => '第 9–10 周',
+            'effort' => '中',
+        ],
     ];
 }

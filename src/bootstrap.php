@@ -35,6 +35,7 @@ require_once __DIR__ . '/editorial_calendar.php';
 require_once __DIR__ . '/reactions.php';
 require_once __DIR__ . '/backup.php';
 require_once __DIR__ . '/content_ops.php';
+require_once __DIR__ . '/milestone.php';
 require_once __DIR__ . '/diagnostics.php';
 require_once __DIR__ . '/content.php';
 
