@@ -145,7 +145,7 @@ jobs:
           # FTPS drops better than lftp's own in-session reconnect.
           attempt=1
           max_attempts=3
-          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -f /tmp/deploy.lftp; do
+          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" < /tmp/deploy.lftp; do
             if [ "$attempt" -ge "$max_attempts" ]; then
               echo "Deploy failed after $attempt attempts."
               exit 1
