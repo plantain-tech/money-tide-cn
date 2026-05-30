@@ -58,7 +58,7 @@ function launch_cleanup_table_exists(string $table): bool
         return false;
     }
     try {
-        $stmt = $pdo->prepare('SHOW TABLES LIKE :table');
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
         $stmt->execute(['table' => $table]);
         return (bool) $stmt->fetchColumn();
     } catch (Throwable $exception) {
