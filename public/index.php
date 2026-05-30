@@ -1776,15 +1776,62 @@ if ($route === 'admin/diagnostics') {
 
 if ($route === 'admin/smoke') {
     require_admin();
+    $smokeChecks = admin_smoke_checks();
     if (($_GET['format'] ?? '') === 'json') {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['checks' => admin_smoke_checks()], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        header('Cache-Control: no-store');
+        $passed  = array_filter($smokeChecks, static fn (array $c): bool => (bool) $c['ok']);
+        $failed  = array_filter($smokeChecks, static fn (array $c): bool => !(bool) $c['ok']);
+        $total   = count($smokeChecks);
+        $passCount = count($passed);
+        $failCount = count($failed);
+        echo json_encode([
+            'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
+            'app'        => 'money-tide',
+            'release'    => 'week-8-day-5-backup-monitoring',
+            'checked_at' => gmdate('c'),
+            'summary'    => [
+                'total'     => $total,
+                'passed'    => $passCount,
+                'failed'    => $failCount,
+                'pass_rate' => $total > 0 ? round($passCount / $total, 4) : 0.0,
+            ],
+            'failures' => array_values(array_map(
+                static fn (array $c): array => ['name' => $c['name'], 'detail' => $c['detail']],
+                $failed
+            )),
+            'checks' => $smokeChecks,
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         exit;
     }
     render_page('admin/smoke', [
         'site' => $site,
         'categories' => $categories,
-        'checks' => admin_smoke_checks(),
+        'checks' => $smokeChecks,
+    ]);
+    exit;
+}
+
+if ($route === 'admin/backup') {
+    require_admin();
+    render_page('admin/backup', [
+        'site' => $site,
+        'categories' => $categories,
+        'manifest' => backup_export_manifest(),
+        'safetyAudit' => backup_safety_audit(),
+        'permissionMatrix' => backup_permission_matrix(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/week8-checklist') {
+    require_admin();
+    render_page('admin/week8-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'items' => week_eight_qa_checklist(),
+        'backlog' => week_nine_backlog(),
+        'smokeChecks' => admin_smoke_checks(),
     ]);
     exit;
 }

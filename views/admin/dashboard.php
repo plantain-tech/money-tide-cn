@@ -184,6 +184,14 @@
             <strong>第 7 周检查</strong>
             <span>检查搜索、RSS、编辑日历、排期队列、读者反馈和 Week 8 backlog。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/week8-checklist')) ?>">
+            <strong>第 8 周检查</strong>
+            <span>确认邮件投递、Google OAuth、性能缓存、备份导出与安全保障。</span>
+        </a>
+        <a class="admin-module" href="<?= e(url('admin/backup')) ?>">
+            <strong>备份与安全</strong>
+            <span>分级数据导出、安全保障审计、权限矩阵、监控集成指南。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/diagnostics')) ?>">
             <strong>系统诊断</strong>
             <span>数据库表行数、AI 额度、PHP 错误日志。</span>

@@ -8,16 +8,46 @@
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
-            <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">Smoke</a>
+            <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">自检</a>
+            <a class="ghost-link" href="<?= e(url('admin/backup')) ?>">备份</a>
             <a class="ghost-link" href="<?= e(url('admin/exports')) ?>">导出</a>
             <a class="ghost-link" href="<?= e(url('admin/audit')) ?>">审计日志</a>
-            <a class="ghost-link" href="<?= e(url('admin/qa-checklist')) ?>">QA</a>
         </div>
     </div>
 
-    <div class="status-banner <?= $diagnostics['ready'] ? 'is-ready' : 'is-warning' ?>">
-        <strong>数据库：<?= $diagnostics['ready'] ? '已连接' : '未连接' ?></strong>
-        <span>MySQL 版本：<?= e($diagnostics['version'] ?: '—') ?> · 今日 AI：<?= e((string) $aiUsage['used_today']) ?>/<?= e((string) $aiUsage['daily_limit']) ?></span>
+    <?php
+    $tableOk = count(array_filter($diagnostics['tables'], static fn (array $t): bool => $t['error'] === null));
+    $tableTotal = count($diagnostics['tables']);
+    $tableErrors = $tableTotal - $tableOk;
+    ?>
+    <div class="diagnostics-health-bar">
+        <div class="diag-stat <?= $diagnostics['ready'] ? 'diag-stat-ok' : 'diag-stat-fail' ?>">
+            <span>数据库</span>
+            <strong><?= $diagnostics['ready'] ? '已连接' : '未连接' ?></strong>
+        </div>
+        <div class="diag-stat diag-stat-ok">
+            <span>MySQL</span>
+            <strong><?= e($diagnostics['version'] ? explode('-', $diagnostics['version'])[0] : '—') ?></strong>
+        </div>
+        <div class="diag-stat <?= $tableErrors === 0 ? 'diag-stat-ok' : 'diag-stat-warn' ?>">
+            <span>表状态</span>
+            <strong><?= e((string) $tableOk) ?>/<?= e((string) $tableTotal) ?> 正常</strong>
+        </div>
+        <div class="diag-stat <?= $aiUsage['used_today'] < $aiUsage['daily_limit'] ? 'diag-stat-ok' : 'diag-stat-warn' ?>">
+            <span>今日 AI</span>
+            <strong><?= e((string) $aiUsage['used_today']) ?>/<?= e((string) $aiUsage['daily_limit']) ?></strong>
+        </div>
+        <?php if (!empty($errorLog['lines'])): ?>
+            <div class="diag-stat diag-stat-warn">
+                <span>错误日志</span>
+                <strong><?= e((string) count($errorLog['lines'])) ?> 行</strong>
+            </div>
+        <?php else: ?>
+            <div class="diag-stat diag-stat-ok">
+                <span>错误日志</span>
+                <strong>清空</strong>
+            </div>
+        <?php endif; ?>
     </div>
 
     <?php if (!empty($diagnostics['errors'])): ?>

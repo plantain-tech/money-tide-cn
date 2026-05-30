@@ -246,6 +246,17 @@ function admin_smoke_checks(): array
             'detail' => $reactions['total_all'] . ' reactions · ' . count(reaction_types()) . ' types',
         ];
     }
+    // Safety audit: no auto-publish / no auto-broadcast / no auto-post
+    if (function_exists('backup_safety_audit')) {
+        foreach (backup_safety_audit() as $gate) {
+            $checks[] = [
+                'name' => '安全：' . (string) $gate['gate'],
+                'ok' => (bool) $gate['ok'],
+                'detail' => (string) $gate['detail'],
+                'group' => 'safety',
+            ];
+        }
+    }
     if (function_exists('editorial_calendar_events')) {
         $calendarFilters = calendar_filters_from_request(['view' => 'month', 'date' => date('Y-m-d')]);
         $calendarRange = calendar_range($calendarFilters['view'], $calendarFilters['date']);
