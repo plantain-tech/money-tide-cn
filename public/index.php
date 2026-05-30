@@ -1149,6 +1149,8 @@ if (preg_match('#^admin/newsletter/(\d+)/edit$#', $route, $matches)) {
         'providerStatus' => email_provider_status(),
         'sends' => newsletter_issue_sends($issueId),
         'checklist' => newsletter_presend_checklist($issue),
+        'checklistReady' => newsletter_checklist_ready(newsletter_presend_checklist($issue)),
+        'deliverySummary' => newsletter_delivery_summary($issueId),
         'flash' => (string) ($_GET['flash'] ?? ''),
     ]);
     exit;
@@ -1230,7 +1232,9 @@ if (preg_match('#^admin/newsletter/(\d+)/test$#', $route, $matches) && ($_SERVER
     require_admin();
     $issueId = (int) $matches[1];
     $result = send_newsletter_test($issueId, (string) ($_POST['test_email'] ?? ''));
-    $flash = $result['ok'] ? '测试邮件已发送/记录。' : ('测试发送失败：' . ($result['message'] ?? ''));
+    $flash = $result['ok']
+        ? ('测试邮件已提交给邮件服务商。' . (!empty($result['message']) ? ' ' . $result['message'] : '') . ' 请在收件箱、垃圾邮件和 Brevo Logs 中确认 Delivered。')
+        : ('测试发送失败：' . ($result['message'] ?? ''));
     header('Location: ' . url('admin/newsletter/' . $issueId . '/edit') . '?flash=' . rawurlencode($flash));
     exit;
 }

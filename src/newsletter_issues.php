@@ -56,11 +56,28 @@ function ensure_newsletter_issues_schema(): void
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             issue_id INT UNSIGNED NOT NULL,
             email VARCHAR(255) NOT NULL,
+            send_type ENUM('test','broadcast') NOT NULL DEFAULT 'broadcast',
             status ENUM('queued','sent','failed','skipped') NOT NULL DEFAULT 'queued',
             error_message VARCHAR(500) NULL,
+            provider_message VARCHAR(255) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_sends_issue (issue_id, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM newsletter_sends LIKE 'send_type'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec("ALTER TABLE newsletter_sends ADD COLUMN send_type ENUM('test','broadcast') NOT NULL DEFAULT 'broadcast' AFTER email");
+            }
+        } catch (Throwable $exception) {
+        }
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM newsletter_sends LIKE 'provider_message'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec("ALTER TABLE newsletter_sends ADD COLUMN provider_message VARCHAR(255) NULL AFTER error_message");
+            }
+        } catch (Throwable $exception) {
+        }
     } catch (Throwable $exception) {
     }
 }
@@ -308,16 +325,79 @@ function newsletter_presend_checklist(array $issue): array
     $outro = trim((string) ($issue['outro'] ?? ''));
     $subject = trim((string) ($issue['subject'] ?? ''));
     $provider = function_exists('email_provider_status') ? email_provider_status() : ['ready' => false];
+    $fromAddress = (string) ($provider['from_address'] ?? '');
+    $fromDomain = strpos($fromAddress, '@') !== false ? substr(strrchr($fromAddress, '@') ?: '', 1) : '';
+    $hasReadableBlurb = count($articles) > 0;
+    foreach ($articles as $article) {
+        if (trim((string) ($article['blurb'] ?? $article['brief'] ?? '')) === '') {
+            $hasReadableBlurb = false;
+            break;
+        }
+    }
+    $activeSubscribers = function_exists('db_count') ? db_count('subscribers', "status = 'active'") : 0;
 
     return [
         ['label' => '邮件标题已填写', 'ok' => $subject !== '', 'tip' => '早报需要一个清晰的邮件标题。'],
         ['label' => '至少选择一篇文章', 'ok' => count($articles) > 0, 'tip' => '发送前请先加入已发布文章。'],
         ['label' => '开场导语已填写', 'ok' => $intro !== '', 'tip' => '可以使用 AI 助手生成，也可以手动写一段简短导语。'],
+        ['label' => '每篇文章有推荐语或摘要', 'ok' => $hasReadableBlurb, 'tip' => '建议至少为重点文章写推荐语，收件箱里更容易扫读。'],
         ['label' => '页脚/结尾已保留', 'ok' => $outro !== '', 'tip' => '请保留退订和上下文说明。'],
         ['label' => '排期时间已设置', 'ok' => $scheduledAt !== '', 'tip' => '排期只用于人工提醒，不会自动发送。'],
         ['label' => '状态为可发送或已排期', 'ok' => in_array((string) ($issue['status'] ?? ''), ['ready', 'scheduled'], true), 'tip' => '广播前请先从草稿推进到可发送或已排期。'],
+        ['label' => '存在 active 订阅者', 'ok' => $activeSubscribers > 0, 'tip' => '当前 active 订阅者：' . $activeSubscribers . '。'],
         ['label' => '邮件服务可用', 'ok' => !empty($provider['ready']), 'tip' => '测试期可以使用日志模式；真实发送需要配置邮件服务密钥。'],
+        ['label' => '发件人地址已使用钱潮域名', 'ok' => $fromAddress !== '' && str_contains($fromAddress, '@moneytidecn.avanturadeals.com'), 'tip' => '当前发件人：' . ($fromAddress !== '' ? $fromAddress : '未配置')],
+        ['label' => '域名发件认证已准备', 'ok' => $fromDomain === 'moneytidecn.avanturadeals.com', 'tip' => 'Brevo 中应显示 DKIM 和 DMARC 为绿色。'],
+        ['label' => '退订与偏好链接会自动加入', 'ok' => function_exists('generate_unsubscribe_token'), 'tip' => '正式广播会按每位收件人生成一键退订和订阅偏好链接。'],
     ];
+}
+
+function newsletter_checklist_ready(array $checklist): bool
+{
+    foreach ($checklist as $item) {
+        if (empty($item['ok'])) {
+            return false;
+        }
+    }
+    return count($checklist) > 0;
+}
+
+function newsletter_delivery_summary(int $issueId): array
+{
+    ensure_newsletter_issues_schema();
+    $pdo = db();
+    $summary = [
+        'test_sent' => 0,
+        'test_failed' => 0,
+        'broadcast_sent' => 0,
+        'broadcast_failed' => 0,
+        'latest_error' => '',
+    ];
+    if (!$pdo instanceof PDO) {
+        return $summary;
+    }
+    try {
+        $statement = $pdo->prepare("SELECT send_type, status, COUNT(*) AS total
+            FROM newsletter_sends
+            WHERE issue_id = :id
+            GROUP BY send_type, status");
+        $statement->execute(['id' => $issueId]);
+        foreach ($statement->fetchAll() ?: [] as $row) {
+            $key = ((string) $row['send_type']) . '_' . ((string) $row['status']);
+            if (array_key_exists($key, $summary)) {
+                $summary[$key] = (int) $row['total'];
+            }
+        }
+        $errorStmt = $pdo->prepare("SELECT error_message
+            FROM newsletter_sends
+            WHERE issue_id = :id AND status = 'failed' AND error_message IS NOT NULL
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1");
+        $errorStmt->execute(['id' => $issueId]);
+        $summary['latest_error'] = (string) ($errorStmt->fetchColumn() ?: '');
+    } catch (Throwable $exception) {
+    }
+    return $summary;
 }
 
 function newsletter_ready_to_send_today(): array
@@ -561,6 +641,7 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
             $payload = [
                 'sender' => ['name' => $fromName, 'email' => $fromAddr],
                 'to' => [['email' => $to]],
+                'replyTo' => ['email' => $fromAddr, 'name' => $fromName],
                 'subject' => $subject,
                 'htmlContent' => $html,
             ];
@@ -611,7 +692,19 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
     if ($body === false || $status >= 400) {
         return ['ok' => false, 'message' => email_provider_error_message($provider, $status, (string) $body, $error)];
     }
-    return ['ok' => true];
+    return ['ok' => true, 'message' => email_provider_success_message($provider, (string) $body)];
+}
+
+function email_provider_success_message(string $provider, string $body): string
+{
+    $payload = json_decode($body, true);
+    if ($provider === 'brevo' && is_array($payload) && !empty($payload['messageId'])) {
+        return 'Brevo accepted · ' . (string) $payload['messageId'];
+    }
+    if ($provider === 'resend' && is_array($payload) && !empty($payload['id'])) {
+        return 'Resend accepted · ' . (string) $payload['id'];
+    }
+    return $provider . ' accepted';
 }
 
 function email_provider_error_message(string $provider, int $status, string $body, string $curlError = ''): string
@@ -646,6 +739,7 @@ function email_provider_error_message(string $provider, int $status, string $bod
 
 function send_newsletter_test(int $issueId, string $toEmail): array
 {
+    ensure_newsletter_issues_schema();
     $issue = newsletter_issue_by_id($issueId);
     if (!$issue) {
         return ['ok' => false, 'message' => 'Issue 不存在。'];
@@ -653,9 +747,25 @@ function send_newsletter_test(int $issueId, string $toEmail): array
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         return ['ok' => false, 'message' => '测试邮箱无效。'];
     }
-    $html = render_newsletter_issue_html($issue);
+    $html = render_newsletter_issue_html($issue, $toEmail);
     $subject = '[测试] ' . (string) $issue['subject'];
-    return send_email_via_provider($toEmail, $subject, $html);
+    $result = send_email_via_provider($toEmail, $subject, $html);
+    $pdo = db();
+    if ($pdo instanceof PDO) {
+        try {
+            $stmt = $pdo->prepare('INSERT INTO newsletter_sends (issue_id, email, send_type, status, error_message, provider_message)
+                VALUES (:issue_id, :email, "test", :status, :error, :provider_message)');
+            $stmt->execute([
+                'issue_id' => $issueId,
+                'email' => $toEmail,
+                'status' => $result['ok'] ? 'sent' : 'failed',
+                'error' => $result['ok'] ? null : substr((string) ($result['message'] ?? ''), 0, 500),
+                'provider_message' => $result['ok'] ? substr((string) ($result['message'] ?? ''), 0, 255) : null,
+            ]);
+        } catch (Throwable $exception) {
+        }
+    }
+    return $result;
 }
 
 function send_newsletter_broadcast(int $issueId): array
@@ -675,6 +785,10 @@ function send_newsletter_broadcast(int $issueId): array
     if ((string) $issue['status'] === 'sent') {
         return ['ok' => false, 'message' => '这一期已发送。'];
     }
+    $checklist = newsletter_presend_checklist($issue);
+    if (!newsletter_checklist_ready($checklist)) {
+        return ['ok' => false, 'message' => '发送前检查未全部通过。请先补齐内容、排期、状态和发件配置。'];
+    }
 
     try {
         $statement = $pdo->query("SELECT email FROM subscribers WHERE status = 'active' ORDER BY id ASC");
@@ -686,7 +800,7 @@ function send_newsletter_broadcast(int $issueId): array
     $subject = (string) $issue['subject'];
     $sent = 0;
     $failed = 0;
-    $sendStmt = $pdo->prepare('INSERT INTO newsletter_sends (issue_id, email, status, error_message) VALUES (:issue_id, :email, :status, :error)');
+    $sendStmt = $pdo->prepare('INSERT INTO newsletter_sends (issue_id, email, send_type, status, error_message, provider_message) VALUES (:issue_id, :email, "broadcast", :status, :error, :provider_message)');
     foreach ($subscribers as $row) {
         $email = (string) $row['email'];
         $html = render_newsletter_issue_html($issue, $email);
@@ -703,6 +817,7 @@ function send_newsletter_broadcast(int $issueId): array
                 'email' => $email,
                 'status' => $status,
                 'error' => $result['ok'] ? null : substr((string) ($result['message'] ?? ''), 0, 500),
+                'provider_message' => $result['ok'] ? substr((string) ($result['message'] ?? ''), 0, 255) : null,
             ]);
         } catch (Throwable $exception) {
         }
@@ -730,7 +845,7 @@ function newsletter_issue_sends(int $issueId): array
         return [];
     }
     try {
-        $statement = $pdo->prepare('SELECT email, status, error_message, created_at FROM newsletter_sends WHERE issue_id = :id ORDER BY created_at DESC LIMIT 200');
+        $statement = $pdo->prepare('SELECT email, send_type, status, error_message, provider_message, created_at FROM newsletter_sends WHERE issue_id = :id ORDER BY created_at DESC, id DESC LIMIT 200');
         $statement->execute(['id' => $issueId]);
         return $statement->fetchAll() ?: [];
     } catch (Throwable $exception) {

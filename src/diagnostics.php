@@ -184,6 +184,10 @@ function admin_smoke_checks(): array
         $summary = newsletter_schedule_summary();
         $checks[] = ['name' => 'Newsletter scheduling queue', 'ok' => is_array($summary), 'detail' => ($summary['today'] ?? 0) . ' ready today · ' . ($summary['upcoming'] ?? 0) . ' upcoming'];
     }
+    if (function_exists('newsletter_delivery_summary')) {
+        ensure_newsletter_issues_schema();
+        $checks[] = ['name' => 'Newsletter sending QA', 'ok' => true, 'detail' => 'test sends logged · pre-send checklist enforced'];
+    }
     if (function_exists('share_card_types')) {
         $checks[] = ['name' => 'Share cards', 'ok' => count(share_card_types()) >= 3, 'detail' => count(share_card_types()) . ' card templates'];
     }

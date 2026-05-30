@@ -4,6 +4,11 @@ $issueId = $issue['id'] ?? 0;
 $status = $issue ? (string) $issue['status'] : 'draft';
 $articles = $issue['articles'] ?? [];
 $flash = $flash ?? '';
+$checklist = $checklist ?? [];
+$checklistReady = $checklistReady ?? false;
+$deliverySummary = $deliverySummary ?? ['test_sent' => 0, 'test_failed' => 0, 'broadcast_sent' => 0, 'broadcast_failed' => 0, 'latest_error' => ''];
+$passedChecks = count(array_filter($checklist, static fn ($item) => !empty($item['ok'])));
+$totalChecks = count($checklist);
 ?>
 <section class="admin-shell">
     <div class="admin-topbar">
@@ -145,8 +150,8 @@ $flash = $flash ?? '';
                 <?php
                 $transitions = [
                     'draft' => [['ready', '标记为可发送'], ['scheduled', '标记为已排期']],
-                    'ready' => [['draft', '回到草稿'], ['scheduled', '标记为已排期'], ['sent', '直接标记为已发送']],
-                    'scheduled' => [['ready', '退回可发送'], ['draft', '回到草稿'], ['sent', '直接标记为已发送']],
+                    'ready' => [['draft', '回到草稿'], ['scheduled', '标记为已排期']],
+                    'scheduled' => [['ready', '退回可发送'], ['draft', '回到草稿']],
                     'sent' => [['archived', '归档']],
                     'archived' => [['draft', '恢复为草稿']],
                 ];
@@ -166,9 +171,16 @@ $flash = $flash ?? '';
 
         <section class="newsletter-block presend-checklist">
             <h2>发送前检查</h2>
-            <p><small>这是发送前的人工检查清单。系统不会因为排期自动广播。</small></p>
+            <p><small>这是发送前的人工检查清单。系统不会因为排期自动广播；真正发送只能通过下面的手动广播按钮完成。</small></p>
+            <div class="newsletter-qa-meter">
+                <div>
+                    <strong><?= e((string) $passedChecks) ?>/<?= e((string) $totalChecks) ?></strong>
+                    <span><?= $checklistReady ? '已满足广播条件' : '还需要处理检查项' ?></span>
+                </div>
+                <div class="schedule-progress"><span style="width: <?= $totalChecks > 0 ? e((string) round(($passedChecks / $totalChecks) * 100)) : '0' ?>%"></span></div>
+            </div>
             <ul class="schedule-checklist">
-                <?php foreach (($checklist ?? []) as $item): ?>
+                <?php foreach ($checklist as $item): ?>
                     <li class="<?= !empty($item['ok']) ? 'is-pass' : 'is-warning' ?>">
                         <strong><?= !empty($item['ok']) ? 'OK' : 'Check' ?></strong>
                         <span><?= e((string) $item['label']) ?></span>
@@ -184,14 +196,33 @@ $flash = $flash ?? '';
                 <strong>邮件服务：<?= e($providerStatus['provider']) ?></strong>
                 <span><?= e($providerStatus['message']) ?></span>
             </div>
+            <div class="newsletter-delivery-panel">
+                <article>
+                    <span>测试投递</span>
+                    <strong><?= e((string) ($deliverySummary['test_sent'] ?? 0)) ?> 成功</strong>
+                    <small><?= e((string) ($deliverySummary['test_failed'] ?? 0)) ?> 失败 · 测试邮件会记录在下方日志</small>
+                </article>
+                <article>
+                    <span>正式广播</span>
+                    <strong><?= e((string) ($deliverySummary['broadcast_sent'] ?? 0)) ?> 成功</strong>
+                    <small><?= e((string) ($deliverySummary['broadcast_failed'] ?? 0)) ?> 失败 · 发送后请到 Brevo Logs 确认 Delivered</small>
+                </article>
+                <article class="<?= !empty($deliverySummary['latest_error']) ? 'is-warning' : 'is-ready' ?>">
+                    <span>最近错误</span>
+                    <strong><?= !empty($deliverySummary['latest_error']) ? '需要处理' : '暂无错误' ?></strong>
+                    <small><?= e((string) (($deliverySummary['latest_error'] ?? '') ?: '如果 Gmail 没收到，请优先查看 Brevo 的 Delivered / Error 状态。')) ?></small>
+                </article>
+            </div>
             <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/test')) ?>" class="newsletter-test-form">
                 <input type="email" name="test_email" placeholder="测试邮箱地址" required>
                 <button type="submit" class="button button-small">发送测试</button>
             </form>
             <form method="post" action="<?= e(url('admin/newsletter/' . $issueId . '/send')) ?>" class="newsletter-broadcast-form">
-                <button type="submit" class="button is-primary" data-confirm="向所有 active 订阅者广播本期 newsletter？" data-confirm-sub="一旦发送将无法撤回。请先用测试邮箱预览过。" data-confirm-variant="broadcast" data-confirm-title="广播本期" data-confirm-confirm="立即广播" <?= ($status === 'sent' || !$articles) ? 'disabled' : '' ?>>广播给所有订阅者</button>
+                <button type="submit" class="button is-primary" data-confirm="向所有 active 订阅者广播本期 newsletter？" data-confirm-sub="一旦发送将无法撤回。请先用测试邮箱确认发件人、页脚、退订和偏好链接都正确。" data-confirm-variant="broadcast" data-confirm-title="广播本期" data-confirm-confirm="立即广播" <?= ($status === 'sent' || !$articles || !$checklistReady) ? 'disabled' : '' ?>>广播给所有订阅者</button>
                 <?php if ($status === 'sent'): ?>
                     <small>本期已发送 (<?= e((string) $issue['sent_count']) ?>/<?= e((string) $issue['recipients_count']) ?>)。</small>
+                <?php elseif (!$checklistReady): ?>
+                    <small>广播按钮会在发送前检查全部通过后开启。</small>
                 <?php endif; ?>
             </form>
             <?php if ($sends): ?>
@@ -200,8 +231,9 @@ $flash = $flash ?? '';
                     <?php foreach (array_slice($sends, 0, 30) as $row): ?>
                         <li class="<?= $row['status'] === 'sent' ? 'is-pass' : ($row['status'] === 'failed' ? 'is-fail' : '') ?>">
                             <span><?= e((string) $row['email']) ?></span>
-                            <span><?= e((string) $row['status']) ?></span>
+                            <span><?= e((string) ($row['send_type'] ?? 'broadcast')) ?> · <?= e((string) $row['status']) ?></span>
                             <small><?= e(date('Y-m-d H:i', strtotime((string) $row['created_at']))) ?></small>
+                            <?php if (!empty($row['provider_message'])): ?><small><?= e((string) $row['provider_message']) ?></small><?php endif; ?>
                             <?php if (!empty($row['error_message'])): ?><small><?= e((string) $row['error_message']) ?></small><?php endif; ?>
                         </li>
                     <?php endforeach; ?>
