@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: hostinger-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -122,16 +122,17 @@ jobs:
             echo "FTP secrets are missing; cannot deploy."
             exit 1
           fi
-          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" <<EOF
+          # Build the lftp command script (no credentials inside; passed on CLI).
+          cat > /tmp/deploy.lftp <<EOF
           set ftp:ssl-allow yes
           set ftp:ssl-force yes
           set ftp:ssl-protect-data yes
           set ftp:passive-mode yes
           set ssl:verify-certificate no
           set ssl:check-hostname no
-          set net:max-retries 8
-          set net:reconnect-interval-base 8
-          set net:timeout 90
+          set net:max-retries 4
+          set net:reconnect-interval-base 5
+          set net:timeout 60
           set mirror:parallel-transfer-count 1
           set mirror:use-pget-n 1
           put -O "$PUBLIC_DIR" public/config.php
@@ -140,6 +141,20 @@ jobs:
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
           bye
           EOF
+          # Shell-level retry: a fresh lftp process per attempt survives transient
+          # FTPS drops better than lftp's own in-session reconnect.
+          attempt=1
+          max_attempts=3
+          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -f /tmp/deploy.lftp; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Deploy failed after $attempt attempts."
+              exit 1
+            fi
+            echo "Deploy attempt $attempt failed (transient FTPS issue); retrying in 30s..."
+            attempt=$((attempt + 1))
+            sleep 30
+          done
+          echo "Deploy succeeded on attempt $attempt."
 
       - name: Verify production homepage
         env:
