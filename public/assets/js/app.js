@@ -717,3 +717,55 @@ document.querySelectorAll('[data-news-fetch]').forEach(function(form) {
         setTimeout(function() { btn.disabled = false; }, 60000);
     });
 });
+
+// Sprint 1 D9.6: autopilot master toggle — flip in place (AJAX) with animation,
+// no page reload. Falls back to the normal form POST if JS is unavailable.
+document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
+    btn.addEventListener('click', function(event) {
+        event.preventDefault();
+        if (btn.dataset.busy === '1') return;
+        btn.dataset.busy = '1';
+        btn.classList.add('is-switching');
+        fetch('/admin/autopilot/toggle', { method: 'POST', headers: { Accept: 'application/json' } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                btn.dataset.busy = '0';
+                btn.classList.remove('is-switching');
+                if (!d || !d.ok) return;
+                var on = !!d.enabled;
+                var master = document.querySelector('[data-autopilot-master]');
+
+                btn.classList.toggle('is-on', on);
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                var lbl = btn.querySelector('.autopilot-toggle-label');
+                if (lbl) lbl.textContent = on ? 'ON' : 'OFF';
+
+                if (master) {
+                    master.classList.toggle('is-on', on);
+                    master.classList.toggle('is-off', !on);
+                    master.classList.remove('ap-flash');
+                    void master.offsetWidth; // restart animation
+                    master.classList.add('ap-flash');
+                }
+                var t = document.querySelector('[data-ap-title]');
+                if (t) t.textContent = d.title;
+                var ds = document.querySelector('[data-ap-desc]');
+                if (ds) ds.textContent = d.desc;
+
+                var hint = document.querySelector('[data-ap-hint]');
+                if (hint) {
+                    hint.textContent = d.hint;
+                    hint.hidden = false;
+                    hint.classList.toggle('ap-hint-on', on);
+                    hint.classList.toggle('ap-hint-off', !on);
+                    hint.classList.remove('ap-hint-show');
+                    void hint.offsetWidth;
+                    hint.classList.add('ap-hint-show');
+                }
+            })
+            .catch(function() {
+                btn.dataset.busy = '0';
+                btn.classList.remove('is-switching');
+            });
+    });
+});

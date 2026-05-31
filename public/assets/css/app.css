@@ -6647,3 +6647,65 @@ mark.cred-caution { background: color-mix(in srgb, #ffcc00, var(--paper) 30%); }
     .pipeline-arrow { display: none; }
     .autopilot-master { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Sprint 1 D9.6: autopilot toggle animation polish ───────────────────────── */
+.autopilot-master {
+    transition: background 0.45s ease, border-color 0.3s ease;
+}
+.autopilot-master-info strong,
+.autopilot-master-info p { transition: color 0.3s ease; }
+
+/* Whole-card pulse when toggled */
+.autopilot-master.ap-flash { animation: ap-card-flash 0.55s ease; }
+@keyframes ap-card-flash {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.012); }
+    100% { transform: scale(1); }
+}
+.autopilot-master.is-on.ap-flash { box-shadow: 0 0 0 0 rgba(26,127,55,0.45), var(--shadow); animation: ap-card-flash 0.55s ease, ap-glow-on 0.7s ease; }
+@keyframes ap-glow-on {
+    0%   { box-shadow: 0 0 0 0 rgba(26,127,55,0.5), var(--shadow); }
+    60%  { box-shadow: 0 0 0 10px rgba(26,127,55,0), var(--shadow); }
+    100% { box-shadow: var(--shadow); }
+}
+
+/* Toggle: spring knob + switching feedback */
+.autopilot-toggle-track { transition: background 0.25s ease; }
+.autopilot-toggle-knob {
+    transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+}
+.autopilot-toggle.is-switching { cursor: progress; }
+.autopilot-toggle.is-switching .autopilot-toggle-knob {
+    animation: ap-knob-spin 0.6s linear infinite;
+}
+@keyframes ap-knob-spin {
+    /* subtle "working" wobble while the request is in flight */
+    0%,100% { box-shadow: 0 0 0 2px rgba(0,0,0,0.12); }
+    50%     { box-shadow: 0 0 0 5px rgba(0,0,0,0.05); }
+}
+.autopilot-toggle-label { transition: color 0.2s ease; min-width: 2.4em; text-align: left; }
+
+/* Animated hint line under the switch */
+.ap-hint {
+    margin: -8px 0 22px;
+    padding: 10px 16px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: inline-block;
+}
+.ap-hint.ap-hint-on { background: color-mix(in srgb, var(--lime), var(--paper-strong) 45%); }
+.ap-hint.ap-hint-off { background: color-mix(in srgb, var(--red), var(--paper-strong) 82%); }
+.ap-hint.ap-hint-show { animation: ap-hint-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ap-hint-pop {
+    0%   { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .autopilot-master.ap-flash,
+    .autopilot-toggle.is-switching .autopilot-toggle-knob,
+    .ap-hint.ap-hint-show { animation: none; }
+    .autopilot-toggle-knob { transition: transform 0.15s ease; }
+}

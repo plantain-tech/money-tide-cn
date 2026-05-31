@@ -1428,6 +1428,26 @@ if ($route === 'admin/story-clusters') {
     exit;
 }
 
+if ($route === 'admin/autopilot/toggle' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    $now = autopilot_enabled() ? '0' : '1';
+    set_pipeline_setting('autopilot_enabled', $now);
+    $on = $now === '1';
+    echo json_encode([
+        'ok' => true,
+        'enabled' => $on,
+        'title' => $on ? '自动驾驶：开启' : '自动驾驶：关闭',
+        'desc' => $on
+            ? 'Cron 会按计划自动运行整条流水线。随时可一键关闭。'
+            : '所有自动动作已暂停。Cron 运行时会跳过。开启后才会自动发文与组装早报。',
+        'hint' => $on
+            ? '🟢 自动驾驶已开启 —— Cron 将按计划自动运行整条流水线。'
+            : '🔴 自动驾驶已关闭 —— Cron 运行时会跳过，所有动作回到手动。',
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'admin/autopilot') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
@@ -2047,7 +2067,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-6-stage-pacing',
+            'release'    => 'sprint-9-6-toggle-animation',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

@@ -21,25 +21,24 @@ $on = !empty($config['enabled']);
     <?php endif; ?>
 
     <!-- ── Master kill-switch ─────────────────────────────────────────────── -->
-    <div class="autopilot-master <?= $on ? 'is-on' : 'is-off' ?>">
+    <div class="autopilot-master <?= $on ? 'is-on' : 'is-off' ?>" data-autopilot-master>
         <div class="autopilot-master-info">
             <span class="autopilot-status-dot"></span>
             <div>
-                <strong><?= $on ? '自动驾驶：开启' : '自动驾驶：关闭' ?></strong>
-                <p><?= $on ? 'Cron 会按计划自动运行整条流水线。随时可一键关闭。' : '所有自动动作已暂停。Cron 运行时会跳过。开启后才会自动发文与组装早报。' ?></p>
+                <strong data-ap-title><?= $on ? '自动驾驶：开启' : '自动驾驶：关闭' ?></strong>
+                <p data-ap-desc><?= $on ? 'Cron 会按计划自动运行整条流水线。随时可一键关闭。' : '所有自动动作已暂停。Cron 运行时会跳过。开启后才会自动发文与组装早报。' ?></p>
             </div>
         </div>
         <form method="post" action="<?= e(url('admin/autopilot')) ?>">
             <input type="hidden" name="action" value="toggle">
             <button class="autopilot-toggle <?= $on ? 'is-on' : '' ?>" type="submit"
-                data-confirm="<?= $on ? '关闭自动驾驶？' : '开启自动驾驶？' ?>"
-                data-confirm-sub="<?= $on ? 'Cron 将停止自动运行流水线，回到全手动。' : 'Cron 将开始每天自动抓取→写稿→审核→发布→组装早报。被 AI 标记的草稿仍需你人工处理。' ?>"
-                data-confirm-title="<?= $on ? '关闭自动驾驶' : '开启自动驾驶' ?>" data-confirm-confirm="<?= $on ? '关闭' : '开启' ?>">
+                data-autopilot-toggle aria-pressed="<?= $on ? 'true' : 'false' ?>" aria-label="切换自动驾驶开关">
                 <span class="autopilot-toggle-track"><span class="autopilot-toggle-knob"></span></span>
                 <span class="autopilot-toggle-label"><?= $on ? 'ON' : 'OFF' ?></span>
             </button>
         </form>
     </div>
+    <p class="ap-hint" data-ap-hint hidden aria-live="polite"></p>
 
     <!-- ── Live pipeline flow ─────────────────────────────────────────────── -->
     <section class="newsletter-block">
