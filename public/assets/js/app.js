@@ -701,3 +701,19 @@ if ('IntersectionObserver' in window) {
         }
     });
 }
+
+// Sprint 1 D9.1: news fetch button — show spinner on submit (full RSS pull can take ~20s)
+document.querySelectorAll('[data-news-fetch]').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        var btn = form.querySelector('[data-news-fetch-btn]');
+        if (!btn) return;
+        var label = btn.querySelector('.news-fetch-label');
+        var spinner = btn.querySelector('.news-fetch-spinner');
+        if (label) label.textContent = '抓取中…';
+        if (spinner) spinner.hidden = false;
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        // Re-enable as a safety net if navigation is blocked for any reason.
+        setTimeout(function() { btn.disabled = false; }, 60000);
+    });
+});

@@ -22,6 +22,7 @@ function database_diagnostics(): array
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
         'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format', 'article_reactions',
+        'news_sources', 'news_items',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -266,6 +267,16 @@ function admin_smoke_checks(): array
             'group' => 'content',
         ];
     }
+    if (function_exists('news_ingest_summary')) {
+        ensure_news_schema();
+        $news = news_ingest_summary();
+        $checks[] = [
+            'name' => '新闻源摄取',
+            'ok' => is_array($news) && function_exists('fetch_rss_feed'),
+            'detail' => $news['sources_active'] . '/' . $news['sources_total'] . ' 源启用 · ' . $news['items_total'] . ' 条已抓取 · ' . $news['items_new'] . ' 待处理',
+            'group' => 'content',
+        ];
+    }
     if (function_exists('eight_week_journey')) {
         $checks[] = [
             'name' => '里程碑与路线图',
@@ -303,7 +314,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format', 'article_reactions'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format', 'article_reactions', 'news_sources', 'news_items'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }

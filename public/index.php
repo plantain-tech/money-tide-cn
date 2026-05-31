@@ -1290,6 +1290,74 @@ if (preg_match('#^admin/newsletter/(\d+)/delete$#', $route, $matches) && ($_SERV
     exit;
 }
 
+if ($route === 'admin/news-sources') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $errors = [];
+    $form = ['id' => '', 'name' => '', 'feed_url' => '', 'category_slug' => '', 'credibility' => 'standard', 'is_active' => 1];
+    $fetchSummary = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? 'save');
+        if ($action === 'delete') {
+            delete_news_source((int) ($_POST['id'] ?? 0));
+            $flash = '已删除新闻源。';
+        } elseif ($action === 'toggle') {
+            toggle_news_source((int) ($_POST['id'] ?? 0));
+            $flash = '已更新启用状态。';
+        } elseif ($action === 'seed') {
+            $n = seed_news_sources();
+            $flash = $n > 0 ? ('已载入 ' . $n . ' 个默认新闻源。') : '默认新闻源已存在，无需重复载入。';
+        } elseif ($action === 'fetch') {
+            @set_time_limit(180); // fetching many feeds synchronously can exceed the default 30s
+            $cat = (string) ($_POST['category_slug'] ?? '');
+            $fetchSummary = ingest_all_news_sources($cat !== '' ? $cat : null);
+            $flash = '抓取完成：' . $fetchSummary['ok'] . ' 成功 / ' . $fetchSummary['failed'] . ' 失败 · 新增 ' . $fetchSummary['new_items'] . ' 条。';
+        } else {
+            $id = (int) ($_POST['id'] ?? 0);
+            $result = save_news_source($_POST, $id > 0 ? $id : null);
+            if ($result['ok']) {
+                $flash = '已保存新闻源。';
+            } else {
+                $errors = $result['errors'] ?? [];
+                $form = array_replace($form, $_POST);
+            }
+        }
+    }
+    render_page('admin/news-sources', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'sources' => news_sources(['category_slug' => (string) ($_GET['category_slug'] ?? '')]),
+        'summary' => news_ingest_summary(),
+        'flash' => $flash,
+        'errors' => $errors,
+        'form' => $form,
+        'fetchSummary' => $fetchSummary,
+        'credibilityOptions' => news_credibility_options(),
+        'cliPath' => rtrim((string) (getenv('APP_BASE_PATH') ?: APP_BASE_PATH), '/') . '/cli/fetch-news.php',
+    ]);
+    exit;
+}
+
+if ($route === 'admin/news-items') {
+    require_admin();
+    $filters = [
+        'category_slug' => (string) ($_GET['category_slug'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+        'q' => (string) ($_GET['q'] ?? ''),
+        'limit' => 120,
+    ];
+    render_page('admin/news-items', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'items' => news_items($filters),
+        'summary' => news_ingest_summary(),
+        'filters' => $filters,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/sources') {
     require_admin();
     $filters = [
@@ -1804,7 +1872,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-8-final-launch-cleanup',
+            'release'    => 'sprint-9-1-news-ingestion',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
