@@ -98,8 +98,9 @@ function cluster_news_for_category(string $categorySlug, int $topN = 3): array
         . "2) 对每个 cluster 评估它对中文财经读者的价值，给 0-100 的新闻价值分（score）。\n"
         . "3) 为每个 cluster 写一个中文 headline（中性描述这件事）、一个适合钱潮的中文报道 angle、以及一句 why_it_matters（为什么对中文读者重要）。\n"
         . "4) item_ids 必须是上面出现过的编号。\n"
-        . "按 score 从高到低排序，最多返回 6 个 cluster。\n\n"
-        . "严格只返回 JSON：{\"clusters\":[{\"headline\":\"…\",\"angle\":\"…\",\"why_it_matters\":\"…\",\"score\":0-100,\"item_ids\":[编号,…]}]}";
+        . "按 score 从高到低排序，最多返回 6 个 cluster。"
+        . (function_exists('ai_proper_noun_rule') ? ai_proper_noun_rule() : '')
+        . "\n\n严格只返回 JSON：{\"clusters\":[{\"headline\":\"…\",\"angle\":\"…\",\"why_it_matters\":\"…\",\"score\":0-100,\"item_ids\":[编号,…]}]}";
 
     $response = call_simple_json_api($prompt, ['clusters']);
     log_ai_usage($provider['provider'], $provider['model'], 'cluster-' . $categorySlug, strlen($prompt), $response['ok'] ? 'ok' : 'error', $response['ok'] ? '' : ($response['message'] ?? ''));

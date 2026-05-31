@@ -2,6 +2,21 @@
 
 declare(strict_types=1);
 
+/**
+ * Shared editorial rule injected into every AI content prompt: keep the original
+ * English name in parentheses after the Chinese for proper nouns (people,
+ * companies, places, buildings, products, organizations, etc.) on first mention.
+ * e.g. 凯文·沃什 (Kevin Warsh)、苹果 (Apple)、蒂姆·库克 (Tim Cook)。
+ */
+function ai_proper_noun_rule(): string
+{
+    return "\n\n【专有名词规则】所有人名、公司/机构名、地名、建筑名、产品名、动物名等专有名词，"
+        . "在中文译名首次出现时，必须用括号紧跟英文原名，例如：凯文·沃什 (Kevin Warsh)、苹果 (Apple)、"
+        . "蒂姆·库克 (Tim Cook)、英伟达 (Nvidia)、美联储 (Federal Reserve)。"
+        . "同一篇内同一名词重复出现时只在首次标注即可，避免重复啰嗦。"
+        . "若原名本身就是英文/数字（如 GDP、ETF、iPhone），保持原样，不需要再加括号。";
+}
+
 function editorial_bot_template_defaults(): array
 {
     return [
@@ -274,7 +289,8 @@ function build_ai_draft_prompt(array $form, array $sources, array $template): st
         . "Write in Simplified Chinese. Do not invent facts, numbers, quotes, or source details. "
         . "Keep editor verification reminders, source concerns, and risk notes in source_notes or risk_notes only. "
         . "Do not add editor notes, AI-assisted labels, or disclaimers at the end of the article body. "
-        . "Return fields that can become a CMS article draft.";
+        . "Return fields that can become a CMS article draft."
+        . ai_proper_noun_rule();
 }
 
 function call_ai_draft_api(string $prompt): array
@@ -809,6 +825,7 @@ function build_ai_rewrite_prompt(array $template, string $target, array $targetM
         . "Style guide: {$targetMeta['hint']}\n"
         . "Do not invent facts, numbers, or quotes. Do not add editor notes or AI-assisted disclaimers."
         . $extra
+        . ai_proper_noun_rule()
         . "\n\nOriginal {$target}:\n" . $originalText . "\n";
 }
 

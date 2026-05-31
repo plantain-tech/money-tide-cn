@@ -1926,7 +1926,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-2-yahoo-tech-source',
+            'release'    => 'sprint-9-2-proper-noun-rule',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

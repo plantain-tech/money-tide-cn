@@ -394,6 +394,7 @@ function generate_social_caption(int $articleId, string $channel): array
         . "\n一句话看懂：{$article['brief']}"
         . "\n为什么重要：{$article['why_it_matters']}"
         . "\n正文摘录：\n{$bodyText}"
+        . (function_exists('ai_proper_noun_rule') ? ai_proper_noun_rule() : '')
         . "\n\n严格按 JSON 返回：{\"content\": \"…\", \"hashtags\": \"#tag1 #tag2 …\"}。"
         . "（hashtags 字段空字符串也可；twitter/email 通常不需要 hashtags。）";
 

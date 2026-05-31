@@ -350,7 +350,8 @@ function generate_research_brief(array $input): array
         . "Topic angle: {$topic}\n"
         . "Source links:\n- " . implode("\n- ", $sources) . "\n\n"
         . "Produce a research brief in Simplified Chinese to help a human editor write the article."
-        . " Do NOT write the article. Only output a structured brief.";
+        . " Do NOT write the article. Only output a structured brief."
+        . (function_exists('ai_proper_noun_rule') ? ai_proper_noun_rule() : '');
 
     $response = call_research_brief_api($prompt);
     log_ai_usage($provider['provider'], $provider['model'], $sectionSlug, strlen($prompt), $response['ok'] ? 'ok' : 'error', $response['ok'] ? '' : ($response['message'] ?? ''));

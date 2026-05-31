@@ -116,6 +116,7 @@ function generate_newsletter_intro(int $issueId): array
     $prompt = "你是钱潮早报的总编辑。今天的 newsletter 包含以下文章：\n" . $bullets
         . "\n请用 2-3 句中文写一段开场白（intro），引导读者今天最值得读什么、为什么。不要用列表，写成自然段落。"
         . "\n语气克制、专业，不夸张。不要包含投资建议、行情预测、或'必涨/必跌'之类表述。"
+        . ai_proper_noun_rule()
         . "\n严格按 JSON 返回：{\"intro\": \"…\"}。";
 
     $response = call_simple_json_api($prompt, ['intro']);
@@ -166,6 +167,7 @@ function generate_newsletter_blurbs(int $issueId): array
     $prompt = "你是钱潮早报的编辑助理。为下面这些文章每篇写一句 newsletter 推荐语（1-2 句），用读者关心的角度引出文章。"
         . "\n不要复制标题或摘要原文，要让读者觉得'读了这条值得点开'。语气克制、不夸张，不要写'必读、绝对'等绝对词。"
         . "\n\n文章列表：\n" . $items
+        . ai_proper_noun_rule()
         . "\n严格按 JSON 返回：{\"blurbs\": [\"第 1 条推荐语\", \"第 2 条…\", …]}，数组长度等于上面文章数量。";
 
     $response = call_simple_json_api($prompt, ['blurbs']);
@@ -230,6 +232,7 @@ function generate_themed_block(int $issueId, string $themeKey): array
         . "\n板块要求：{$themeMeta['description']}"
         . "\n请基于下面的素材，提炼可读、克制的描述。不要列表，写成段落。不出现投资建议或绝对词。"
         . "\n素材：\n" . $items
+        . ai_proper_noun_rule()
         . "\n严格按 JSON 返回：{\"content\": \"…\"}。";
 
     $response = call_simple_json_api($prompt, ['content']);
