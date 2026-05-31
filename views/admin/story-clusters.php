@@ -62,7 +62,7 @@ $scoreClass = static function (int $s): string {
             <input type="hidden" name="action" value="synthesize_all">
             <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
             <button class="button button-small" type="submit" data-news-fetch-btn <?= ($synthSummary['pending_selected'] ?? 0) < 1 ? 'disabled' : '' ?>>
-                <span class="news-fetch-label">✍️ 批量生成草稿<?= $filters['category_slug'] !== '' ? '（本栏目）' : '（最多5篇）' ?></span>
+                <span class="news-fetch-label">✍️ 批量生成草稿<?= $filters['category_slug'] !== '' ? '（本栏目）' : '（最多8篇）' ?></span>
                 <span class="news-fetch-spinner" hidden></span>
             </button>
         </form>
@@ -74,7 +74,7 @@ $scoreClass = static function (int $s): string {
                 data-confirm-sub="会删除该范围内所有 cluster（含已选用），相关素材恢复为待处理，可重新聚类。常用于清掉旧格式的 cluster 后重新生成。"
                 data-confirm-variant="danger" data-confirm-title="清空 cluster" data-confirm-confirm="清空">🗑 清空<?= $filters['category_slug'] !== '' ? '本栏目' : '全部' ?> cluster</button>
         </form>
-        <small class="news-action-hint">聚类每栏目耗 1 次 AI 额度；生成草稿每篇耗 1 次。批量生成可能需要 1-2 分钟。</small>
+        <small class="news-action-hint">聚类每栏目耗 1 次 AI 额度；生成草稿每篇耗 1 次。批量最多 8 篇（每栏目各 1 篇），可能需要 2-4 分钟。</small>
     </div>
 
     <!-- Per-run result -->

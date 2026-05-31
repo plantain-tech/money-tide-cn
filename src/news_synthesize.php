@@ -93,7 +93,7 @@ function synthesize_cluster_to_draft(int $clusterId): array
  * Batch-synthesize selected clusters (pipeline + admin "synthesize selected").
  * Paced + retried for free-tier rate limits; bounded by $limit for web use.
  */
-function synthesize_selected_clusters(?string $categorySlug = null, int $limit = 5, int $pauseSec = 2, int $maxTries = 2): array
+function synthesize_selected_clusters(?string $categorySlug = null, int $limit = 8, int $pauseSec = 2, int $maxTries = 2): array
 {
     $filters = ['status' => 'selected'];
     if ($categorySlug !== null && $categorySlug !== '') {

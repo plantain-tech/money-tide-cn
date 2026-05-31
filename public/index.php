@@ -1385,9 +1385,9 @@ if ($route === 'admin/story-clusters') {
             $r = synthesize_cluster_to_draft((int) ($_POST['id'] ?? 0));
             $flash = ($r['ok'] ? '✅ ' : '⚠️ ') . $r['message'];
         } elseif ($action === 'synthesize_all') {
-            @set_time_limit(600);
+            @set_time_limit(720);
             $cat = (string) ($_POST['category_slug'] ?? '');
-            $synthSummary = synthesize_selected_clusters($cat !== '' ? $cat : null, 5);
+            $synthSummary = synthesize_selected_clusters($cat !== '' ? $cat : null, 8);
             $flash = '批量生成完成：' . $synthSummary['ok'] . ' 成功 / ' . $synthSummary['failed'] . ' 失败' . ($synthSummary['skipped'] > 0 ? ' · ' . $synthSummary['skipped'] . ' 已有草稿' : '') . '。';
         } elseif ($action === 'select') {
             set_cluster_status((int) ($_POST['id'] ?? 0), 'selected');
@@ -1942,7 +1942,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-3-nav-all-categories',
+            'release'    => 'sprint-9-3-batch-8',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
