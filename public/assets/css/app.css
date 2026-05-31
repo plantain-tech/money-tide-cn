@@ -6457,3 +6457,77 @@ mark.cred-caution { background: color-mix(in srgb, #ffcc00, var(--paper) 30%); }
     .news-fetch-form select { flex: 1; }
     .news-item-time { margin-left: 0; }
 }
+
+/* ── Sprint 1 D9.2: story clusters ──────────────────────────────────────────── */
+.news-action-hint { color: var(--muted); font-size: 0.82rem; }
+
+.cluster-list { display: grid; gap: 14px; }
+.cluster-card {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.cluster-card:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--ink); }
+.cluster-card.is-selected { background: color-mix(in srgb, var(--lime), var(--paper-strong) 60%); border-width: 3px; }
+.cluster-card.is-skipped { opacity: 0.5; }
+.cluster-card.is-used { background: color-mix(in srgb, var(--blue), var(--paper-strong) 88%); }
+
+.cluster-card-main { display: flex; gap: 16px; padding: 18px; }
+
+.cluster-score {
+    flex-shrink: 0;
+    width: 64px; height: 64px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.cluster-score strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.cluster-score small { font-size: 0.66rem; color: var(--muted); }
+.cluster-score.score-hot { background: var(--lime); animation: cluster-pulse 2s ease-in-out infinite; }
+.cluster-score.score-warm { background: color-mix(in srgb, var(--lime), white 45%); }
+.cluster-score.score-mid { background: color-mix(in srgb, #ffcc00, var(--paper) 40%); }
+.cluster-score.score-low { background: var(--paper); color: var(--muted); }
+@keyframes cluster-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lime), transparent 40%); }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--lime), transparent 85%); }
+}
+
+.cluster-body { flex: 1; min-width: 0; }
+.cluster-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; font-size: 0.76rem; }
+.cluster-status-pill { padding: 1px 9px; border-radius: 999px; font-weight: 700; }
+.cluster-selected { background: var(--lime); }
+.cluster-candidate { background: color-mix(in srgb, var(--blue), white 70%); }
+.cluster-skipped { background: var(--paper); color: var(--muted); }
+.cluster-used { background: color-mix(in srgb, var(--blue), white 55%); }
+.cluster-count { color: var(--muted); }
+.cluster-body h3 { margin: 0 0 8px; font-size: 1.12rem; line-height: 1.4; }
+.cluster-angle, .cluster-why { margin: 0 0 6px; font-size: 0.9rem; line-height: 1.55; }
+.cluster-angle strong, .cluster-why strong { color: var(--ink); }
+.cluster-why { color: var(--muted); }
+
+.cluster-sources { margin-top: 8px; font-size: 0.85rem; }
+.cluster-sources summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.cluster-sources ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.cluster-sources a { color: var(--ink); border-bottom: 1px solid var(--line); }
+
+.cluster-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 12px 18px;
+    border-top: 2px solid var(--ink);
+    background: color-mix(in srgb, var(--paper), white 20%);
+}
+
+@media (max-width: 640px) {
+    .cluster-card-main { flex-direction: column; }
+    .cluster-score { width: 52px; height: 52px; }
+    .cluster-score strong { font-size: 1.2rem; }
+}

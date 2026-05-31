@@ -1358,6 +1358,59 @@ if ($route === 'admin/news-items') {
     exit;
 }
 
+if ($route === 'admin/story-clusters') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $clusterSummary = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'cluster') {
+            @set_time_limit(240);
+            $cat = (string) ($_POST['category_slug'] ?? '');
+            if ($cat !== '') {
+                $r = cluster_news_for_category($cat);
+                $flash = ($r['ok'] ? '✅ ' : '⚠️ ') . $r['message'];
+            } else {
+                $clusterSummary = cluster_all_categories();
+                $flash = 'AI 聚类完成：' . $clusterSummary['ok'] . ' 栏目成功 / ' . $clusterSummary['failed'] . ' 失败 · 共 ' . $clusterSummary['clusters'] . ' 个 cluster。';
+            }
+        } elseif ($action === 'select') {
+            set_cluster_status((int) ($_POST['id'] ?? 0), 'selected');
+            $flash = '已选用该 cluster。';
+        } elseif ($action === 'skip') {
+            set_cluster_status((int) ($_POST['id'] ?? 0), 'skipped');
+            $flash = '已跳过该 cluster。';
+        } elseif ($action === 'delete') {
+            delete_cluster((int) ($_POST['id'] ?? 0));
+            $flash = '已删除该 cluster。';
+        }
+    }
+    $filters = [
+        'category_slug' => (string) ($_GET['category_slug'] ?? ''),
+        'status' => (string) ($_GET['status'] ?? ''),
+    ];
+    $clusters = story_clusters($filters);
+    // Hydrate member items for display.
+    foreach ($clusters as &$cl) {
+        $cl['members'] = cluster_member_items($cl['item_ids']);
+    }
+    unset($cl);
+    render_page('admin/story-clusters', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'clusters' => $clusters,
+        'summary' => clustering_summary(),
+        'newsSummary' => news_ingest_summary(),
+        'statusLabels' => cluster_status_labels(),
+        'filters' => $filters,
+        'flash' => $flash,
+        'clusterSummary' => $clusterSummary,
+        'aiReady' => ai_provider_status(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/sources') {
     require_admin();
     $filters = [
@@ -1872,7 +1925,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-1-news-ingestion',
+            'release'    => 'sprint-9-2-cluster-select',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

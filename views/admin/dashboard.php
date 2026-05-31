@@ -104,6 +104,10 @@
             <strong>🛰 新闻源摄取</strong>
             <span>配置 RSS 新闻源，自动抓取标题与摘要作为 AI 原创合成素材（自动新闻流水线起点）。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/story-clusters')) ?>">
+            <strong>🧠 选题聚类</strong>
+            <span>AI 把抓取的新闻去重、聚类、按价值打分排序，挑出每个栏目当天值得写的选题。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>
