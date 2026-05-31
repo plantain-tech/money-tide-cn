@@ -66,9 +66,10 @@ $scoreClass = static function (int $s): string {
             <div class="admin-table">
                 <div class="admin-table-row admin-table-head"><span>栏目</span><span>结果</span></div>
                 <?php foreach ($clusterSummary['details'] as $d): ?>
-                    <div class="admin-table-row <?= $d['ok'] ? '' : 'smoke-row-fail' ?>">
+                    <?php $isSkip = !empty($d['skipped']); ?>
+                    <div class="admin-table-row <?= ($d['ok'] || $isSkip) ? '' : 'smoke-row-fail' ?>">
                         <strong><?= e($d['name']) ?></strong>
-                        <span><mark class="<?= $d['ok'] ? 'status-ok' : 'status-warn' ?>"><?= e($d['message']) ?></mark></span>
+                        <span><mark class="<?= $d['ok'] ? 'status-ok' : ($isSkip ? '' : 'status-warn') ?>"><?= e($d['message']) ?></mark></span>
                     </div>
                 <?php endforeach; ?>
             </div>

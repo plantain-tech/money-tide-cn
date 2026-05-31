@@ -1305,8 +1305,8 @@ if ($route === 'admin/news-sources') {
             toggle_news_source((int) ($_POST['id'] ?? 0));
             $flash = '已更新启用状态。';
         } elseif ($action === 'seed') {
-            $n = seed_news_sources();
-            $flash = $n > 0 ? ('已载入 ' . $n . ' 个默认新闻源。') : '默认新闻源已存在，无需重复载入。';
+            $n = topup_default_news_sources();
+            $flash = $n > 0 ? ('已添加 ' . $n . ' 个默认新闻源（含新增的 Seeking Alpha）。') : '默认新闻源均已存在，无需重复添加。';
         } elseif ($action === 'fetch') {
             @set_time_limit(180); // fetching many feeds synchronously can exceed the default 30s
             $cat = (string) ($_POST['category_slug'] ?? '');
@@ -1365,14 +1365,15 @@ if ($route === 'admin/story-clusters') {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
         if ($action === 'cluster') {
-            @set_time_limit(240);
+            @set_time_limit(400); // all-category run paces + retries AI calls
             $cat = (string) ($_POST['category_slug'] ?? '');
             if ($cat !== '') {
                 $r = cluster_news_for_category($cat);
                 $flash = ($r['ok'] ? '✅ ' : '⚠️ ') . $r['message'];
             } else {
                 $clusterSummary = cluster_all_categories();
-                $flash = 'AI 聚类完成：' . $clusterSummary['ok'] . ' 栏目成功 / ' . $clusterSummary['failed'] . ' 失败 · 共 ' . $clusterSummary['clusters'] . ' 个 cluster。';
+                $skippedNote = !empty($clusterSummary['skipped']) ? ' · ' . $clusterSummary['skipped'] . ' 跳过(无素材)' : '';
+                $flash = 'AI 聚类完成：' . $clusterSummary['ok'] . ' 栏目成功 / ' . $clusterSummary['failed'] . ' 失败' . $skippedNote . ' · 共 ' . $clusterSummary['clusters'] . ' 个 cluster。';
             }
         } elseif ($action === 'select') {
             set_cluster_status((int) ($_POST['id'] ?? 0), 'selected');
@@ -1925,7 +1926,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-2-cluster-select',
+            'release'    => 'sprint-9-2-cluster-pacing-fix',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

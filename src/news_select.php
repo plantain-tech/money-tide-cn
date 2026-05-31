@@ -57,21 +57,21 @@ function cluster_news_for_category(string $categorySlug, int $topN = 3): array
     ensure_clusters_schema();
     $pdo = db();
     if (!$pdo instanceof PDO) {
-        return ['ok' => false, 'message' => '数据库未连接。', 'clusters' => 0];
+        return ['ok' => false, 'code' => 'db', 'message' => '数据库未连接。', 'clusters' => 0];
     }
 
     $provider = ai_provider_status();
     if (!$provider['ready']) {
-        return ['ok' => false, 'message' => $provider['message'], 'clusters' => 0];
+        return ['ok' => false, 'code' => 'provider', 'message' => $provider['message'], 'clusters' => 0];
     }
     if (!ai_usage_allowed()) {
-        return ['ok' => false, 'message' => '今日 AI 额度已用完。', 'clusters' => 0];
+        return ['ok' => false, 'code' => 'quota', 'message' => '今日 AI 额度已用完。', 'clusters' => 0];
     }
 
     // Pull recent unclustered items for this category.
     $items = news_items(['category_slug' => $categorySlug, 'status' => 'new', 'limit' => 40]);
     if (count($items) < 1) {
-        return ['ok' => false, 'message' => '该栏目暂无待处理的新闻条目，先去抓取。', 'clusters' => 0];
+        return ['ok' => false, 'code' => 'empty', 'message' => '该栏目暂无待处理的新闻条目，先去抓取。', 'clusters' => 0];
     }
 
     // Compact item list for the prompt.
@@ -105,12 +105,12 @@ function cluster_news_for_category(string $categorySlug, int $topN = 3): array
     log_ai_usage($provider['provider'], $provider['model'], 'cluster-' . $categorySlug, strlen($prompt), $response['ok'] ? 'ok' : 'error', $response['ok'] ? '' : ($response['message'] ?? ''));
 
     if (!$response['ok']) {
-        return ['ok' => false, 'message' => $response['message'] ?? 'AI 调用失败。', 'clusters' => 0];
+        return ['ok' => false, 'code' => 'ai_error', 'message' => $response['message'] ?? 'AI 调用失败。', 'clusters' => 0];
     }
 
     $clusters = $response['payload']['clusters'] ?? [];
     if (!is_array($clusters) || !$clusters) {
-        return ['ok' => false, 'message' => 'AI 未返回有效 cluster。', 'clusters' => 0];
+        return ['ok' => false, 'code' => 'parse', 'message' => 'AI 未返回有效 cluster。', 'clusters' => 0];
     }
 
     // Clear prior candidate clusters for this category (keep selected/used so manual picks persist).
@@ -185,34 +185,93 @@ function cluster_news_for_category(string $categorySlug, int $topN = 3): array
             $pdo->exec("UPDATE news_items SET status = 'clustered' WHERE id IN ({$idList}) AND status = 'new'");
         }
     } catch (Throwable $exception) {
-        return ['ok' => false, 'message' => '保存 cluster 失败：' . $exception->getMessage(), 'clusters' => $inserted];
+        return ['ok' => false, 'code' => 'db', 'message' => '保存 cluster 失败：' . $exception->getMessage(), 'clusters' => $inserted];
     }
 
-    return ['ok' => true, 'message' => '生成 ' . $inserted . ' 个 cluster（自动选用前 ' . min($topN, $inserted) . ' 个）。', 'clusters' => $inserted];
+    return ['ok' => true, 'code' => 'ok', 'message' => '生成 ' . $inserted . ' 个 cluster（自动选用前 ' . min($topN, $inserted) . ' 个）。', 'clusters' => $inserted];
 }
 
 /**
- * Cluster all categories (pipeline + admin "cluster all"). Stops gracefully if
- * AI quota runs out, returning partial results.
+ * Cluster all categories (pipeline + admin "cluster all").
+ *
+ * Resilience for free-tier AI providers that rate-limit rapid successive calls:
+ *  - paces calls with a short gap between categories
+ *  - retries transient provider/parse errors with backoff
+ *  - skips empty categories silently (not counted as failures)
+ *  - stops cleanly when the daily AI quota is exhausted
+ *
+ * @param int  $topN      auto-selected clusters per category
+ * @param int  $pauseSec  gap between categories (rate-limit friendly)
+ * @param int  $maxTries  total attempts per category on transient errors
  */
-function cluster_all_categories(int $topN = 3): array
+function cluster_all_categories(int $topN = 3, int $pauseSec = 2, int $maxTries = 3): array
 {
     ensure_clusters_schema();
-    $summary = ['categories' => 0, 'ok' => 0, 'failed' => 0, 'clusters' => 0, 'details' => []];
-    foreach ((function_exists('get_categories') ? get_categories() : []) as $c) {
+    ensure_news_schema();
+    $summary = ['categories' => 0, 'ok' => 0, 'failed' => 0, 'skipped' => 0, 'clusters' => 0, 'details' => []];
+    $cats = function_exists('get_categories') ? get_categories() : [];
+    $total = count($cats);
+
+    foreach ($cats as $index => $c) {
         $slug = (string) $c['slug'];
+        $name = (string) $c['name'];
+
+        // Skip categories with no fresh material — silent, not a failure.
+        if (count(news_items(['category_slug' => $slug, 'status' => 'new', 'limit' => 1])) === 0) {
+            $summary['skipped']++;
+            $summary['details'][] = ['category' => $slug, 'name' => $name, 'ok' => false, 'skipped' => true, 'message' => '无待处理素材，已跳过'];
+            continue;
+        }
+
+        // Stop cleanly when the local daily quota is gone.
         if (!ai_usage_allowed()) {
-            $summary['details'][] = ['category' => $slug, 'name' => (string) $c['name'], 'ok' => false, 'message' => 'AI 额度用完，已停止。'];
+            $summary['details'][] = ['category' => $slug, 'name' => $name, 'ok' => false, 'message' => 'AI 额度用完，已停止后续栏目'];
             $summary['failed']++;
             $summary['categories']++;
             break;
         }
-        $r = cluster_news_for_category($slug, $topN);
+
+        // Attempt with retry/backoff on transient errors.
+        $attempt = 1;
+        $r = ['ok' => false, 'code' => 'unknown', 'message' => '未执行', 'clusters' => 0];
+        while ($attempt <= $maxTries) {
+            $r = cluster_news_for_category($slug, $topN);
+            if ($r['ok']) {
+                break;
+            }
+            $code = (string) ($r['code'] ?? '');
+            // Don't retry terminal conditions.
+            if (in_array($code, ['quota', 'empty', 'provider', 'db'], true)) {
+                break;
+            }
+            // Transient (ai_error / parse): back off and retry.
+            if ($attempt < $maxTries) {
+                sleep($attempt * 3);
+            }
+            $attempt++;
+        }
+
         $summary['categories']++;
         $summary['clusters'] += (int) $r['clusters'];
-        $r['ok'] ? $summary['ok']++ : $summary['failed']++;
-        $summary['details'][] = ['category' => $slug, 'name' => (string) $c['name'], 'ok' => $r['ok'], 'message' => $r['message']];
+        if ($r['ok']) {
+            $summary['ok']++;
+        } else {
+            $summary['failed']++;
+        }
+        $retryNote = ($attempt > 1 && $r['ok']) ? '（重试 ' . ($attempt - 1) . ' 次后成功）' : '';
+        $summary['details'][] = ['category' => $slug, 'name' => $name, 'ok' => $r['ok'], 'message' => $r['message'] . $retryNote];
+
+        // If quota ran out mid-retry, stop the rest.
+        if (!$r['ok'] && (string) ($r['code'] ?? '') === 'quota') {
+            break;
+        }
+
+        // Pace before the next category to respect provider rate limits.
+        if ($pauseSec > 0 && $index < $total - 1) {
+            sleep($pauseSec);
+        }
     }
+
     if (function_exists('record_event')) {
         record_event('news_cluster_run', ['source' => $summary['categories'] . ' cats', 'slug' => 'clusters:' . $summary['clusters']]);
     }

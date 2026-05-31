@@ -90,6 +90,7 @@ function default_news_sources(): array
         ['name' => 'BBC · Business', 'feed_url' => 'https://feeds.bbci.co.uk/news/business/rss.xml', 'category_slug' => 'world', 'credibility' => 'trusted'],
         // wealth
         ['name' => 'Investopedia', 'feed_url' => 'https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_articles', 'category_slug' => 'wealth', 'credibility' => 'standard'],
+        ['name' => 'Seeking Alpha', 'feed_url' => 'https://seekingalpha.com/feed.php', 'category_slug' => 'wealth', 'credibility' => 'standard'],
         // global-china
         ['name' => 'SCMP · Business', 'feed_url' => 'https://www.scmp.com/rss/92/feed', 'category_slug' => 'global-china', 'credibility' => 'standard'],
     ];
@@ -110,6 +111,39 @@ function seed_news_sources(): int
         if ($existing > 0) {
             return 0;
         }
+        $inserted = 0;
+        $statement = $pdo->prepare('INSERT IGNORE INTO news_sources (name, feed_url, category_slug, credibility)
+            VALUES (:name, :url, :cat, :cred)');
+        foreach (default_news_sources() as $src) {
+            $statement->execute([
+                'name' => $src['name'],
+                'url' => $src['feed_url'],
+                'cat' => $src['category_slug'],
+                'cred' => $src['credibility'],
+            ]);
+            $inserted += $statement->rowCount();
+        }
+        return $inserted;
+    } catch (Throwable $exception) {
+        return 0;
+    }
+}
+
+/**
+ * Add any missing default sources (idempotent via unique feed_url). Unlike
+ * seed_news_sources() this runs even when the table is non-empty, so the owner
+ * can top up with newly-added defaults (e.g. Seeking Alpha). Returns count added.
+ * Only invoked on explicit admin action — never auto-runs, so a source the owner
+ * deleted won't silently reappear during ingestion.
+ */
+function topup_default_news_sources(): int
+{
+    ensure_news_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return 0;
+    }
+    try {
         $inserted = 0;
         $statement = $pdo->prepare('INSERT IGNORE INTO news_sources (name, feed_url, category_slug, credibility)
             VALUES (:name, :url, :cat, :cred)');

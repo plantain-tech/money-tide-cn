@@ -51,12 +51,10 @@ foreach ($adminCategories as $c) {
                 <span class="news-fetch-spinner" hidden></span>
             </button>
         </form>
-        <?php if ($summary['sources_total'] === 0): ?>
-            <form method="post" action="<?= e(url('admin/news-sources')) ?>">
-                <input type="hidden" name="action" value="seed">
-                <button class="button button-ghost" type="submit">📥 载入默认新闻源</button>
-            </form>
-        <?php endif; ?>
+        <form method="post" action="<?= e(url('admin/news-sources')) ?>">
+            <input type="hidden" name="action" value="seed">
+            <button class="button button-ghost" type="submit"><?= $summary['sources_total'] === 0 ? '📥 载入默认新闻源' : '➕ 补充默认新闻源' ?></button>
+        </form>
     </div>
 
     <!-- ── Fetch result detail ────────────────────────────────────────────── -->
