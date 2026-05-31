@@ -109,33 +109,32 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Deploy via FTPS with lftp
+      - name: Deploy via SFTP over SSH (key auth)
         env:
-          FTP_HOST: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          FTP_USER: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
           PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
           APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
         run: |
           set -e
-          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
-            echo "FTP secrets are missing; cannot deploy."
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
+            echo "SSH secrets are missing; cannot deploy."
             exit 1
           fi
-          # Resilient FTPS deploy: short per-attempt timeouts + a shell-level retry
-          # loop. A fresh lftp process per attempt rides out Hostinger's
-          # intermittent FTP outages far better than lftp's in-session reconnect,
-          # and the incremental mirror means progress accumulates across attempts.
+          # Key-based SFTP over SSH. No password / no sshpass — Hostinger refuses
+          # non-interactive password auth, so we authenticate with a deploy key.
+          # lftp drives the SFTP subsystem (no remote rsync needed); mirror is
+          # incremental so progress accumulates across attempts.
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
           cat > /tmp/deploy.lftp <<EOF
           set cmd:fail-exit yes
-          set ftp:ssl-allow yes
-          set ftp:ssl-force yes
-          set ftp:ssl-protect-data yes
-          set ftp:passive-mode yes
-          set ssl:verify-certificate no
-          set ssl:check-hostname no
+          set sftp:auto-confirm yes
+          set sftp:connect-program "ssh -a -x -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
           set net:max-retries 2
-          set net:reconnect-interval-base 4
           set net:timeout 30
           set net:connection-limit 1
           set mirror:parallel-transfer-count 1
@@ -147,15 +146,15 @@ jobs:
           bye
           EOF
           attempt=1
-          max_attempts=20
-          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" < /tmp/deploy.lftp; do
+          max_attempts=10
+          until lftp -u "$SSH_USER," "sftp://$SSH_HOST" < /tmp/deploy.lftp; do
             if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Deploy failed after $attempt attempts (FTP unreachable)."
+              echo "Deploy failed after $attempt attempts."
               exit 1
             fi
-            echo "Deploy attempt $attempt failed (FTP unreachable); retrying in 15s..."
+            echo "Deploy attempt $attempt failed; retrying in 12s..."
             attempt=$((attempt + 1))
-            sleep 15
+            sleep 12
           done
           echo "Deploy succeeded on attempt $attempt."
 
