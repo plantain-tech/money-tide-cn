@@ -56,6 +56,14 @@ $scoreClass = static function (int $s): string {
                 <span class="news-fetch-spinner" hidden></span>
             </button>
         </form>
+        <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="inline-action">
+            <input type="hidden" name="action" value="clear">
+            <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
+            <button class="button button-ghost button-small" type="submit"
+                data-confirm="<?= $filters['category_slug'] !== '' ? '清空「' . e($filters['category_slug']) . '」栏目的全部 cluster？' : '清空全部 cluster？' ?>"
+                data-confirm-sub="会删除该范围内所有 cluster（含已选用），相关素材恢复为待处理，可重新聚类。常用于清掉旧格式的 cluster 后重新生成。"
+                data-confirm-variant="danger" data-confirm-title="清空 cluster" data-confirm-confirm="清空">🗑 清空<?= $filters['category_slug'] !== '' ? '本栏目' : '全部' ?> cluster</button>
+        </form>
         <small class="news-action-hint">每个栏目消耗 1 次 AI 额度。建议先在「素材库」抓取新闻，再聚类。</small>
     </div>
 

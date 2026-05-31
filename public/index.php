@@ -1375,6 +1375,10 @@ if ($route === 'admin/story-clusters') {
                 $skippedNote = !empty($clusterSummary['skipped']) ? ' · ' . $clusterSummary['skipped'] . ' 跳过(无素材)' : '';
                 $flash = 'AI 聚类完成：' . $clusterSummary['ok'] . ' 栏目成功 / ' . $clusterSummary['failed'] . ' 失败' . $skippedNote . ' · 共 ' . $clusterSummary['clusters'] . ' 个 cluster。';
             }
+        } elseif ($action === 'clear') {
+            $cat = (string) ($_POST['category_slug'] ?? '');
+            $n = clear_clusters($cat !== '' ? $cat : null);
+            $flash = '已清空 ' . $n . ' 个 cluster' . ($cat !== '' ? '（' . $cat . '）' : '（全部）') . '，相关素材已恢复为待处理，可重新聚类。';
         } elseif ($action === 'select') {
             set_cluster_status((int) ($_POST['id'] ?? 0), 'selected');
             $flash = '已选用该 cluster。';
@@ -1926,7 +1930,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-2-proper-noun-rule',
+            'release'    => 'sprint-9-2-proper-noun-v2',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

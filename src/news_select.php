@@ -348,6 +348,34 @@ function set_cluster_status(int $id, string $status): bool
     }
 }
 
+/**
+ * Clear clusters — all, or one category. Also resets the clustered news items
+ * in that scope back to 'new' so they can be re-clustered fresh.
+ */
+function clear_clusters(?string $categorySlug = null): int
+{
+    ensure_clusters_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return 0;
+    }
+    try {
+        if ($categorySlug !== null && $categorySlug !== '') {
+            $n = $pdo->prepare('DELETE FROM story_clusters WHERE category_slug = :cat');
+            $n->execute(['cat' => $categorySlug]);
+            $deleted = $n->rowCount();
+            $pdo->prepare("UPDATE news_items SET status = 'new' WHERE category_slug = :cat AND status = 'clustered'")
+                ->execute(['cat' => $categorySlug]);
+        } else {
+            $deleted = (int) $pdo->exec('DELETE FROM story_clusters');
+            $pdo->exec("UPDATE news_items SET status = 'new' WHERE status = 'clustered'");
+        }
+        return (int) $deleted;
+    } catch (Throwable $exception) {
+        return 0;
+    }
+}
+
 function delete_cluster(int $id): bool
 {
     $pdo = db();

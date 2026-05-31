@@ -10,11 +10,19 @@ declare(strict_types=1);
  */
 function ai_proper_noun_rule(): string
 {
-    return "\n\n【专有名词规则】所有人名、公司/机构名、地名、建筑名、产品名、动物名等专有名词，"
-        . "在中文译名首次出现时，必须用括号紧跟英文原名，例如：凯文·沃什 (Kevin Warsh)、苹果 (Apple)、"
-        . "蒂姆·库克 (Tim Cook)、英伟达 (Nvidia)、美联储 (Federal Reserve)。"
-        . "同一篇内同一名词重复出现时只在首次标注即可，避免重复啰嗦。"
-        . "若原名本身就是英文/数字（如 GDP、ETF、iPhone），保持原样，不需要再加括号。";
+    return "\n\n【硬性格式要求 · 专有名词中英对照（必须遵守）】"
+        . "你输出的每一处人名、公司名、机构名、地名、建筑名、产品名、动物名等专有名词，"
+        . "在首次出现时，中文译名后面【必须】紧跟一个英文圆括号，括号里写它的英文原名。"
+        . "请严格照下面示例的格式输出：\n"
+        . "  · 蒂姆·库克 (Tim Cook)\n"
+        . "  · 苹果 (Apple)\n"
+        . "  · 美联储 (Federal Reserve)\n"
+        . "  · 黄仁勋 (Jensen Huang)\n"
+        . "  · 英伟达 (Nvidia)\n"
+        . "  · 凯文·沃什 (Kevin Warsh)\n"
+        . "如果你只写了中文名而没有附上英文原名，就属于错误输出，必须修正。"
+        . "同一个名词在同一段文字里重复出现时，只在第一次标注英文即可，之后可省略。"
+        . "本身已是英文或数字缩写的词（如 GDP、ETF、iPhone、AI、IPO）保持原样，不要再加括号。";
 }
 
 function editorial_bot_template_defaults(): array
