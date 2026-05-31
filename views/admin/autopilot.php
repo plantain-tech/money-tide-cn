@@ -10,6 +10,7 @@ $on = !empty($config['enabled']);
             <p>整条 AI 流水线的总开关与监控：抓取 → 聚类 → 写稿 → AI 审核 → 发布 + 组装早报。开启后由 Cron 每天自动跑；AI 标记需核查的草稿不会自动发布，仍等你处理（你的 5%）。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/pipeline-analytics')) ?>">流水线分析</a>
             <a class="ghost-link" href="<?= e(url('admin/review-queue')) ?>">AI 审核台</a>
             <a class="ghost-link" href="<?= e(url('admin/auto-publish')) ?>">发布与组装</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>

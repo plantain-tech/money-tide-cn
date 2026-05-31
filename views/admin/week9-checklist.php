@@ -21,6 +21,7 @@ $days = [
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin/autopilot')) ?>">自动驾驶</a>
+            <a class="ghost-link" href="<?= e(url('admin/pipeline-analytics')) ?>">流水线分析</a>
             <a class="ghost-link" href="<?= e(url('admin/smoke')) ?>">系统自检</a>
             <a class="ghost-link" href="<?= e(url('admin/diagnostics')) ?>">诊断</a>
             <a class="ghost-link" href="<?= e(url('admin/milestone')) ?>">里程碑</a>

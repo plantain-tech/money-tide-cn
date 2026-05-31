@@ -124,6 +124,10 @@
             <strong>🚦 自主引擎控制室</strong>
             <span>Sprint 1 签收台：流水线健康灯、一键端到端 dry run、调自动通过阈值、完成定义与第 10 周 backlog。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/pipeline-analytics')) ?>">
+            <strong>📈 流水线分析</strong>
+            <span>自动运行的趋势与转化漏斗：产出曲线、自动通过率、限流迹象与智能洞察，用数据调阈值和节流。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>

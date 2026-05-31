@@ -2067,7 +2067,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-9-autonomous-content',
+            'release'    => 'week-10-day-1-pipeline-analytics',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2134,6 +2134,23 @@ if ($route === 'admin/week8-checklist') {
         'items' => week_eight_qa_checklist(),
         'backlog' => week_nine_backlog(),
         'smokeChecks' => admin_smoke_checks(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/pipeline-analytics') {
+    require_admin();
+    $days = pipeline_analytics_clamp_days((int) ($_GET['days'] ?? 14));
+    $summary = pipeline_analytics_summary($days);
+    render_page('admin/pipeline-analytics', [
+        'site' => $site,
+        'categories' => $categories,
+        'days' => $days,
+        'windows' => pipeline_analytics_windows(),
+        'summary' => $summary,
+        'insights' => pipeline_analytics_insights($summary),
+        'runs' => pipeline_runs(12),
+        'config' => pipeline_config(),
     ]);
     exit;
 }
