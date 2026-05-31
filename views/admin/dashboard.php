@@ -120,6 +120,10 @@
             <strong>🚀 发布与早报组装</strong>
             <span>一键把已批准草稿发布为正式文章，再按栏目自动组装当日早报（可发送，不自动发送）。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/week9-checklist')) ?>">
+            <strong>🚦 自主引擎控制室</strong>
+            <span>Sprint 1 签收台：流水线健康灯、一键端到端 dry run、调自动通过阈值、完成定义与第 10 周 backlog。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>

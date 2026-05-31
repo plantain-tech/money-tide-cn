@@ -2067,7 +2067,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-6-toggle-animation',
+            'release'    => 'week-9-autonomous-content',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2134,6 +2134,39 @@ if ($route === 'admin/week8-checklist') {
         'items' => week_eight_qa_checklist(),
         'backlog' => week_nine_backlog(),
         'smokeChecks' => admin_smoke_checks(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/week9-checklist') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $dryRun = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'dry_run') {
+            $dryRun = autonomy_dry_run();
+            $flash = 'Dry run 完成：' . ($dryRun['message'] ?? '');
+        } elseif ($action === 'save_threshold') {
+            $value = max(50, min(100, (int) ($_POST['review_threshold'] ?? 80)));
+            set_pipeline_setting('review_threshold', (string) $value);
+            $flash = '已保存自动通过阈值：' . $value . ' 分。';
+        }
+    }
+    $checks = autonomy_health_checks();
+    render_page('admin/week9-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'checks' => $checks,
+        'readiness' => autonomy_readiness($checks),
+        'threshold' => autonomy_review_threshold(),
+        'config' => pipeline_config(),
+        'items' => sprint_one_signoff_checklist(),
+        'backlog' => week_ten_backlog(),
+        'runs' => pipeline_runs(8),
+        'dryRun' => $dryRun,
+        'flash' => $flash,
+        'aiReady' => ai_provider_status(),
     ]);
     exit;
 }

@@ -709,7 +709,7 @@ document.querySelectorAll('[data-news-fetch]').forEach(function(form) {
         if (!btn) return;
         var label = btn.querySelector('.news-fetch-label');
         var spinner = btn.querySelector('.news-fetch-spinner');
-        if (label) label.textContent = '抓取中…';
+        if (label) label.textContent = btn.getAttribute('data-loading-label') || '抓取中…';
         if (spinner) spinner.hidden = false;
         btn.classList.add('is-loading');
         btn.disabled = true;
@@ -769,3 +769,69 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
             });
     });
 });
+
+// Day 9·7 — Autonomous engine control room (week9 finale) interactions.
+(function () {
+    var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Count-up animation for [data-countup] (readiness %, dry-run stage numbers).
+    function countUp(el) {
+        var target = parseInt(el.getAttribute('data-countup'), 10) || 0;
+        if (prefersReduced || target === 0) { el.textContent = String(target); return; }
+        var start = null, dur = 900;
+        function step(ts) {
+            if (start === null) start = ts;
+            var p = Math.min((ts - start) / dur, 1);
+            var eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = String(Math.round(eased * target));
+            if (p < 1) requestAnimationFrame(step);
+            else el.textContent = String(target);
+        }
+        requestAnimationFrame(step);
+    }
+    function runCountUps(scope) {
+        (scope || document).querySelectorAll('[data-countup]').forEach(function (el) {
+            if (el.dataset.counted === '1') return;
+            el.dataset.counted = '1';
+            countUp(el);
+        });
+    }
+    // Run when visible (IntersectionObserver) so numbers animate as you scroll in.
+    if ('IntersectionObserver' in window && !prefersReduced) {
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (en.isIntersecting) { countUp(en.target); en.target.dataset.counted = '1'; io.unobserve(en.target); }
+            });
+        }, { threshold: 0.4 });
+        document.querySelectorAll('[data-countup]').forEach(function (el) {
+            if (el.dataset.counted !== '1') io.observe(el);
+        });
+    } else {
+        runCountUps(document);
+    }
+
+    // Threshold slider: live bubble that tracks the thumb.
+    var range = document.querySelector('[data-threshold-range]');
+    var bubble = document.querySelector('[data-threshold-bubble]');
+    if (range && bubble) {
+        var positionBubble = function () {
+            var min = parseFloat(range.min) || 50;
+            var max = parseFloat(range.max) || 100;
+            var val = parseFloat(range.value);
+            var pct = (val - min) / (max - min);
+            bubble.textContent = String(val);
+            // 24px thumb -> offset so the bubble stays over the thumb center.
+            var width = range.offsetWidth;
+            bubble.style.left = (pct * (width - 24) + 12) + 'px';
+        };
+        range.addEventListener('input', positionBubble);
+        window.addEventListener('resize', positionBubble);
+        positionBubble();
+    }
+
+    // Scroll a fresh dry-run result into view for the demo.
+    var dryrun = document.querySelector('[data-dryrun]');
+    if (dryrun && !prefersReduced) {
+        dryrun.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+})();

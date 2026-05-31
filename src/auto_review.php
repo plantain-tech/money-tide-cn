@@ -51,6 +51,15 @@ function ensure_auto_review_schema(): void
  */
 function auto_review_threshold(): int
 {
+    // Live override from the autopilot/finale UI (pipeline_settings) takes
+    // precedence over the AI_REVIEW_THRESHOLD secret so the owner can tune it
+    // without a redeploy. 0/unset = fall back to the secret/default.
+    if (function_exists('pipeline_setting')) {
+        $override = (int) pipeline_setting('review_threshold', '0');
+        if ($override > 0) {
+            return max(50, min(100, $override));
+        }
+    }
     $t = (int) app_config('ai.review_threshold', 80);
     return max(50, min(100, $t > 0 ? $t : 80));
 }
