@@ -6978,3 +6978,16 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
 .is-warn .pa-alert-badge { background: #ffe39a; }
 .is-info .pa-alert-badge { background: #cfe0ff; }
 .pa-alert-type { font-family: ui-monospace, monospace; font-size: 0.74rem; color: var(--muted); }
+.pa-alert-status { font-size: 0.72rem; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 4px; }
+.pa-status-open { background: #ffe39a; }
+.pa-status-acknowledged { background: #cfe0ff; }
+.pa-status-resolved { background: #c8f5d4; }
+.pa-alert-head time { margin-left: auto; color: var(--muted); font-size: 0.74rem; }
+.pa-alert-msg { margin: 0; }
+.pa-alert-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.pa-alert-actions form { margin: 0; }
+.button-ghost { background: var(--white) !important; color: var(--ink) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    .pa-alert, .pa-alert-banner, .pa-alert-count { animation: none !important; }
+}
