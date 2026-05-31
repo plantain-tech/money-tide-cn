@@ -20,11 +20,19 @@ $levelClass = ['ok' => 'is-ok', 'warn' => 'is-warn', 'info' => 'is-info'];
             <p>把每日自动运行变成可读的趋势：各阶段产出、转化漏斗、自动通过率与限流迹象，让你用数据调阈值和节流，而不是凭感觉。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/pipeline-alerts')) ?>">告警台<?php if (!empty($alertSummary['open'])): ?> <span class="pa-alert-count pa-alert-count-sm"><?= e((string) $alertSummary['open']) ?></span><?php endif; ?></a>
             <a class="ghost-link" href="<?= e(url('admin/autopilot')) ?>">自动驾驶</a>
             <a class="ghost-link" href="<?= e(url('admin/week9-checklist')) ?>">签收台</a>
             <a class="ghost-link" href="<?= e(url('admin/diagnostics')) ?>">诊断</a>
         </div>
     </div>
+
+    <?php if (!empty($alertSummary['open'])): ?>
+        <a class="pa-alert-banner <?= !empty($alertSummary['critical_open']) ? 'is-critical' : 'is-warn' ?>" href="<?= e(url('admin/pipeline-alerts')) ?>">
+            <span class="pa-alert-banner-icon"><?= !empty($alertSummary['critical_open']) ? '🟥' : '🔔' ?></span>
+            <span>有 <strong><?= e((string) $alertSummary['open']) ?></strong> 条待处理告警<?php if (!empty($alertSummary['critical_open'])): ?>（其中 <?= e((string) $alertSummary['critical_open']) ?> 条严重）<?php endif; ?> —— 点此打开告警台 →</span>
+        </a>
+    <?php endif; ?>
 
     <!-- Window switcher -->
     <div class="pa-window-bar">

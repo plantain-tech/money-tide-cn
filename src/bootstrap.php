@@ -40,6 +40,7 @@ require_once __DIR__ . '/auto_review.php';
 require_once __DIR__ . '/news_publish.php';
 require_once __DIR__ . '/pipeline.php';
 require_once __DIR__ . '/pipeline_analytics.php';
+require_once __DIR__ . '/pipeline_alerts.php';
 require_once __DIR__ . '/autonomy.php';
 require_once __DIR__ . '/backup.php';
 require_once __DIR__ . '/content_ops.php';

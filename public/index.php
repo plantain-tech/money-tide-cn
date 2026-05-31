@@ -2067,7 +2067,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-1-pipeline-analytics',
+            'release'    => 'week-10-day-2-resilience',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2138,6 +2138,48 @@ if ($route === 'admin/week8-checklist') {
     exit;
 }
 
+if ($route === 'admin/pipeline-alerts') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $checkResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'save_settings') {
+            save_pipeline_alert_settings($_POST);
+            $flash = '已保存告警设置。';
+        } elseif ($action === 'check_now') {
+            @set_time_limit(60);
+            $found = evaluate_pipeline_health(['context' => ['trigger' => 'manual_check']]);
+            $sent = dispatch_pipeline_alerts();
+            $flash = '健康检查完成：发现 ' . count($found) . ' 项需关注' . ($sent > 0 ? '，已发送 ' . $sent . ' 条告警邮件' : '') . '。';
+            $checkResult = $found;
+        } elseif ($action === 'ack') {
+            set_pipeline_alert_status((int) ($_POST['id'] ?? 0), 'acknowledged');
+            $flash = '已标记为处理中。';
+        } elseif ($action === 'resolve') {
+            set_pipeline_alert_status((int) ($_POST['id'] ?? 0), 'resolved');
+            $flash = '已解决该告警。';
+        } elseif ($action === 'reopen') {
+            set_pipeline_alert_status((int) ($_POST['id'] ?? 0), 'open');
+            $flash = '已重新打开该告警。';
+        }
+    }
+    $statusFilter = (string) ($_GET['status'] ?? '');
+    render_page('admin/pipeline-alerts', [
+        'site' => $site,
+        'categories' => $categories,
+        'settings' => pipeline_alert_settings(),
+        'summary' => pipeline_alert_summary(),
+        'alerts' => pipeline_alerts(['status' => $statusFilter]),
+        'levels' => pipeline_alert_levels(),
+        'filters' => ['status' => $statusFilter],
+        'emailReady' => function_exists('email_provider_status') ? email_provider_status() : ['ready' => false],
+        'checkResult' => $checkResult,
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/pipeline-analytics') {
     require_admin();
     $days = pipeline_analytics_clamp_days((int) ($_GET['days'] ?? 14));
@@ -2151,6 +2193,7 @@ if ($route === 'admin/pipeline-analytics') {
         'insights' => pipeline_analytics_insights($summary),
         'runs' => pipeline_runs(12),
         'config' => pipeline_config(),
+        'alertSummary' => function_exists('pipeline_alert_summary') ? pipeline_alert_summary() : ['open' => 0],
     ]);
     exit;
 }

@@ -125,39 +125,86 @@ function run_daily_pipeline(string $trigger = 'cron', array $opts = []): array
     // previous stage's burst (clustering ~8 calls) before the next begins.
     $stagePause = max(0, min(60, (int) ($opts['stage_pause'] ?? (int) pipeline_setting('stage_pause', '8'))));
 
+    // Day 10·2 resilience: each stage is wrapped so one failure can't abort the
+    // whole run; failures are recorded and surfaced as alerts afterwards.
+    $errors = [];
+    $retry = null;
+
     // 1) Ingest (no AI)
     if (function_exists('ingest_all_news_sources')) {
-        $r = ingest_all_news_sources();
-        $stages['ingest'] = ['new_items' => (int) ($r['new_items'] ?? 0), 'sources' => (int) ($r['sources'] ?? 0)];
+        try {
+            $r = ingest_all_news_sources();
+            $stages['ingest'] = ['new_items' => (int) ($r['new_items'] ?? 0), 'sources' => (int) ($r['sources'] ?? 0)];
+        } catch (Throwable $ex) {
+            $stages['ingest'] = ['error' => $ex->getMessage()];
+            $errors[] = 'ingest';
+        }
     }
     // 2) Cluster (AI)
     if (function_exists('cluster_all_categories')) {
-        $r = cluster_all_categories();
-        $stages['cluster'] = ['clusters' => (int) ($r['clusters'] ?? 0), 'ok' => (int) ($r['ok'] ?? 0)];
-        if ($stagePause > 0 && ($stages['cluster']['clusters'] ?? 0) > 0) {
-            sleep($stagePause); // let the provider cool down before synthesis
+        try {
+            $r = cluster_all_categories();
+            $stages['cluster'] = ['clusters' => (int) ($r['clusters'] ?? 0), 'ok' => (int) ($r['ok'] ?? 0)];
+            if ($stagePause > 0 && ($stages['cluster']['clusters'] ?? 0) > 0) {
+                sleep($stagePause); // let the provider cool down before synthesis
+            }
+        } catch (Throwable $ex) {
+            $stages['cluster'] = ['error' => $ex->getMessage()];
+            $errors[] = 'cluster';
         }
     }
-    // 3) Synthesize selected clusters -> drafts (AI)
+    // 3) Synthesize selected clusters -> drafts (AI), with ONE self-heal retry:
+    //    if it produced 0 drafts but had failures (the throttle signature), wait
+    //    a longer backoff and try once more before giving up.
     if (function_exists('synthesize_selected_clusters')) {
-        $r = synthesize_selected_clusters(null, $synthLimit);
-        $stages['synthesize'] = ['drafts' => (int) ($r['ok'] ?? 0), 'failed' => (int) ($r['failed'] ?? 0)];
-        if ($stagePause > 0 && (($stages['synthesize']['drafts'] ?? 0) > 0)) {
-            sleep($stagePause); // cool down before the fact-check gate
+        try {
+            $r = synthesize_selected_clusters(null, $synthLimit);
+            $drafts = (int) ($r['ok'] ?? 0);
+            $failed = (int) ($r['failed'] ?? 0);
+            if ($drafts === 0 && $failed > 0) {
+                $backoff = max(15, $stagePause * 2);
+                sleep($backoff);
+                $r2 = synthesize_selected_clusters(null, $synthLimit);
+                $drafts = (int) ($r2['ok'] ?? 0);
+                $failed = (int) ($r2['failed'] ?? 0);
+                $retry = ['stage' => 'synthesize', 'backoff' => $backoff, 'recovered' => $drafts > 0];
+            }
+            $stages['synthesize'] = ['drafts' => $drafts, 'failed' => $failed];
+            if ($retry !== null) {
+                $stages['synthesize']['retried'] = true;
+                $stages['synthesize']['recovered'] = $retry['recovered'];
+            }
+            if ($stagePause > 0 && $drafts > 0) {
+                sleep($stagePause); // cool down before the fact-check gate
+            }
+        } catch (Throwable $ex) {
+            $stages['synthesize'] = ['error' => $ex->getMessage()];
+            $errors[] = 'synthesize';
         }
     }
     // 4) Fact-check gate (AI)
     if (function_exists('assess_pending_drafts')) {
-        $r = assess_pending_drafts($assessLimit);
-        $stages['assess'] = ['auto' => (int) ($r['auto'] ?? 0), 'review' => (int) ($r['review'] ?? 0)];
+        try {
+            $r = assess_pending_drafts($assessLimit);
+            $stages['assess'] = ['auto' => (int) ($r['auto'] ?? 0), 'review' => (int) ($r['review'] ?? 0)];
+        } catch (Throwable $ex) {
+            $stages['assess'] = ['error' => $ex->getMessage()];
+            $errors[] = 'assess';
+        }
     }
     // 5) Publish approved + assemble newsletters (no AI)
     if (function_exists('run_auto_publish_and_assemble')) {
-        $r = run_auto_publish_and_assemble($publishLimit);
-        $stages['publish'] = ['articles' => (int) ($r['publish']['ok'] ?? 0)];
-        $stages['assemble'] = ['issues' => (int) ($r['assemble']['issues'] ?? 0)];
+        try {
+            $r = run_auto_publish_and_assemble($publishLimit);
+            $stages['publish'] = ['articles' => (int) ($r['publish']['ok'] ?? 0)];
+            $stages['assemble'] = ['issues' => (int) ($r['assemble']['issues'] ?? 0)];
+        } catch (Throwable $ex) {
+            $stages['publish'] = ['error' => $ex->getMessage()];
+            $errors[] = 'publish';
+        }
     }
 
+    $status = empty($errors) ? 'ok' : 'error';
     $duration = (int) round(microtime(true) - $started);
     $summary = sprintf(
         '抓取 %d · 聚类 %d · 草稿 %d · 自动通过 %d/转人工 %d · 发布 %d · 早报 %d',
@@ -169,12 +216,30 @@ function run_daily_pipeline(string $trigger = 'cron', array $opts = []): array
         $stages['publish']['articles'] ?? 0,
         $stages['assemble']['issues'] ?? 0
     );
+    if ($retry !== null) {
+        $summary .= ' · 写稿重试' . ($retry['recovered'] ? '成功' : '未恢复');
+    }
+    if (!empty($errors)) {
+        $summary .= ' · 失败阶段：' . implode('/', $errors);
+    }
 
-    log_pipeline_run($trigger, 'ok', $stages, $summary, $duration);
+    log_pipeline_run($trigger, $status, $stages, $summary, $duration);
     set_pipeline_setting('last_run_at', date('Y-m-d H:i:s'));
-    set_pipeline_setting('last_run_status', 'ok');
+    set_pipeline_setting('last_run_status', $status);
 
-    return ['status' => 'ok', 'message' => $summary, 'stages' => $stages, 'duration' => $duration];
+    // Day 10·2: self-monitor — record health alerts; email only on cron so
+    // manual/dry runs don't spam the inbox.
+    if (function_exists('evaluate_pipeline_health')) {
+        try {
+            evaluate_pipeline_health(['context' => ['trigger' => $trigger, 'errors' => $errors]]);
+            if ($trigger === 'cron' && function_exists('dispatch_pipeline_alerts')) {
+                dispatch_pipeline_alerts();
+            }
+        } catch (Throwable $ex) {
+        }
+    }
+
+    return ['status' => $status, 'message' => $summary, 'stages' => $stages, 'duration' => $duration];
 }
 
 function log_pipeline_run(string $trigger, string $status, array $stages, string $summary, int $duration): void

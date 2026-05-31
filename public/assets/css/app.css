@@ -6935,3 +6935,46 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
     .pa-line { stroke-dashoffset: 0; }
     .pa-funnel-bar { width: var(--w, 0%); }
 }
+
+/* ===== Day 10·2 — Pipeline alerts & self-heal ===== */
+.pa-alert-count {
+    display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px;
+    background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: 999px;
+    font-size: 0.85rem; font-weight: 800; vertical-align: middle; margin-left: 0.3rem;
+    animation: autonomy-pulse 1.8s infinite;
+}
+.pa-alert-count-sm { min-width: 20px; height: 20px; font-size: 0.72rem; animation: none; }
+
+.pa-alert-banner {
+    display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink);
+    border: 2px solid var(--ink); padding: 0.75rem 1rem; margin: 0.4rem 0 1rem;
+    box-shadow: 4px 4px 0 var(--ink); font-weight: 600;
+    animation: pa-banner-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.pa-alert-banner.is-critical { background: #ffe9e6; }
+.pa-alert-banner.is-warn { background: #fff7e0; }
+.pa-alert-banner:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+.pa-alert-banner-icon { font-size: 1.2rem; }
+@keyframes pa-banner-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.pa-switch-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 0.5rem; }
+.pa-switch-row input { width: auto !important; }
+
+.pa-alert-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.pa-alert {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+    border: 2px solid var(--ink); border-left-width: 6px; background: var(--white);
+    padding: 0.8rem 1rem; box-shadow: 3px 3px 0 var(--ink);
+    animation: autonomy-pop 0.45s ease both; animation-delay: calc(var(--i, 0) * 50ms);
+}
+.pa-alert.is-critical { border-left-color: var(--red); }
+.pa-alert.is-warn { border-left-color: #f5a623; }
+.pa-alert.is-info { border-left-color: var(--blue); }
+.pa-alert.status-resolved { opacity: 0.62; background: var(--paper); }
+.pa-alert-main { flex: 1 1 320px; }
+.pa-alert-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+.pa-alert-badge { font-weight: 800; font-size: 0.74rem; padding: 0.1rem 0.5rem; border: 2px solid var(--ink); border-radius: 999px; }
+.is-critical .pa-alert-badge { background: #ffb3aa; }
+.is-warn .pa-alert-badge { background: #ffe39a; }
+.is-info .pa-alert-badge { background: #cfe0ff; }
+.pa-alert-type { font-family: ui-monospace, monospace; font-size: 0.74rem; color: var(--muted); }
