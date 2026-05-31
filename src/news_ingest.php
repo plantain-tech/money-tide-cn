@@ -81,6 +81,7 @@ function default_news_sources(): array
         // tech
         ['name' => 'TechCrunch', 'feed_url' => 'https://techcrunch.com/feed/', 'category_slug' => 'tech', 'credibility' => 'trusted'],
         ['name' => 'The Verge', 'feed_url' => 'https://www.theverge.com/rss/index.xml', 'category_slug' => 'tech', 'credibility' => 'standard'],
+        ['name' => 'Yahoo Finance · 科技 (NVDA)', 'feed_url' => 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=NVDA&region=US&lang=en-US', 'category_slug' => 'tech', 'credibility' => 'standard'],
         // crypto
         ['name' => 'CoinDesk', 'feed_url' => 'https://www.coindesk.com/arc/outboundfeeds/rss/', 'category_slug' => 'crypto', 'credibility' => 'trusted'],
         ['name' => 'Cointelegraph', 'feed_url' => 'https://cointelegraph.com/rss', 'category_slug' => 'crypto', 'credibility' => 'standard'],
