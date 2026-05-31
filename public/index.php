@@ -1362,6 +1362,7 @@ if ($route === 'admin/story-clusters') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
     $clusterSummary = null;
+    $synthSummary = null;
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
         if ($action === 'cluster') {
@@ -1379,6 +1380,15 @@ if ($route === 'admin/story-clusters') {
             $cat = (string) ($_POST['category_slug'] ?? '');
             $n = clear_clusters($cat !== '' ? $cat : null);
             $flash = '已清空 ' . $n . ' 个 cluster' . ($cat !== '' ? '（' . $cat . '）' : '（全部）') . '，相关素材已恢复为待处理，可重新聚类。';
+        } elseif ($action === 'synthesize') {
+            @set_time_limit(180);
+            $r = synthesize_cluster_to_draft((int) ($_POST['id'] ?? 0));
+            $flash = ($r['ok'] ? '✅ ' : '⚠️ ') . $r['message'];
+        } elseif ($action === 'synthesize_all') {
+            @set_time_limit(600);
+            $cat = (string) ($_POST['category_slug'] ?? '');
+            $synthSummary = synthesize_selected_clusters($cat !== '' ? $cat : null, 5);
+            $flash = '批量生成完成：' . $synthSummary['ok'] . ' 成功 / ' . $synthSummary['failed'] . ' 失败' . ($synthSummary['skipped'] > 0 ? ' · ' . $synthSummary['skipped'] . ' 已有草稿' : '') . '。';
         } elseif ($action === 'select') {
             set_cluster_status((int) ($_POST['id'] ?? 0), 'selected');
             $flash = '已选用该 cluster。';
@@ -1407,6 +1417,8 @@ if ($route === 'admin/story-clusters') {
         'clusters' => $clusters,
         'summary' => clustering_summary(),
         'newsSummary' => news_ingest_summary(),
+        'synthSummary' => synthesis_summary(),
+        'synthRun' => $synthSummary ?? null,
         'statusLabels' => cluster_status_labels(),
         'filters' => $filters,
         'flash' => $flash,
@@ -1930,7 +1942,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-2-proper-noun-v2',
+            'release'    => 'sprint-9-3-article-synthesis',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

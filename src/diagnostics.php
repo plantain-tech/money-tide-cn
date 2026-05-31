@@ -287,6 +287,15 @@ function admin_smoke_checks(): array
             'group' => 'content',
         ];
     }
+    if (function_exists('synthesis_summary')) {
+        $synth = synthesis_summary();
+        $checks[] = [
+            'name' => 'AI 文章合成',
+            'ok' => function_exists('synthesize_cluster_to_draft') && is_array($synth),
+            'detail' => $synth['synthesized'] . ' 篇已生成 · ' . $synth['pending_selected'] . ' 待生成',
+            'group' => 'content',
+        ];
+    }
     if (function_exists('eight_week_journey')) {
         $checks[] = [
             'name' => '里程碑与路线图',

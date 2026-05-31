@@ -33,9 +33,18 @@ function ensure_clusters_schema(): void
             item_count INT NOT NULL DEFAULT 0,
             primary_url VARCHAR(700) NULL,
             status ENUM('candidate','selected','skipped','used') NOT NULL DEFAULT 'candidate',
+            draft_id INT UNSIGNED NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_clusters_cat (category_slug, status, score)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        // Idempotent add for tables created before draft_id existed.
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM story_clusters LIKE 'draft_id'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec('ALTER TABLE story_clusters ADD COLUMN draft_id INT UNSIGNED NULL AFTER status');
+            }
+        } catch (Throwable $exception) {
+        }
         $ensured = true;
     } catch (Throwable $exception) {
     }
@@ -313,6 +322,27 @@ function story_clusters(array $filters = []): array
 /**
  * Hydrate a cluster's member news items (titles + urls) for display.
  */
+function story_cluster_get(int $id): ?array
+{
+    ensure_clusters_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare('SELECT * FROM story_clusters WHERE id = :id LIMIT 1');
+        $st->execute(['id' => $id]);
+        $row = $st->fetch();
+        if (!$row) {
+            return null;
+        }
+        $row['item_ids'] = json_decode((string) ($row['item_ids'] ?? '[]'), true) ?: [];
+        return $row;
+    } catch (Throwable $exception) {
+        return null;
+    }
+}
+
 function cluster_member_items(array $itemIds): array
 {
     $itemIds = array_values(array_filter(array_map('intval', $itemIds)));
@@ -325,7 +355,7 @@ function cluster_member_items(array $itemIds): array
     }
     try {
         $in = implode(',', $itemIds);
-        return $pdo->query("SELECT id, title, url, source_id, published_at FROM news_items WHERE id IN ({$in})")->fetchAll() ?: [];
+        return $pdo->query("SELECT id, title, url, summary, source_id, published_at FROM news_items WHERE id IN ({$in})")->fetchAll() ?: [];
     } catch (Throwable $exception) {
         return [];
     }

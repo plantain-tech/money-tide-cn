@@ -16,9 +16,10 @@ $scoreClass = static function (int $s): string {
         <div>
             <p class="eyebrow">自动新闻 · 聚类与选题</p>
             <h1>选题聚类</h1>
-            <p>AI 把抓取到的新闻去重、聚类，并按对中文财经读者的价值打分排序。选用的 cluster 会进入下一步（Day 9·3）由 AI 合成原创文章。</p>
+            <p>AI 把抓取到的新闻去重、聚类、按价值打分排序。对「已选用」的 cluster 点「✍️ 生成草稿」，AI 会综合多来源素材写成一篇原创中文文章，落入 AI 草稿队列等待审核。</p>
         </div>
         <div class="admin-actions">
+            <a class="ghost-link" href="<?= e(url('admin/ai-drafts')) ?>">草稿队列</a>
             <a class="ghost-link" href="<?= e(url('admin/news-items')) ?>">素材库</a>
             <a class="ghost-link" href="<?= e(url('admin/news-sources')) ?>">新闻源</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
@@ -33,11 +34,12 @@ $scoreClass = static function (int $s): string {
     <?php endif; ?>
 
     <!-- Stats hero -->
+    <?php $synthSummary = $synthSummary ?? ['synthesized' => 0, 'pending_selected' => 0, 'today' => 0]; ?>
     <div class="news-stat-grid">
         <div class="news-stat"><span>Cluster 总数</span><strong><?= e((string) $summary['total']) ?></strong><small>累计</small></div>
-        <div class="news-stat news-stat-accent"><span>已选用</span><strong><?= e((string) $summary['selected']) ?></strong><small>待生成草稿</small></div>
+        <div class="news-stat news-stat-accent"><span>待生成草稿</span><strong><?= e((string) $synthSummary['pending_selected']) ?></strong><small>已选用未生成</small></div>
+        <div class="news-stat"><span>已生成草稿</span><strong><?= e((string) $synthSummary['synthesized']) ?></strong><small>cluster→draft</small></div>
         <div class="news-stat"><span>候选</span><strong><?= e((string) $summary['candidate']) ?></strong><small>可手动选用</small></div>
-        <div class="news-stat"><span>今日新增</span><strong><?= e((string) $summary['today']) ?></strong><small>今天聚类</small></div>
         <div class="news-stat"><span>素材待处理</span><strong><?= e((string) $newsSummary['items_new']) ?></strong><small>news status=new</small></div>
     </div>
 
@@ -56,6 +58,14 @@ $scoreClass = static function (int $s): string {
                 <span class="news-fetch-spinner" hidden></span>
             </button>
         </form>
+        <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="news-fetch-form" data-news-fetch>
+            <input type="hidden" name="action" value="synthesize_all">
+            <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
+            <button class="button button-small" type="submit" data-news-fetch-btn <?= ($synthSummary['pending_selected'] ?? 0) < 1 ? 'disabled' : '' ?>>
+                <span class="news-fetch-label">✍️ 批量生成草稿<?= $filters['category_slug'] !== '' ? '（本栏目）' : '（最多5篇）' ?></span>
+                <span class="news-fetch-spinner" hidden></span>
+            </button>
+        </form>
         <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="inline-action">
             <input type="hidden" name="action" value="clear">
             <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
@@ -64,7 +74,7 @@ $scoreClass = static function (int $s): string {
                 data-confirm-sub="会删除该范围内所有 cluster（含已选用），相关素材恢复为待处理，可重新聚类。常用于清掉旧格式的 cluster 后重新生成。"
                 data-confirm-variant="danger" data-confirm-title="清空 cluster" data-confirm-confirm="清空">🗑 清空<?= $filters['category_slug'] !== '' ? '本栏目' : '全部' ?> cluster</button>
         </form>
-        <small class="news-action-hint">每个栏目消耗 1 次 AI 额度。建议先在「素材库」抓取新闻，再聚类。</small>
+        <small class="news-action-hint">聚类每栏目耗 1 次 AI 额度；生成草稿每篇耗 1 次。批量生成可能需要 1-2 分钟。</small>
     </div>
 
     <!-- Per-run result -->
@@ -81,6 +91,30 @@ $scoreClass = static function (int $s): string {
                     </div>
                 <?php endforeach; ?>
             </div>
+        </section>
+    <?php endif; ?>
+
+    <!-- Synthesis run result -->
+    <?php if (!empty($synthRun)): ?>
+        <section class="news-fetch-result">
+            <h2>本次草稿生成结果</h2>
+            <div class="admin-table">
+                <div class="admin-table-row admin-table-head"><span>选题</span><span>结果</span></div>
+                <?php foreach ($synthRun['details'] as $d): ?>
+                    <div class="admin-table-row <?= $d['ok'] ? '' : 'smoke-row-fail' ?>">
+                        <strong><?= e($d['headline']) ?></strong>
+                        <span><mark class="<?= $d['ok'] ? 'status-ok' : 'status-warn' ?>"><?= e($d['message']) ?></mark></span>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php if (!empty($synthRun['drafts'])): ?>
+                <p class="news-action-hint">已生成草稿：
+                    <?php foreach ($synthRun['drafts'] as $did): ?>
+                        <a class="link-button" href="<?= e(url('admin/ai-drafts/' . (int) $did)) ?>">#<?= e((string) (int) $did) ?></a>
+                    <?php endforeach; ?>
+                    · <a class="link-button" href="<?= e(url('admin/ai-drafts')) ?>">查看草稿队列 →</a>
+                </p>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
 
@@ -134,11 +168,23 @@ $scoreClass = static function (int $s): string {
                     </div>
                 </div>
                 <div class="cluster-actions">
-                    <?php if ($cl['status'] !== 'selected'): ?>
+                    <?php if (!empty($cl['draft_id'])): ?>
+                        <a class="button button-small" href="<?= e(url('admin/ai-drafts/' . (int) $cl['draft_id'])) ?>">📄 查看草稿 #<?= e((string) (int) $cl['draft_id']) ?> →</a>
+                    <?php elseif ($cl['status'] !== 'skipped'): ?>
+                        <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="inline-action news-fetch-form" data-news-fetch>
+                            <input type="hidden" name="action" value="synthesize">
+                            <input type="hidden" name="id" value="<?= e((string) $cl['id']) ?>">
+                            <button type="submit" class="button button-small" data-news-fetch-btn <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+                                <span class="news-fetch-label">✍️ 生成草稿</span>
+                                <span class="news-fetch-spinner" hidden></span>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if ($cl['status'] !== 'selected' && empty($cl['draft_id'])): ?>
                         <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="inline-action">
                             <input type="hidden" name="action" value="select">
                             <input type="hidden" name="id" value="<?= e((string) $cl['id']) ?>">
-                            <button type="submit" class="button button-small">✓ 选用</button>
+                            <button type="submit" class="button button-small button-ghost">✓ 选用</button>
                         </form>
                     <?php endif; ?>
                     <?php if ($cl['status'] !== 'skipped'): ?>
