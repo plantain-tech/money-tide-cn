@@ -106,33 +106,36 @@ jobs:
             echo "Database secrets are not set; deploying without generated config.php."
           fi
 
-      - name: Install lftp and sshpass
-        run: sudo apt-get update && sudo apt-get install -y lftp sshpass
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Deploy via SFTP over SSH (lftp + sshpass)
+      - name: Deploy via FTPS with lftp
         env:
-          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
-          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          SSH_PASS: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          FTP_HOST: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          FTP_USER: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
           APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
         run: |
           set -e
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
-            echo "SSH secrets are missing; cannot deploy."
+          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
+            echo "FTP secrets are missing; cannot deploy."
             exit 1
           fi
-          # SFTP over SSH using lftp, with the password supplied to ssh via
-          # sshpass through sftp:connect-program. This needs only the SFTP
-          # subsystem on the server (no remote rsync) and does password auth
-          # that plain lftp+sftp can't. mirror is incremental.
-          export SSHPASS="$SSH_PASS"
+          # Resilient FTPS deploy: short per-attempt timeouts + a shell-level retry
+          # loop. A fresh lftp process per attempt rides out Hostinger's
+          # intermittent FTP outages far better than lftp's in-session reconnect,
+          # and the incremental mirror means progress accumulates across attempts.
           cat > /tmp/deploy.lftp <<EOF
           set cmd:fail-exit yes
-          set sftp:auto-confirm yes
-          set sftp:connect-program "sshpass -e ssh -a -x -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          set ftp:ssl-allow yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ftp:passive-mode yes
+          set ssl:verify-certificate no
+          set ssl:check-hostname no
           set net:max-retries 2
+          set net:reconnect-interval-base 4
           set net:timeout 30
           set net:connection-limit 1
           set mirror:parallel-transfer-count 1
@@ -144,15 +147,15 @@ jobs:
           bye
           EOF
           attempt=1
-          max_attempts=8
-          until lftp -u "$SSH_USER" "sftp://$SSH_HOST" < /tmp/deploy.lftp; do
+          max_attempts=20
+          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" < /tmp/deploy.lftp; do
             if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Deploy failed after $attempt attempts."
+              echo "Deploy failed after $attempt attempts (FTP unreachable)."
               exit 1
             fi
-            echo "Deploy attempt $attempt failed; retrying in 12s..."
+            echo "Deploy attempt $attempt failed (FTP unreachable); retrying in 15s..."
             attempt=$((attempt + 1))
-            sleep 12
+            sleep 15
           done
           echo "Deploy succeeded on attempt $attempt."
 
