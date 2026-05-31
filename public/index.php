@@ -1428,6 +1428,43 @@ if ($route === 'admin/story-clusters') {
     exit;
 }
 
+if ($route === 'admin/review-queue') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $assessRun = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'assess_all') {
+            @set_time_limit(720);
+            $assessRun = assess_pending_drafts(8);
+            $flash = 'AI 审核完成：' . $assessRun['auto'] . ' 自动通过 / ' . $assessRun['review'] . ' 转人工 / ' . $assessRun['failed'] . ' 失败。';
+        } elseif ($action === 'assess') {
+            @set_time_limit(120);
+            $r = assess_draft((int) ($_POST['id'] ?? 0));
+            $flash = ($r['ok'] ? '' : '⚠️ ') . $r['message'];
+        } elseif ($action === 'approve') {
+            $r = record_human_decision((int) ($_POST['id'] ?? 0), 'approved');
+            $flash = ($r['ok'] ? '✅ ' : '⚠️ ') . $r['message'];
+        } elseif ($action === 'reject') {
+            $r = record_human_decision((int) ($_POST['id'] ?? 0), 'rejected');
+            $flash = ($r['ok'] ? '↩️ ' : '⚠️ ') . $r['message'];
+        }
+    }
+    render_page('admin/review-queue', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'queue' => review_queue(['section_slug' => (string) ($_GET['section_slug'] ?? '')]),
+        'summary' => auto_review_summary(),
+        'assessRun' => $assessRun,
+        'severityLabels' => auto_review_severity_labels(),
+        'filters' => ['section_slug' => (string) ($_GET['section_slug'] ?? '')],
+        'flash' => $flash,
+        'aiReady' => ai_provider_status(),
+    ]);
+    exit;
+}
+
 if ($route === 'admin/sources') {
     require_admin();
     $filters = [
@@ -1942,7 +1979,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-3-batch-8',
+            'release'    => 'sprint-9-4-factcheck-gate',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

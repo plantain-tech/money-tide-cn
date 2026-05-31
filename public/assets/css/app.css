@@ -6531,3 +6531,60 @@ mark.cred-caution { background: color-mix(in srgb, #ffcc00, var(--paper) 30%); }
     .cluster-score { width: 52px; height: 52px; }
     .cluster-score strong { font-size: 1.2rem; }
 }
+
+/* ── Sprint 1 D9.4: review queue (fact-check gate) ──────────────────────────── */
+.review-queue-heading { margin: 26px 0 14px; font-size: 1.2rem; }
+.review-list { display: grid; gap: 14px; }
+.review-card {
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    display: flex;
+    flex-direction: column;
+}
+.review-card-main { display: flex; gap: 16px; padding: 18px; }
+.review-body { flex: 1; min-width: 0; }
+.review-flag-count {
+    font-size: 0.74rem; font-weight: 700; color: var(--ink);
+    background: color-mix(in srgb, #ffcc00, var(--paper) 35%);
+    padding: 1px 9px; border-radius: 999px;
+}
+.review-body h3 { margin: 4px 0 6px; font-size: 1.12rem; line-height: 1.4; }
+.review-body h3 a { color: var(--ink); border-bottom: 2px solid var(--lime); }
+.review-dek { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; }
+.review-assessment { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.55; }
+
+.review-flags { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.review-flag {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 10px; border-radius: 6px;
+    border-left: 4px solid var(--line);
+    background: var(--paper);
+}
+.review-flag.sev-high { border-left-color: var(--red); background: color-mix(in srgb, var(--red), var(--paper-strong) 88%); }
+.review-flag.sev-medium { border-left-color: #f0a020; background: color-mix(in srgb, #ffcc00, var(--paper-strong) 80%); }
+.review-flag.sev-low { border-left-color: var(--muted); }
+.review-flag-badge {
+    flex-shrink: 0; font-size: 0.72rem; font-weight: 700;
+    padding: 1px 8px; border-radius: 999px; border: 1.5px solid var(--ink);
+    background: var(--white);
+}
+.review-flag.sev-high .review-flag-badge { background: var(--red); color: var(--white); border-color: var(--red); }
+.review-flag-text { display: flex; flex-direction: column; gap: 2px; font-size: 0.86rem; line-height: 1.45; }
+.review-flag-text small { color: var(--muted); }
+
+.review-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    padding: 12px 18px; border-top: 2px solid var(--ink);
+    background: color-mix(in srgb, var(--paper), white 20%);
+}
+.review-decide { display: flex; gap: 10px; align-items: center; }
+.button.review-approve { background: var(--lime); border-color: var(--ink); }
+.button.review-approve:hover { box-shadow: 3px 3px 0 var(--ink); transform: translateY(-1px); }
+
+@media (max-width: 640px) {
+    .review-card-main { flex-direction: column; }
+    .review-actions { flex-direction: column; align-items: stretch; }
+    .review-decide { justify-content: stretch; }
+    .review-decide form, .review-decide .button { flex: 1; }
+}

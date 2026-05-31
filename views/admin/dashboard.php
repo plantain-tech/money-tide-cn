@@ -108,6 +108,10 @@
             <strong>🧠 选题聚类</strong>
             <span>AI 把抓取的新闻去重、聚类、按价值打分排序，挑出每个栏目当天值得写的选题。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/review-queue')) ?>">
+            <strong>🔍 AI 审核台</strong>
+            <span>AI 给草稿打置信度分、标记需核查点；强草稿自动通过，可疑的留给你一键批准/退回（你的 5%）。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>

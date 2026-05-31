@@ -22,7 +22,7 @@ function database_diagnostics(): array
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
         'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format', 'article_reactions',
-        'news_sources', 'news_items', 'story_clusters',
+        'news_sources', 'news_items', 'story_clusters', 'auto_reviews',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -296,6 +296,16 @@ function admin_smoke_checks(): array
             'group' => 'content',
         ];
     }
+    if (function_exists('auto_review_summary')) {
+        ensure_auto_review_schema();
+        $rev = auto_review_summary();
+        $checks[] = [
+            'name' => 'AI 审核闸门',
+            'ok' => function_exists('assess_draft') && is_array($rev),
+            'detail' => '阈值 ' . $rev['threshold'] . ' · ' . $rev['auto_approved'] . ' 自动通过 · ' . $rev['pending_review'] . ' 待人工',
+            'group' => 'content',
+        ];
+    }
     if (function_exists('eight_week_journey')) {
         $checks[] = [
             'name' => '里程碑与路线图',
@@ -333,7 +343,7 @@ function diagnostics_export_csv(string $table): bool
     }
     $allowed = ['articles', 'subscribers', 'newsletter_issues', 'newsletter_sends',
         'source_profiles', 'source_templates', 'research_briefs', 'analytics_events',
-        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format', 'article_reactions', 'news_sources', 'news_items', 'story_clusters'];
+        'article_audit_logs', 'ai_usage_logs', 'ai_bots', 'ai_task_templates', 'ai_story_intakes', 'reader_saved_articles', 'reader_recent_reads', 'social_posts', 'article_claims', 'article_short_format', 'article_reactions', 'news_sources', 'news_items', 'story_clusters', 'auto_reviews'];
     if (!in_array($table, $allowed, true)) {
         return false;
     }

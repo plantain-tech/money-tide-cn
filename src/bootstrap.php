@@ -36,6 +36,7 @@ require_once __DIR__ . '/reactions.php';
 require_once __DIR__ . '/news_ingest.php';
 require_once __DIR__ . '/news_select.php';
 require_once __DIR__ . '/news_synthesize.php';
+require_once __DIR__ . '/auto_review.php';
 require_once __DIR__ . '/backup.php';
 require_once __DIR__ . '/content_ops.php';
 require_once __DIR__ . '/milestone.php';
