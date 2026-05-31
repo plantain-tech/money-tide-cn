@@ -112,6 +112,10 @@
             <strong>🔍 AI 审核台</strong>
             <span>AI 给草稿打置信度分、标记需核查点；强草稿自动通过，可疑的留给你一键批准/退回（你的 5%）。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/auto-publish')) ?>">
+            <strong>🚀 发布与早报组装</strong>
+            <span>一键把已批准草稿发布为正式文章，再按栏目自动组装当日早报（可发送，不自动发送）。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>

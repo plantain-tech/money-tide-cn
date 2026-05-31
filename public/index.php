@@ -1428,6 +1428,37 @@ if ($route === 'admin/story-clusters') {
     exit;
 }
 
+if ($route === 'admin/auto-publish') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $runResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'run') {
+            @set_time_limit(300);
+            $runResult = run_auto_publish_and_assemble(12);
+            $flash = '完成：发布 ' . $runResult['publish']['ok'] . ' 篇文章 · 组装 ' . $runResult['assemble']['issues'] . ' 份早报。';
+        } elseif ($action === 'publish_only') {
+            @set_time_limit(180);
+            $runResult = ['publish' => publish_approved_drafts(12), 'assemble' => null];
+            $flash = '已发布 ' . $runResult['publish']['ok'] . ' 篇已批准文章。';
+        } elseif ($action === 'assemble_only') {
+            @set_time_limit(120);
+            $runResult = ['publish' => null, 'assemble' => assemble_daily_newsletters()];
+            $flash = '已组装 ' . $runResult['assemble']['issues'] . ' 份今日早报。';
+        }
+    }
+    render_page('admin/auto-publish', [
+        'site' => $site,
+        'categories' => $categories,
+        'adminCategories' => admin_categories(),
+        'summary' => auto_publish_summary(),
+        'runResult' => $runResult,
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/review-queue') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
@@ -1979,7 +2010,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-4-factcheck-gate',
+            'release'    => 'sprint-9-5-auto-publish',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

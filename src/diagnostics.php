@@ -306,6 +306,16 @@ function admin_smoke_checks(): array
             'group' => 'content',
         ];
     }
+    if (function_exists('auto_publish_summary')) {
+        ensure_auto_publish_schema();
+        $pub = auto_publish_summary();
+        $checks[] = [
+            'name' => '自动发布与早报组装',
+            'ok' => function_exists('run_auto_publish_and_assemble') && is_array($pub),
+            'detail' => $pub['approved_pending'] . ' 待发布 · 今日 ' . $pub['published_today'] . ' 篇 / ' . $pub['issues_today'] . ' 份早报',
+            'group' => 'content',
+        ];
+    }
     if (function_exists('eight_week_journey')) {
         $checks[] = [
             'name' => '里程碑与路线图',
