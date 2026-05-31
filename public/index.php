@@ -1428,6 +1428,42 @@ if ($route === 'admin/story-clusters') {
     exit;
 }
 
+if ($route === 'admin/autopilot') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $runResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'toggle') {
+            $now = autopilot_enabled() ? '0' : '1';
+            set_pipeline_setting('autopilot_enabled', $now);
+            $flash = $now === '1' ? '🟢 自动驾驶已开启 —— Cron 将按计划自动运行整条流水线。' : '🔴 自动驾驶已关闭 —— Cron 运行时会跳过，所有动作回到手动。';
+        } elseif ($action === 'save_settings') {
+            set_pipeline_setting('synthesize_limit', (string) max(1, min(24, (int) ($_POST['synthesize_limit'] ?? 8))));
+            set_pipeline_setting('assess_limit', (string) max(1, min(24, (int) ($_POST['assess_limit'] ?? 8))));
+            set_pipeline_setting('publish_limit', (string) max(1, min(50, (int) ($_POST['publish_limit'] ?? 12))));
+            $flash = '已保存流水线设置。';
+        } elseif ($action === 'run_now') {
+            @set_time_limit(0);
+            // Manual run forces past the kill-switch, with conservative caps to fit the web window.
+            $runResult = run_daily_pipeline('manual', ['force' => true, 'synthesize_limit' => 3, 'assess_limit' => 4, 'publish_limit' => 12]);
+            $flash = '手动运行完成：' . ($runResult['message'] ?? '');
+        }
+    }
+    render_page('admin/autopilot', [
+        'site' => $site,
+        'categories' => $categories,
+        'config' => pipeline_config(),
+        'live' => pipeline_live_stats(),
+        'runs' => pipeline_runs(15),
+        'runResult' => $runResult,
+        'flash' => $flash,
+        'aiReady' => ai_provider_status(),
+        'cliPath' => rtrim((string) (getenv('APP_BASE_PATH') ?: APP_BASE_PATH), '/') . '/cli/run-daily.php',
+    ]);
+    exit;
+}
+
 if ($route === 'admin/auto-publish') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
@@ -2010,7 +2046,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-5-auto-publish',
+            'release'    => 'sprint-9-6-autopilot',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

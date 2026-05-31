@@ -22,7 +22,7 @@ function database_diagnostics(): array
         'newsletter_sends', 'source_profiles', 'source_templates', 'research_briefs',
         'reader_preferences', 'reader_preference_topics', 'tags', 'article_tags', 'login_providers',
         'reader_saved_articles', 'reader_recent_reads', 'monetization_settings', 'article_claims', 'social_posts', 'article_short_format', 'article_reactions',
-        'news_sources', 'news_items', 'story_clusters', 'auto_reviews',
+        'news_sources', 'news_items', 'story_clusters', 'auto_reviews', 'pipeline_settings', 'pipeline_runs',
     ];
     foreach ($tables as $table) {
         if (!preg_match('/^[a-z_]+$/', $table)) {
@@ -314,6 +314,16 @@ function admin_smoke_checks(): array
             'ok' => function_exists('run_auto_publish_and_assemble') && is_array($pub),
             'detail' => $pub['approved_pending'] . ' 待发布 · 今日 ' . $pub['published_today'] . ' 篇 / ' . $pub['issues_today'] . ' 份早报',
             'group' => 'content',
+        ];
+    }
+    if (function_exists('pipeline_config')) {
+        ensure_pipeline_schema();
+        $pcfg = pipeline_config();
+        $checks[] = [
+            'name' => '自动驾驶流水线',
+            'ok' => function_exists('run_daily_pipeline'),
+            'detail' => '总开关 ' . ($pcfg['enabled'] ? '开启' : '关闭') . ' · 上次运行 ' . ($pcfg['last_run_at'] !== '' ? $pcfg['last_run_at'] : '从未'),
+            'group' => 'safety',
         ];
     }
     if (function_exists('eight_week_journey')) {

@@ -100,6 +100,10 @@
             <strong>栏目</strong>
             <span>查看当前栏目和公开频道结构。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/autopilot')) ?>">
+            <strong>🛸 自动驾驶 Autopilot</strong>
+            <span>整条 AI 流水线的总开关、实时监控、运行记录与 Cron 设置（自动新闻系统控制台）。</span>
+        </a>
         <a class="admin-module admin-module-feature" href="<?= e(url('admin/news-sources')) ?>">
             <strong>🛰 新闻源摄取</strong>
             <span>配置 RSS 新闻源，自动抓取标题与摘要作为 AI 原创合成素材（自动新闻流水线起点）。</span>

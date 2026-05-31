@@ -11,6 +11,12 @@ function start_session(): void
 
 function current_user(): ?array
 {
+    // System context for the CLI pipeline runner (cron has no login session).
+    // PIPELINE_SYSTEM is only defined by the CLI-only run-daily.php entrypoint,
+    // so the web can never trigger this elevated context.
+    if (defined('PIPELINE_SYSTEM') && PIPELINE_SYSTEM === true) {
+        return ['id' => 0, 'email' => 'autopilot@system', 'name' => '自动驾驶', 'role' => 'admin'];
+    }
     start_session();
     return $_SESSION['user'] ?? null;
 }

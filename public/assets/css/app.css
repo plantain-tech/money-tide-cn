@@ -6588,3 +6588,62 @@ mark.cred-caution { background: color-mix(in srgb, #ffcc00, var(--paper) 30%); }
     .review-decide { justify-content: stretch; }
     .review-decide form, .review-decide .button { flex: 1; }
 }
+
+/* ── Sprint 1 D9.6: autopilot console ───────────────────────────────────────── */
+.autopilot-master {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+    padding: 22px 24px; margin-bottom: 22px;
+    border: 3px solid var(--ink); box-shadow: var(--shadow);
+}
+.autopilot-master.is-on { background: color-mix(in srgb, var(--lime), var(--paper-strong) 55%); }
+.autopilot-master.is-off { background: var(--paper-strong); }
+.autopilot-master-info { display: flex; align-items: center; gap: 14px; }
+.autopilot-master-info strong { font-size: 1.25rem; display: block; }
+.autopilot-master-info p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; max-width: 60ch; }
+.autopilot-status-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); flex-shrink: 0; }
+.autopilot-master.is-on .autopilot-status-dot { background: #1a7f37; animation: ap-pulse 1.8s ease-in-out infinite; }
+.autopilot-master.is-off .autopilot-status-dot { background: var(--muted); }
+@keyframes ap-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(26,127,55,0.5);} 50% { box-shadow: 0 0 0 7px rgba(26,127,55,0);} }
+
+.autopilot-toggle {
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    background: none; border: none; padding: 6px;
+}
+.autopilot-toggle-track {
+    width: 64px; height: 34px; border-radius: 999px; border: 2px solid var(--ink);
+    background: var(--paper); position: relative; transition: background 0.2s;
+}
+.autopilot-toggle.is-on .autopilot-toggle-track { background: #1a7f37; }
+.autopilot-toggle-knob {
+    position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--ink); transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.autopilot-toggle.is-on .autopilot-toggle-knob { transform: translateX(30px); background: var(--white); }
+.autopilot-toggle-label { font-weight: 800; font-size: 1rem; letter-spacing: 1px; }
+
+/* Pipeline flow */
+.pipeline-flow {
+    display: flex; align-items: stretch; gap: 6px; flex-wrap: wrap; margin-top: 14px;
+}
+.pipeline-step {
+    flex: 1 1 110px; min-width: 100px;
+    border: 2px solid var(--ink); background: var(--paper-strong);
+    padding: 14px 10px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: transform 0.12s, box-shadow 0.12s;
+    opacity: 0; transform: translateY(8px); animation: ap-rise 0.4s ease forwards;
+    animation-delay: calc(var(--i) * 70ms);
+}
+@keyframes ap-rise { to { opacity: 1; transform: translateY(0); } }
+.pipeline-step:hover { transform: translateY(-3px); box-shadow: 4px 4px 0 var(--ink); }
+.pipeline-step-icon { font-size: 1.5rem; }
+.pipeline-step strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.pipeline-step small { font-size: 0.74rem; color: var(--muted); }
+.pipeline-arrow { display: flex; align-items: center; font-size: 1.3rem; color: var(--muted); font-weight: 800; }
+
+.autopilot-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) {
+    .autopilot-cols { grid-template-columns: 1fr; }
+    .pipeline-arrow { display: none; }
+    .autopilot-master { flex-direction: column; align-items: flex-start; }
+}
