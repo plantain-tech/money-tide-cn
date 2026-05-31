@@ -127,6 +127,14 @@ jobs:
           # non-interactive password auth, so we authenticate with a deploy key.
           # lftp drives the SFTP subsystem (no remote rsync needed); mirror is
           # incremental so progress accumulates across attempts.
+          #
+          # Path fix: over FTP, Hostinger chroots the user so a leading "/" means
+          # the home dir; over SFTP a leading "/" means the real filesystem root
+          # (not writable -> "Permission denied"). Strip the leading slash so the
+          # same secret values resolve relative to the SSH home dir.
+          PUBLIC_DIR="${PUBLIC_DIR#/}"
+          APP_DIR="${APP_DIR#/}"
+          echo "Resolved PUBLIC_DIR=$PUBLIC_DIR  APP_DIR=$APP_DIR (relative to SSH home)"
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
           chmod 600 "$HOME/.ssh/deploy_key"
