@@ -73,7 +73,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
             <span class="brand-name">Money Tide</span>
         </a>
         <nav class="top-nav" aria-label="主导航">
-            <?php foreach (array_slice($categories, 0, 7) as $navCategory): ?>
+            <?php foreach (array_slice($categories, 0, 10) as $navCategory): ?>
                 <?php $navPath = 'category/' . $navCategory['slug']; ?>
                 <a class="<?= $currentPath === $navPath ? 'is-active' : '' ?>" href="<?= e(url($navPath)) ?>"><?= e($navCategory['name']) ?></a>
             <?php endforeach; ?>
