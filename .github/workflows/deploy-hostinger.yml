@@ -109,34 +109,28 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Deploy via FTPS with lftp
+      - name: Deploy via SFTP over SSH with lftp
         env:
-          FTP_HOST: ${{ secrets.HOSTINGER_FTP_SERVER }}
-          FTP_USER: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PASS: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
           PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
           APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
         run: |
           set -e
-          if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
-            echo "FTP secrets are missing; cannot deploy."
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PASS" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
+            echo "SSH secrets are missing; cannot deploy."
             exit 1
           fi
-          # Build the lftp command script (no credentials inside; passed on CLI).
-          # cmd:fail-exit makes lftp stop and return non-zero on the FIRST failed
-          # command, so the shell loop below gets an accurate success/failure signal.
-          # Fast per-attempt timeouts (30s/2 retries) mean a dead connection aborts
-          # in ~1 min instead of ~13, so we can re-probe and catch the first good
-          # FTP window. mirror is incremental (only uploads changed/newer files),
-          # so progress accumulates across attempts instead of restarting.
+          # SFTP over SSH is far more reliable than Hostinger's flaky FTPS.
+          # lftp's built-in sftp does password auth + respects the URL port;
+          # sftp:auto-confirm accepts the host key on a fresh CI runner.
+          # cmd:fail-exit => accurate success/failure for the retry loop.
+          # mirror is incremental, so retries accumulate progress.
           cat > /tmp/deploy.lftp <<EOF
           set cmd:fail-exit yes
-          set ftp:ssl-allow yes
-          set ftp:ssl-force yes
-          set ftp:ssl-protect-data yes
-          set ftp:passive-mode yes
-          set ssl:verify-certificate no
-          set ssl:check-hostname no
+          set sftp:auto-confirm yes
           set net:max-retries 2
           set net:reconnect-interval-base 4
           set net:timeout 30
@@ -149,21 +143,18 @@ jobs:
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
           bye
           EOF
-          # Shell-level retry: a fresh lftp process per attempt survives transient
-          # FTPS drops far better than lftp's own in-session reconnect. Many short
-          # attempts beat a few long ones when the FTP server is intermittently
-          # unreachable — we keep probing until it answers, then the incremental
-          # mirror finishes in seconds.
+          # Shell-level retry: a fresh lftp process per attempt. SSH/SFTP rarely
+          # needs this, but it keeps deploys robust against any transient blip.
           attempt=1
-          max_attempts=20
-          until lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" < /tmp/deploy.lftp; do
+          max_attempts=10
+          until lftp -u "$SSH_USER","$SSH_PASS" "sftp://$SSH_HOST:$SSH_PORT" < /tmp/deploy.lftp; do
             if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Deploy failed after $attempt attempts (FTP unreachable)."
+              echo "Deploy failed after $attempt attempts (SSH/SFTP unreachable)."
               exit 1
             fi
-            echo "Deploy attempt $attempt failed (FTP unreachable); retrying in 15s..."
+            echo "Deploy attempt $attempt failed; retrying in 12s..."
             attempt=$((attempt + 1))
-            sleep 15
+            sleep 12
           done
           echo "Deploy succeeded on attempt $attempt."
 
