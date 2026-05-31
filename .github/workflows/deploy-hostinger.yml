@@ -115,11 +115,11 @@ jobs:
           SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
           SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
           SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          PUBLIC_DIR: ${{ secrets.HOSTINGER_PUBLIC_DIR }}
-          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR }}
+          # Optional override; defaults to the verified MoneyTide doc root below.
+          REMOTE_BASE: ${{ secrets.HOSTINGER_SSH_BASE }}
         run: |
           set -e
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$PUBLIC_DIR" ] || [ -z "$APP_DIR" ]; then
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
             echo "SSH secrets are missing; cannot deploy."
             exit 1
           fi
@@ -128,13 +128,16 @@ jobs:
           # lftp drives the SFTP subsystem (no remote rsync needed); mirror is
           # incremental so progress accumulates across attempts.
           #
-          # Path fix: over FTP, Hostinger chroots the user so a leading "/" means
-          # the home dir; over SFTP a leading "/" means the real filesystem root
-          # (not writable -> "Permission denied"). Strip the leading slash so the
-          # same secret values resolve relative to the SSH home dir.
-          PUBLIC_DIR="${PUBLIC_DIR#/}"
-          APP_DIR="${APP_DIR#/}"
-          echo "Resolved PUBLIC_DIR=$PUBLIC_DIR  APP_DIR=$APP_DIR (relative to SSH home)"
+          # Path note: over SSH we land in the real home dir (/home/u284368723),
+          # NOT the FTP chroot. The MoneyTide subdomain doc root is several levels
+          # down, and src/views/cli all live INSIDE it (index.php loads src/ from
+          # its own __DIR__). Paths are relative to the SSH home dir.
+          REMOTE_BASE="${REMOTE_BASE:-domains/avanturadeals.com/public_html/moneytidecn}"
+          REMOTE_BASE="${REMOTE_BASE#/}"        # ensure relative to SSH home
+          REMOTE_BASE="${REMOTE_BASE%/}"        # no trailing slash
+          PUBLIC_DIR="$REMOTE_BASE"
+          APP_DIR="$REMOTE_BASE/"
+          echo "Deploy target: ~/$REMOTE_BASE"
           mkdir -p "$HOME/.ssh"
           printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
           chmod 600 "$HOME/.ssh/deploy_key"
