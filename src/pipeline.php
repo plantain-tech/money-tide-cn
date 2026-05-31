@@ -94,6 +94,7 @@ function pipeline_config(): array
         'synthesize_limit' => max(1, min(24, (int) pipeline_setting('synthesize_limit', '8'))),
         'assess_limit' => max(1, min(24, (int) pipeline_setting('assess_limit', '8'))),
         'publish_limit' => max(1, min(50, (int) pipeline_setting('publish_limit', '12'))),
+        'stage_pause' => max(0, min(60, (int) pipeline_setting('stage_pause', '8'))),
         'last_run_at' => pipeline_setting('last_run_at', ''),
         'last_run_status' => pipeline_setting('last_run_status', ''),
     ];
@@ -120,28 +121,37 @@ function run_daily_pipeline(string $trigger = 'cron', array $opts = []): array
     $synthLimit = (int) ($opts['synthesize_limit'] ?? $cfg['synthesize_limit']);
     $assessLimit = (int) ($opts['assess_limit'] ?? $cfg['assess_limit']);
     $publishLimit = (int) ($opts['publish_limit'] ?? $cfg['publish_limit']);
+    // Pause between AI-heavy stages so a free-tier provider recovers from the
+    // previous stage's burst (clustering ~8 calls) before the next begins.
+    $stagePause = max(0, min(60, (int) ($opts['stage_pause'] ?? (int) pipeline_setting('stage_pause', '8'))));
 
-    // 1) Ingest
+    // 1) Ingest (no AI)
     if (function_exists('ingest_all_news_sources')) {
         $r = ingest_all_news_sources();
         $stages['ingest'] = ['new_items' => (int) ($r['new_items'] ?? 0), 'sources' => (int) ($r['sources'] ?? 0)];
     }
-    // 2) Cluster
+    // 2) Cluster (AI)
     if (function_exists('cluster_all_categories')) {
         $r = cluster_all_categories();
         $stages['cluster'] = ['clusters' => (int) ($r['clusters'] ?? 0), 'ok' => (int) ($r['ok'] ?? 0)];
+        if ($stagePause > 0 && ($stages['cluster']['clusters'] ?? 0) > 0) {
+            sleep($stagePause); // let the provider cool down before synthesis
+        }
     }
-    // 3) Synthesize selected clusters -> drafts
+    // 3) Synthesize selected clusters -> drafts (AI)
     if (function_exists('synthesize_selected_clusters')) {
         $r = synthesize_selected_clusters(null, $synthLimit);
         $stages['synthesize'] = ['drafts' => (int) ($r['ok'] ?? 0), 'failed' => (int) ($r['failed'] ?? 0)];
+        if ($stagePause > 0 && (($stages['synthesize']['drafts'] ?? 0) > 0)) {
+            sleep($stagePause); // cool down before the fact-check gate
+        }
     }
-    // 4) Fact-check gate
+    // 4) Fact-check gate (AI)
     if (function_exists('assess_pending_drafts')) {
         $r = assess_pending_drafts($assessLimit);
         $stages['assess'] = ['auto' => (int) ($r['auto'] ?? 0), 'review' => (int) ($r['review'] ?? 0)];
     }
-    // 5) Publish approved + assemble newsletters
+    // 5) Publish approved + assemble newsletters (no AI)
     if (function_exists('run_auto_publish_and_assemble')) {
         $r = run_auto_publish_and_assemble($publishLimit);
         $stages['publish'] = ['articles' => (int) ($r['publish']['ok'] ?? 0)];

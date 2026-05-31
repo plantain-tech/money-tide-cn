@@ -89,7 +89,9 @@ $on = !empty($config['enabled']);
                     <label>每次写稿上限<input type="number" name="synthesize_limit" min="1" max="24" value="<?= e((string) $config['synthesize_limit']) ?>"></label>
                     <label>每次审核上限<input type="number" name="assess_limit" min="1" max="24" value="<?= e((string) $config['assess_limit']) ?>"></label>
                     <label>每次发布上限<input type="number" name="publish_limit" min="1" max="50" value="<?= e((string) $config['publish_limit']) ?>"></label>
+                    <label>AI 阶段间隔（秒）<input type="number" name="stage_pause" min="0" max="60" value="<?= e((string) ($config['stage_pause'] ?? 8)) ?>"></label>
                 </div>
+                <p class="news-action-hint">「AI 阶段间隔」是聚类与写稿等 AI 阶段之间的等待秒数，给免费额度的 AI 服务留出恢复时间，避免连续调用被限流（这正是手动测试时「草稿 0」的常见原因）。免费额度建议 8–15 秒。</p>
                 <div class="cms-form-actions"><button class="button button-small" type="submit">保存设置</button></div>
             </form>
         </section>

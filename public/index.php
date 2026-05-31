@@ -1442,6 +1442,7 @@ if ($route === 'admin/autopilot') {
             set_pipeline_setting('synthesize_limit', (string) max(1, min(24, (int) ($_POST['synthesize_limit'] ?? 8))));
             set_pipeline_setting('assess_limit', (string) max(1, min(24, (int) ($_POST['assess_limit'] ?? 8))));
             set_pipeline_setting('publish_limit', (string) max(1, min(50, (int) ($_POST['publish_limit'] ?? 12))));
+            set_pipeline_setting('stage_pause', (string) max(0, min(60, (int) ($_POST['stage_pause'] ?? 8))));
             $flash = '已保存流水线设置。';
         } elseif ($action === 'run_now') {
             @set_time_limit(0);
@@ -2046,7 +2047,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint-9-6-autopilot',
+            'release'    => 'sprint-9-6-stage-pacing',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
