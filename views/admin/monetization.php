@@ -82,8 +82,16 @@
             </div>
             <label>赞助文案<textarea name="sponsor_blurb" rows="2" placeholder="一句话介绍赞助商，清晰、不夸大。"><?= e((string) ($m['sponsor_blurb'] ?? '')) ?></textarea></label>
 
+            <h3 class="monetize-sub">📢 Google AdSense（仅在批准的版位渲染）</h3>
+            <label class="pa-switch-row"><input type="checkbox" name="adsense_enabled" value="1" <?= !empty($m['adsense_enabled']) ? 'checked' : '' ?>> <span>开启 AdSense（仅公开文章页正文内的版位，绝不出现在后台）</span></label>
+            <div class="cms-form-grid">
+                <label>Publisher ID<input type="text" name="adsense_client" value="<?= e((string) ($m['adsense_client'] ?? '')) ?>" placeholder="ca-pub-xxxxxxxxxxxxxxxx"></label>
+                <label>文章版位 Slot ID<input type="text" name="adsense_slot_article" value="<?= e((string) ($m['adsense_slot_article'] ?? '')) ?>" placeholder="如 1234567890"></label>
+                <label>目标 RPM（用于收入估算）<input type="number" step="0.1" min="0" name="target_rpm" value="<?= e((string) ($m['target_rpm'] ?? 0)) ?>"></label>
+            </div>
+
             <div class="cms-form-actions"><button class="button" type="submit">保存广告与联盟设置</button></div>
-            <p class="news-action-hint">提示：联盟链接只在正文里命中关键词时插入，并自动加披露；赞助位为空（名称/文案缺失）时不渲染。两者都清晰标注，符合 AdSense / 广告法的披露要求。</p>
+            <p class="news-action-hint">提示：联盟链接只在正文里命中关键词时插入，并自动加披露；赞助位为空（名称/文案缺失）时不渲染。AdSense 仅在公开文章页的批准版位加载（后台与缩略页绝不出现），并带「广告」标注。三者都清晰披露，符合 AdSense / 广告法要求。</p>
         </form>
 
         <?php if (function_exists('monetize_sponsor_html') && monetize_sponsor_enabled()): ?>

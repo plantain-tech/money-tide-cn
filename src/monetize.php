@@ -41,7 +41,53 @@ function monetize_config(): array
         'sponsor_blurb' => trim((string) ($s['sponsor_blurb'] ?? '')),
         'sponsor_url' => trim((string) ($s['sponsor_url'] ?? '')),
         'sponsor_cta' => trim((string) ($s['sponsor_cta'] ?? '了解更多')),
+        // Day 10·6 — compliant AdSense + RPM target for revenue estimates.
+        'adsense_enabled' => ($s['adsense_enabled'] ?? '0') === '1',
+        'adsense_client' => trim((string) ($s['adsense_client'] ?? '')),
+        'adsense_slot_article' => trim((string) ($s['adsense_slot_article'] ?? '')),
+        'target_rpm' => max(0.0, (float) ($s['target_rpm'] ?? 0)),
     ];
+}
+
+/** AdSense is "on" only when explicitly enabled AND a real publisher id is set. */
+function adsense_enabled(): bool
+{
+    $c = monetize_config();
+    return $c['adsense_enabled'] && strncmp($c['adsense_client'], 'ca-pub-', 7) === 0;
+}
+
+/** The loader script — injected in <head> on PUBLIC pages only (see layout). */
+function adsense_head_script(): string
+{
+    if (!adsense_enabled()) {
+        return '';
+    }
+    $client = monetize_config()['adsense_client'];
+    return '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='
+        . e($client) . '" crossorigin="anonymous"></script>';
+}
+
+/**
+ * Render an AdSense unit — ONLY from approved in-content slots (article body).
+ * Always wrapped + labeled "广告 / Advertisement" for policy compliance. Returns
+ * '' unless enabled and a slot id is configured, so ads never appear elsewhere.
+ */
+function adsense_slot_html(string $variant = 'article'): string
+{
+    if (!adsense_enabled()) {
+        return '';
+    }
+    $c = monetize_config();
+    $slot = $c['adsense_slot_article'];
+    if ($slot === '') {
+        return '';
+    }
+    return '<div class="ad-zone" data-ad-zone="' . e($variant) . '">'
+        . '<span class="ad-zone-label">广告 · Advertisement</span>'
+        . '<ins class="adsbygoogle" style="display:block" data-ad-client="' . e($c['adsense_client']) . '"'
+        . ' data-ad-slot="' . e($slot) . '" data-ad-format="auto" data-full-width-responsive="true"></ins>'
+        . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>'
+        . '</div>';
 }
 
 function monetize_affiliate_rules(): array
@@ -204,6 +250,10 @@ function save_monetize_config(array $input): void
         'sponsor_blurb' => trim((string) ($input['sponsor_blurb'] ?? '')),
         'sponsor_url' => trim((string) ($input['sponsor_url'] ?? '')),
         'sponsor_cta' => trim((string) ($input['sponsor_cta'] ?? '了解更多')) ?: '了解更多',
+        'adsense_enabled' => !empty($input['adsense_enabled']) ? '1' : '0',
+        'adsense_client' => trim((string) ($input['adsense_client'] ?? '')),
+        'adsense_slot_article' => trim((string) ($input['adsense_slot_article'] ?? '')),
+        'target_rpm' => (string) max(0.0, (float) ($input['target_rpm'] ?? 0)),
     ];
     try {
         $stmt = $pdo->prepare('INSERT INTO monetization_settings (setting_key, setting_value) VALUES (:k, :v)

@@ -1661,11 +1661,34 @@ if ($route === 'admin/autopilot') {
             }
         }
     }
+    // Day 10·6 — unified revenue + automation overview (one screen).
+    $ovAnalytics = function_exists('analytics_summary') ? analytics_summary() : [];
+    $ovPipe = function_exists('pipeline_analytics_summary') ? pipeline_analytics_summary(14) : [];
+    $ovLive = pipeline_live_stats();
+    $ovMon = function_exists('monetize_config') ? monetize_config() : [];
+    $ovRpm = (float) ($ovMon['target_rpm'] ?? 0);
+    $ovViewsToday = (int) ($ovAnalytics['views']['today'] ?? 0);
+    $ovViewsTotal = (int) ($ovAnalytics['views']['total'] ?? 0);
+    $overview = [
+        'success_rate' => (int) ($ovPipe['success_rate'] ?? 0),
+        'runs' => (int) ($ovPipe['run_count'] ?? 0),
+        'published_today' => (int) ($ovLive['published_today'] ?? 0),
+        'issues_today' => (int) ($ovLive['issues_today'] ?? 0),
+        'subscribers' => (int) ($ovAnalytics['subscribes']['total'] ?? 0),
+        'views_today' => $ovViewsToday,
+        'views_total' => $ovViewsTotal,
+        'rpm' => $ovRpm,
+        'est_rev_today' => $ovRpm > 0 ? round($ovViewsToday / 1000 * $ovRpm, 2) : 0.0,
+        'est_rev_total' => $ovRpm > 0 ? round($ovViewsTotal / 1000 * $ovRpm, 2) : 0.0,
+        'adsense' => function_exists('adsense_enabled') && adsense_enabled(),
+        'open_alerts' => function_exists('pipeline_alert_summary') ? (int) (pipeline_alert_summary()['open'] ?? 0) : 0,
+    ];
     render_page('admin/autopilot', [
         'site' => $site,
         'categories' => $categories,
         'config' => pipeline_config(),
-        'live' => pipeline_live_stats(),
+        'live' => $ovLive,
+        'overview' => $overview,
         'runs' => pipeline_runs(15),
         'runResult' => $runResult,
         'flash' => $flash,
@@ -2258,7 +2281,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-5-monetize',
+            'release'    => 'week-10-day-6-seo-ads',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2595,6 +2618,7 @@ if (strpos($route, 'article/') === 0) {
         'site' => $site,
         'categories' => $categories,
         'article' => $article,
+        'schema' => function_exists('article_jsonld') ? article_jsonld($article) : null,
         'related' => personalized_related_articles($article, $fallbackRelated, is_array($reader) ? (int) $reader['id'] : null),
         'tags' => article_tags_by_slug($slug),
         'reader' => $reader,

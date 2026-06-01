@@ -67,6 +67,35 @@ $on = !empty($config['enabled']);
     </div>
     <p class="ap-hint" data-ap-hint hidden aria-live="polite"></p>
 
+    <!-- ── Day 10·6: revenue + automation overview (one screen) ──────────── -->
+    <?php if (!empty($overview)): $ov = $overview; ?>
+        <section class="newsletter-block">
+            <div class="ops-section-head">
+                <h2>📊 收入与自动化总览</h2>
+                <a class="ghost-link" href="<?= e(url('admin/pipeline-analytics')) ?>">详细分析 →</a>
+            </div>
+            <div class="pa-kpi-grid">
+                <article class="pa-kpi pa-kpi-accent">
+                    <span class="pa-kpi-icon">💵</span>
+                    <strong>¥<span data-countup="<?= e((string) (int) round($ov['est_rev_total'])) ?>">0</span></strong>
+                    <small>预计累计收入（估算）· 今日 ¥<?= e((string) $ov['est_rev_today']) ?></small>
+                </article>
+                <article class="pa-kpi"><span class="pa-kpi-icon">📈</span><strong>¥<?= e((string) $ov['rpm']) ?></strong><small>目标 RPM（每千次浏览）</small></article>
+                <article class="pa-kpi"><span class="pa-kpi-icon">👁</span><strong data-countup="<?= e((string) $ov['views_today']) ?>">0</strong><small>今日浏览 · 累计 <?= e((string) $ov['views_total']) ?></small></article>
+                <article class="pa-kpi"><span class="pa-kpi-icon">📧</span><strong data-countup="<?= e((string) $ov['subscribers']) ?>">0</strong><small>订阅用户</small></article>
+                <article class="pa-kpi <?= $ov['success_rate'] >= 80 ? 'pa-kpi-accent' : ($ov['success_rate'] > 0 ? 'pa-kpi-warn' : '') ?>">
+                    <span class="pa-kpi-icon">✅</span><strong><span data-countup="<?= e((string) $ov['success_rate']) ?>">0</span>%</strong><small>流水线成功率（14天）</small>
+                </article>
+                <article class="pa-kpi"><span class="pa-kpi-icon">📄</span><strong data-countup="<?= e((string) $ov['published_today']) ?>">0</strong><small>今日发布 · 早报 <?= e((string) $ov['issues_today']) ?></small></article>
+                <article class="pa-kpi <?= $ov['open_alerts'] > 0 ? 'pa-kpi-warn' : '' ?>"><span class="pa-kpi-icon">🔔</span><strong data-countup="<?= e((string) $ov['open_alerts']) ?>">0</strong><small><a href="<?= e(url('admin/pipeline-alerts')) ?>">待处理告警</a></small></article>
+                <article class="pa-kpi <?= $ov['adsense'] ? 'pa-kpi-accent' : '' ?>"><span class="pa-kpi-icon">📢</span><strong style="font-size:1.1rem"><?= $ov['adsense'] ? '已开启' : '未开启' ?></strong><small><a href="<?= e(url('admin/monetization')) ?>">AdSense 广告</a></small></article>
+            </div>
+            <?php if ($ov['rpm'] <= 0): ?>
+                <p class="news-action-hint">💡 在 <a href="<?= e(url('admin/monetization')) ?>">会员与变现</a> 设置「目标 RPM」后，这里会按浏览量估算收入。</p>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
+
     <!-- ── Live pipeline flow ─────────────────────────────────────────────── -->
     <section class="newsletter-block">
         <h2>📊 实时流水线</h2>

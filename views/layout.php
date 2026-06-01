@@ -53,6 +53,10 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <?php endif; ?>
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=<?= $cssVersion ?>">
     <script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+    <?php // Day 10·6: AdSense loader — PUBLIC pages only, never in the admin console.
+    if (strpos($currentPath, 'admin') !== 0 && function_exists('adsense_head_script')): ?>
+        <?= adsense_head_script() ?>
+    <?php endif; ?>
     <?php if ($plausibleDomain !== ''): ?>
         <script defer data-domain="<?= e($plausibleDomain) ?>" src="https://plausible.io/js/script.js"></script>
     <?php endif; ?>

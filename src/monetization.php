@@ -145,6 +145,8 @@ function seo_article_checklist(array $article): array
         ['label' => '社交分享图可用', 'passed' => $image !== '' || function_exists('default_og_image')],
         ['label' => '头图 alt 文案可用', 'passed' => trim((string) ($article['hero_image_alt'] ?? '')) !== '' || $title !== ''],
         ['label' => '发布日期可用', 'passed' => !empty($article['published_at']) || (string) ($article['status'] ?? '') !== 'published'],
+        ['label' => 'NewsArticle 结构化数据可生成', 'passed' => function_exists('article_jsonld') && $slug !== ''],
+        ['label' => '关键词自然、无堆砌（反作弊）', 'passed' => !function_exists('seo_anti_stuffing') || (bool) (seo_anti_stuffing($article)['ok'] ?? true), 'note' => function_exists('seo_anti_stuffing') && empty(seo_anti_stuffing($article)['ok']) ? ('「' . (string) seo_anti_stuffing($article)['term'] . '」出现 ' . (int) seo_anti_stuffing($article)['count'] . ' 次，超过建议上限 ' . (int) seo_anti_stuffing($article)['max']) : ''],
     ];
 }
 

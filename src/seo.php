@@ -12,6 +12,70 @@ function default_og_image(): string
     return app_url('assets/img/og-money-tide.svg');
 }
 
+/**
+ * Day 10·6 — NewsArticle JSON-LD for an article page (richer than the default
+ * Organization schema). Empty fields are dropped so we never emit blanks.
+ */
+function article_jsonld(array $article): array
+{
+    $url = canonical_url('article/' . (string) ($article['slug'] ?? ''));
+    $published = (string) ($article['published_at'] ?? '');
+    $modified = (string) ($article['updated_at'] ?? $published);
+    $desc = trim((string) (($article['seo_description'] ?? '') ?: ($article['dek'] ?? '') ?: ($article['brief'] ?? '')));
+    $image = '';
+    if (function_exists('article_social_image_url')) {
+        $image = (string) article_social_image_url($article);
+    }
+    if ($image === '') {
+        $image = (string) (($article['hero_image'] ?? '') ?: default_og_image());
+    }
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'NewsArticle',
+        'headline' => mb_substr((string) ($article['title'] ?? ''), 0, 110, 'UTF-8'),
+        'description' => $desc,
+        'datePublished' => $published !== '' ? date('c', strtotime($published)) : '',
+        'dateModified' => $modified !== '' ? date('c', strtotime($modified)) : '',
+        'inLanguage' => 'zh-CN',
+        'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $url],
+        'image' => $image !== '' ? [$image] : [],
+        'author' => ['@type' => 'Organization', 'name' => '钱潮 Money Tide'],
+        'publisher' => ['@type' => 'NewsMediaOrganization', 'name' => '钱潮 Money Tide', 'alternateName' => 'Money Tide'],
+    ];
+    return array_filter($schema, static fn ($v) => $v !== '' && $v !== []);
+}
+
+/**
+ * Anti-stuffing guardrail: no single tag/keyword should appear more often than
+ * ~1 per 300 chars of body (with a small floor). Returns the worst offender.
+ */
+function seo_anti_stuffing(array $article): array
+{
+    $bodyRaw = $article['body'] ?? '';
+    $body = is_array($bodyRaw) ? implode("\n", array_map('strval', $bodyRaw)) : (string) $bodyRaw;
+    $body = strip_tags($body);
+    $len = mb_strlen($body, 'UTF-8');
+    $max = max(4, (int) floor($len / 300));
+    $tags = [];
+    if (function_exists('article_tags') && !empty($article['id'])) {
+        $tags = array_map(static fn ($t) => (string) $t['name'], article_tags((int) $article['id']));
+    }
+    $worst = 0;
+    $worstTerm = '';
+    foreach ($tags as $t) {
+        $t = trim((string) $t);
+        if ($t === '') {
+            continue;
+        }
+        $n = substr_count($body, $t);
+        if ($n > $worst) {
+            $worst = $n;
+            $worstTerm = $t;
+        }
+    }
+    return ['ok' => $len === 0 || $worst <= $max, 'term' => $worstTerm, 'count' => $worst, 'max' => $max];
+}
+
 function seo_title(string $title, string $suffix = '钱潮 Money Tide'): string
 {
     $title = trim($title);

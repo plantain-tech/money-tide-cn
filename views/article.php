@@ -165,6 +165,10 @@ $schema = [
                 <?= monetize_sponsor_html('article') ?>
             <?php endif; ?>
 
+            <?php if (function_exists('adsense_slot_html')): ?>
+                <?= adsense_slot_html('article') ?>
+            <?php endif; ?>
+
             <?php if (!empty($article['is_premium'])): ?>
                 <aside class="premium-soft-wall">
                     <p class="eyebrow"><?= e((string) ($monetization['premium_label'] ?? '会员内容')) ?></p>

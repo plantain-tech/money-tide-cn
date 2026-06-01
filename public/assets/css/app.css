@@ -7165,3 +7165,13 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
 .monetize-flag.is-on { background: #b6f5c8; color: var(--ink); }
 .monetize-sub { margin: 1.2rem 0 0.4rem; font-size: 1rem; border-top: 2px dashed var(--ink); padding-top: 0.9rem; }
 @media (prefers-reduced-motion: reduce) { .sponsor-slot { animation: none; } }
+
+/* ===== Day 10·6 — compliant AdSense zone ===== */
+.ad-zone {
+    margin: 1.6rem 0; padding: 0.5rem; border: 1px dashed #c9c2b0; background: #fcfbf7; text-align: center;
+}
+.ad-zone-label {
+    display: block; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #b3aa95; margin-bottom: 0.35rem;
+}
+.ad-zone ins { min-height: 90px; }
