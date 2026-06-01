@@ -145,8 +145,8 @@ jobs:
           set cmd:fail-exit yes
           set sftp:auto-confirm yes
           set sftp:connect-program "ssh -a -x -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-          set net:max-retries 2
-          set net:timeout 30
+          set net:max-retries 1
+          set net:timeout 40
           set net:connection-limit 1
           set mirror:parallel-transfer-count 1
           set mirror:use-pget-n 1
@@ -156,16 +156,23 @@ jobs:
           mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
           bye
           EOF
+          # Escalating, well-spaced backoff. Hostinger appears to rate-limit SSH
+          # logins (fail2ban-style) after many deploys in a short time; hammering
+          # extends the ban, so we wait progressively longer (≈12 min total span)
+          # to ride the cooldown out instead of pounding the door.
+          backoffs="15 30 45 60 90 120 180 240"
           attempt=1
-          max_attempts=10
+          max_attempts=8
           until lftp -u "$SSH_USER," "sftp://$SSH_HOST" < /tmp/deploy.lftp; do
             if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Deploy failed after $attempt attempts."
+              echo "Deploy failed after $attempt attempts (SSH unreachable / login throttled)."
               exit 1
             fi
-            echo "Deploy attempt $attempt failed; retrying in 12s..."
+            wait_sec=$(echo "$backoffs" | cut -d' ' -f"$attempt")
+            [ -z "$wait_sec" ] && wait_sec=240
+            echo "Deploy attempt $attempt failed; waiting ${wait_sec}s to let any SSH login throttle cool down..."
             attempt=$((attempt + 1))
-            sleep 12
+            sleep "$wait_sec"
           done
           echo "Deploy succeeded on attempt $attempt."
 
