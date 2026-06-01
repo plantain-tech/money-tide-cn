@@ -251,6 +251,55 @@ function sprint_one_signoff_checklist(): array
 }
 
 /**
+ * Day 10·7 — distribution channel health for the Sprint 2 finale board.
+ */
+function channel_health(): array
+{
+    $out = [];
+    if (function_exists('telegram_ready')) {
+        $out[] = ['key' => 'telegram', 'icon' => '✈️', 'label' => 'Telegram', 'free' => true,
+            'state' => telegram_ready() ? 'ok' : (function_exists('telegram_configured') && telegram_configured() ? 'warn' : 'off'),
+            'detail' => telegram_ready() ? '已开启自动分发' : '未开启（免费·建议主力渠道）'];
+    }
+    if (function_exists('x_ready')) {
+        $out[] = ['key' => 'x', 'icon' => '𝕏', 'label' => 'X', 'free' => false,
+            'state' => x_ready() ? 'ok' : (function_exists('x_configured') && x_configured() ? 'warn' : 'off'),
+            'detail' => x_ready() ? '已开启（注意月度配额）' : 'X 免费写入已取消，需付费额度'];
+    }
+    if (function_exists('wechat_ready')) {
+        $out[] = ['key' => 'wechat', 'icon' => '💬', 'label' => 'WeChat', 'free' => true,
+            'state' => wechat_ready() ? 'ok' : 'off',
+            'detail' => wechat_ready() ? '草稿自动创建（半自动）' : '需认证服务号；可用一键复制分发包'];
+    }
+    if (function_exists('adsense_enabled')) {
+        $out[] = ['key' => 'adsense', 'icon' => '📢', 'label' => 'AdSense', 'free' => true,
+            'state' => adsense_enabled() ? 'ok' : 'off',
+            'detail' => adsense_enabled() ? '广告版位已开启' : '未配置（需 AdSense 账号）'];
+    }
+    return $out;
+}
+
+/**
+ * Sprint 2 (Week 10) sign-off — definition of done for the autonomous launch.
+ */
+function sprint_two_signoff_checklist(): array
+{
+    return [
+        ['label' => '流水线可观测：趋势、转化漏斗、自动通过率、限流迹象一屏可见。', 'tip' => '/admin/pipeline-analytics — 切 7/14/30 天，看 KPI 与漏斗。'],
+        ['label' => '韧性到位：单阶段失败不致命、写稿被限流自动退避重试、失败/停摆有告警。', 'tip' => '/admin/pipeline-alerts — 点「立即检查」，确认检测器与（可选）邮件告警。'],
+        ['label' => 'Telegram 自动分发可用：发文即推标题+摘要+链接，每日早报，消息 ID 有记录。', 'tip' => '/admin/channels — 「发送测试消息」成功，运行后看分发记录。'],
+        ['label' => 'X / WeChat / 一键分发包：X 预算保护、WeChat 半自动草稿、四平台一键复制。', 'tip' => '文章页「社交分发」→ 一键分发包；/admin/channels 配置 X/WeChat。'],
+        ['label' => '变现合规：联盟链接带披露与 rel=sponsored、赞助位有标注、AdSense 仅批准版位。', 'tip' => '/admin/monetization 配置；公开文章页查看披露与版位。'],
+        ['label' => 'SEO 加固：每篇文章输出 NewsArticle 结构化数据，关键词无堆砌（反作弊）。', 'tip' => '公开文章源代码搜 NewsArticle；文章编辑页看 SEO 检查清单。'],
+        ['label' => '收入与自动化总览：一屏展示估算收入、RPM、浏览、订阅、成功率、告警。', 'tip' => '/admin/autopilot — 顶部「收入与自动化总览」。'],
+        ['label' => '分栏目开关可用：可单独暂停某栏目，其余照常自动运行。', 'tip' => '/admin/autopilot — 「分栏目开关」取消勾选某栏目后运行验证。'],
+        ['label' => '总开关（kill-switch）有效：一键关闭后 Cron 跳过，所有自动动作停止。', 'tip' => '/admin/autopilot — 关掉总开关，确认下次运行为 paused。'],
+        ['label' => '部署可靠 + CI 语法校验：push 经 SSH 密钥自动部署，php -l 拦截语法错误。', 'tip' => 'health.php 的 release = week-10-autonomous-launch。'],
+        ['label' => '一次端到端自动运行全绿：六阶段跑通并至少分发到一个免费渠道（Telegram）。', 'tip' => '/admin/autopilot 「立即运行一次」→ 看进度窗 + 分发记录。'],
+    ];
+}
+
+/**
  * Week 10 backlog — the next sprint. Keeps the 5% human gate on anything that
  * goes out to the public (social, email broadcast stay human-confirmed).
  */
@@ -305,5 +354,20 @@ function week_ten_backlog(): array
             'phase' => '第 10–11 周',
             'effort' => '中',
         ],
+    ];
+}
+
+/**
+ * Week 11 backlog — after the autonomous launch. Scale + quality + real revenue.
+ */
+function week_eleven_backlog(): array
+{
+    return [
+        ['pillar' => '真实数据', 'icon' => '🔌', 'title' => '接入真实收入/邮件数据', 'detail' => '把估算 RPM 换成 AdSense / 联盟后台真实收入，邮件接入打开率与点击率（像素 + 链接跳转），让收入与 CTR 卡片显示真实数字。', 'phase' => '第 11 周', 'effort' => '中'],
+        ['pillar' => '增长实验', 'icon' => '🧪', 'title' => 'A/B 标题与发送时段', 'detail' => '对社媒标题与早报发送时段做 A/B，按打开率/点击率自动选优，逐步提升分发效率。', 'phase' => '第 11–12 周', 'effort' => '大'],
+        ['pillar' => '质量', 'icon' => '🛡', 'title' => '多源交叉核查 v2', 'detail' => '每个 cluster 强制 ≥2 独立来源，AI 标注事实冲突，提升自动通过可信度并降低更正风险。', 'phase' => '第 11 周', 'effort' => '中'],
+        ['pillar' => '个性化', 'icon' => '🎯', 'title' => '分读者个性化早报', 'detail' => '基于订阅偏好与阅读历史拼装个性化早报版本，先人工预览后发送。', 'phase' => '第 11–12 周', 'effort' => '大'],
+        ['pillar' => '韧性', 'icon' => '🔁', 'title' => '断点续跑与队列', 'detail' => '把流水线升级为持久任务队列，任意阶段可独立重试/续跑，cron 抢占更稳。', 'phase' => '第 12 周', 'effort' => '大'],
+        ['pillar' => '合规', 'icon' => '⚖️', 'title' => '来源与版权审计', 'detail' => '定期审计原创度与来源署名，自动检测疑似过度引用，确保长期合规。', 'phase' => '第 11 周', 'effort' => '中'],
     ];
 }

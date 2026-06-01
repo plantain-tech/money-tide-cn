@@ -145,6 +145,32 @@ function autopilot_enabled(): bool
     return pipeline_setting('autopilot_enabled', '0') === '1';
 }
 
+/**
+ * Day 10·7 — per-category pause. Paused categories are skipped at the clustering
+ * stage (so no new drafts/articles/dispatch for them) while the rest of the
+ * pipeline keeps running. Master kill-switch (autopilot_enabled) still wins.
+ */
+function paused_categories(): array
+{
+    $raw = pipeline_setting('paused_categories', '');
+    if ($raw === '') {
+        return [];
+    }
+    $arr = json_decode($raw, true);
+    return is_array($arr) ? array_values(array_map('strval', $arr)) : [];
+}
+
+function category_paused(string $slug): bool
+{
+    return in_array($slug, paused_categories(), true);
+}
+
+function set_paused_categories(array $slugs): void
+{
+    $clean = array_values(array_unique(array_filter(array_map('strval', $slugs), static fn ($s) => $s !== '')));
+    set_pipeline_setting('paused_categories', json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
+
 function pipeline_config(): array
 {
     return [

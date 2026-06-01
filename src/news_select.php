@@ -226,6 +226,13 @@ function cluster_all_categories(int $topN = 3, int $pauseSec = 2, int $maxTries 
         $slug = (string) $c['slug'];
         $name = (string) $c['name'];
 
+        // Day 10·7 — per-category pause: skip categories the owner paused.
+        if (function_exists('category_paused') && category_paused($slug)) {
+            $summary['skipped']++;
+            $summary['details'][] = ['category' => $slug, 'name' => $name, 'ok' => false, 'skipped' => true, 'message' => '该栏目已暂停（per-category pause）'];
+            continue;
+        }
+
         // Skip categories with no fresh material — silent, not a failure.
         if (count(news_items(['category_slug' => $slug, 'status' => 'new', 'limit' => 1])) === 0) {
             $summary['skipped']++;

@@ -93,6 +93,10 @@ try {
             cli_out('budget reached before clustering finished — will resume next run.');
             break;
         }
+        if (function_exists('category_paused') && category_paused((string) $c['slug'])) {
+            cli_out('cluster ' . (string) $c['slug'] . ': paused — skipped');
+            continue;
+        }
         $cr = cluster_news_for_category((string) $c['slug']);
         $stages['cluster']['clusters'] += (int) ($cr['clusters'] ?? 0);
         cli_out('cluster ' . $c['slug'] . ': +' . (int) ($cr['clusters'] ?? 0));

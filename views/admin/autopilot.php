@@ -154,6 +154,31 @@ $on = !empty($config['enabled']);
         </section>
     </div>
 
+    <!-- ── Day 10·7: per-category pause ───────────────────────────────────── -->
+    <?php $allCategories = $allCategories ?? []; $pausedCategories = $pausedCategories ?? []; ?>
+    <?php if ($allCategories): ?>
+        <section class="newsletter-block">
+            <div class="ops-section-head">
+                <h2>🎛 分栏目开关</h2>
+                <span><?= count($pausedCategories) > 0 ? (count($pausedCategories) . ' 个栏目已暂停') : '全部启用' ?></span>
+            </div>
+            <p>逐个栏目精细控制：取消勾选即<strong>暂停该栏目</strong>（聚类阶段直接跳过，不再产稿/发布/分发），其它栏目照常自动运行。总开关关闭时全部停止。</p>
+            <form method="post" action="<?= e(url('admin/autopilot')) ?>" class="cms-form">
+                <input type="hidden" name="action" value="save_pauses">
+                <div class="cat-toggle-grid">
+                    <?php foreach ($allCategories as $c): $slug = (string) $c['slug']; $on = !in_array($slug, $pausedCategories, true); ?>
+                        <label class="cat-toggle <?= $on ? 'is-on' : 'is-off' ?>">
+                            <input type="checkbox" name="active_categories[]" value="<?= e($slug) ?>" <?= $on ? 'checked' : '' ?>>
+                            <span class="cat-toggle-name"><?= e((string) ($c['name'] ?? $slug)) ?></span>
+                            <span class="cat-toggle-state"><?= $on ? '运行中' : '已暂停' ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <div class="cms-form-actions"><button class="button button-small" type="submit">保存分栏目开关</button></div>
+            </form>
+        </section>
+    <?php endif; ?>
+
     <!-- ── Run result ─────────────────────────────────────────────────────── -->
     <?php if (!empty($runResult)): ?>
         <div class="status-banner <?= ($runResult['status'] ?? '') === 'ok' ? 'is-ready' : 'is-warning' ?>">

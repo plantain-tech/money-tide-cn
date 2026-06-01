@@ -1550,7 +1550,11 @@ if ($route === 'admin/autopilot/step') {
         if ($op === 'plan') {
             $cats = [];
             foreach (get_categories() as $c) {
-                $cats[] = ['slug' => (string) $c['slug'], 'name' => (string) ($c['name'] ?? $c['slug'])];
+                $slug = (string) $c['slug'];
+                if (function_exists('category_paused') && category_paused($slug)) {
+                    continue; // per-category pause: don't cluster paused sections
+                }
+                $cats[] = ['slug' => $slug, 'name' => (string) ($c['name'] ?? $c['slug'])];
             }
             $resp = [
                 'ok' => true,
@@ -1630,6 +1634,19 @@ if ($route === 'admin/autopilot') {
             set_pipeline_setting('publish_limit', (string) max(1, min(50, (int) ($_POST['publish_limit'] ?? 12))));
             set_pipeline_setting('stage_pause', (string) max(0, min(60, (int) ($_POST['stage_pause'] ?? 8))));
             $flash = '已保存流水线设置。';
+        } elseif ($action === 'save_pauses') {
+            // Per-category pause: POST sends the slugs that should KEEP running;
+            // anything not checked is paused.
+            $active = (array) ($_POST['active_categories'] ?? []);
+            $paused = [];
+            foreach (get_categories() as $c) {
+                $slug = (string) $c['slug'];
+                if (!in_array($slug, $active, true)) {
+                    $paused[] = $slug;
+                }
+            }
+            set_paused_categories($paused);
+            $flash = $paused ? ('已暂停 ' . count($paused) . ' 个栏目，其余正常运行。') : '所有栏目均已启用。';
         } elseif ($action === 'run_now') {
             @set_time_limit(0);
             // Manual run forces past the kill-switch, with conservative caps to fit the web window.
@@ -1689,6 +1706,8 @@ if ($route === 'admin/autopilot') {
         'config' => pipeline_config(),
         'live' => $ovLive,
         'overview' => $overview,
+        'allCategories' => function_exists('get_categories') ? get_categories() : [],
+        'pausedCategories' => function_exists('paused_categories') ? paused_categories() : [],
         'runs' => pipeline_runs(15),
         'runResult' => $runResult,
         'flash' => $flash,
@@ -2281,7 +2300,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-6-usd',
+            'release'    => 'week-10-autonomous-launch',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2437,6 +2456,33 @@ if ($route === 'admin/week9-checklist') {
         'config' => pipeline_config(),
         'items' => sprint_one_signoff_checklist(),
         'backlog' => week_ten_backlog(),
+        'runs' => pipeline_runs(8),
+        'dryRun' => $dryRun,
+        'flash' => $flash,
+        'aiReady' => ai_provider_status(),
+    ]);
+    exit;
+}
+
+if ($route === 'admin/week10-checklist') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $dryRun = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'dry_run') {
+        $dryRun = autonomy_dry_run();
+        $flash = '端到端 dry run 完成：' . ($dryRun['message'] ?? '');
+    }
+    $checks = autonomy_health_checks();
+    render_page('admin/week10-checklist', [
+        'site' => $site,
+        'categories' => $categories,
+        'checks' => $checks,
+        'readiness' => autonomy_readiness($checks),
+        'channels' => function_exists('channel_health') ? channel_health() : [],
+        'config' => pipeline_config(),
+        'pausedCategories' => function_exists('paused_categories') ? paused_categories() : [],
+        'items' => sprint_two_signoff_checklist(),
+        'backlog' => week_eleven_backlog(),
         'runs' => pipeline_runs(8),
         'dryRun' => $dryRun,
         'flash' => $flash,
