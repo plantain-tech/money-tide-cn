@@ -835,3 +835,151 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
         dryrun.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 })();
+
+// Day 9 polish — staged pipeline run with a blocking progress modal.
+// Splits the long pipeline into short AJAX steps (no host request timeout),
+// paces AI calls to dodge free-tier throttling, and shows live progress.
+(function () {
+    var btn = document.querySelector('[data-run-pipeline]');
+    var modal = document.querySelector('[data-run-modal]');
+    if (!btn || !modal) return;
+
+    var stepUrl = btn.getAttribute('data-step-url');
+    var fill = modal.querySelector('[data-run-fill]');
+    var pctEl = modal.querySelector('[data-run-percent]');
+    var stepCountEl = modal.querySelector('[data-run-stepcount]');
+    var detailEl = modal.querySelector('[data-run-detail]');
+    var titleEl = modal.querySelector('[data-run-title]');
+    var subEl = modal.querySelector('[data-run-subtitle]');
+    var footEl = modal.querySelector('[data-run-foot]');
+    var summaryEl = modal.querySelector('[data-run-summary]');
+    var closeBtn = modal.querySelector('[data-run-close]');
+    var sparkEl = modal.querySelector('[data-run-spark]');
+
+    var total = 0, done = 0, running = false;
+    var stages;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function setBar() {
+        var p = total > 0 ? Math.round(done / total * 100) : 0;
+        if (p > 100) p = 100;
+        fill.style.width = p + '%';
+        pctEl.textContent = p + '%';
+        stepCountEl.textContent = '步骤 ' + done + ' / ' + total;
+    }
+    function stepState(key, state) {
+        var li = modal.querySelector('[data-run-step="' + key + '"]');
+        if (!li) return;
+        li.classList.remove('is-active', 'is-done', 'is-error');
+        if (state) li.classList.add('is-' + state);
+        var st = li.querySelector('.run-step-state');
+        if (st) st.textContent = state === 'done' ? '✓' : (state === 'error' ? '!' : '');
+    }
+    function detail(msg) { if (detailEl) detailEl.textContent = msg; }
+
+    function post(payload) {
+        return fetch(stepUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status + '（主机可能仍限制了该步骤时长）');
+            return res.json();
+        });
+    }
+
+    function run() {
+        if (running) return;
+        running = true;
+        btn.disabled = true;
+        stages = { ingest: {}, cluster: { clusters: 0 }, synthesize: { drafts: 0 }, assess: {}, publish: {}, assemble: {} };
+        ['ingest', 'cluster', 'synthesize', 'assess', 'publish'].forEach(function (k) { stepState(k, ''); });
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        if (footEl) footEl.hidden = true;
+        if (sparkEl) sparkEl.textContent = '🛰';
+        if (titleEl) titleEl.textContent = '正在运行流水线…';
+        if (subEl) subEl.textContent = '请稍候，分步执行中，请勿关闭本页。';
+        var t0 = Date.now();
+
+        (async function () {
+            try {
+                detail('正在规划…');
+                var plan = await post({ op: 'plan' });
+                if (!plan.ok) throw new Error(plan.error || '规划失败');
+                var cats = plan.categories || [];
+                total = 1 + cats.length + 1 + 1;
+                done = 0; setBar();
+
+                stepState('ingest', 'active'); detail('抓取新闻素材…');
+                var ing = await post({ op: 'ingest' });
+                if (!ing.ok) throw new Error(ing.error || '抓取失败');
+                stages.ingest = { new_items: ing.count || 0 };
+                detail(ing.detail || ''); done++; setBar(); stepState('ingest', 'done');
+
+                stepState('cluster', 'active');
+                for (var i = 0; i < cats.length; i++) {
+                    detail('聚类：' + cats[i].name + ' …（' + (i + 1) + '/' + cats.length + '）');
+                    var cl = await post({ op: 'cluster', slug: cats[i].slug });
+                    if (cl.ok) stages.cluster.clusters += (cl.count || 0);
+                    detail('聚类 ' + cats[i].name + '：' + (cl.detail || ''));
+                    done++; setBar();
+                    if (i < cats.length - 1) await sleep(1200);
+                }
+                stepState('cluster', 'done');
+
+                stepState('synthesize', 'active'); detail('挑选待写稿选题…');
+                var tg = await post({ op: 'synth_targets' });
+                var ids = (tg && tg.ids) || [];
+                total += ids.length; setBar();
+                for (var j = 0; j < ids.length; j++) {
+                    detail('AI 写稿 ' + (j + 1) + '/' + ids.length + ' …');
+                    var sy = await post({ op: 'synthesize', id: ids[j] });
+                    if (sy.created) stages.synthesize.drafts++;
+                    detail((sy.detail || '') + '（已写 ' + stages.synthesize.drafts + ' 篇）');
+                    done++; setBar();
+                    if (j < ids.length - 1) await sleep(1500);
+                }
+                stepState('synthesize', 'done');
+
+                stepState('assess', 'active'); detail('AI 审核闸门…');
+                var as = await post({ op: 'assess' });
+                stages.assess = { auto: as.auto || 0, review: as.review || 0 };
+                detail(as.detail || ''); done++; setBar(); stepState('assess', 'done');
+
+                stepState('publish', 'active'); detail('发布与早报组装…');
+                var pb = await post({ op: 'publish' });
+                stages.publish = { articles: pb.articles || 0 };
+                stages.assemble = { issues: pb.issues || 0 };
+                detail(pb.detail || ''); done++; setBar(); stepState('publish', 'done');
+
+                var elapsed = Math.round((Date.now() - t0) / 1000);
+                var fin = await post({ op: 'finish', stages: stages, elapsed: elapsed });
+                done = total; setBar();
+                if (titleEl) titleEl.textContent = '✅ 运行完成';
+                if (subEl) subEl.textContent = '本次运行已记录到「运行记录」。';
+                if (sparkEl) sparkEl.textContent = '✅';
+                if (summaryEl) summaryEl.textContent = (fin.summary || '') + ' · 用时 ' + elapsed + ' 秒';
+                if (footEl) footEl.hidden = false;
+            } catch (err) {
+                if (titleEl) titleEl.textContent = '⚠️ 运行中断';
+                if (subEl) subEl.textContent = '某一步出错，已停止。已完成步骤的进度已保存，可关闭后重试或交给 Cron 续跑。';
+                detail('错误：' + (err && err.message ? err.message : err));
+                if (sparkEl) sparkEl.textContent = '⚠️';
+                var active = modal.querySelector('.run-steps .is-active');
+                if (active) { active.classList.remove('is-active'); active.classList.add('is-error'); var s = active.querySelector('.run-step-state'); if (s) s.textContent = '!'; }
+                if (footEl) footEl.hidden = false;
+            } finally {
+                running = false;
+                btn.disabled = false;
+            }
+        })();
+    }
+
+    btn.addEventListener('click', run);
+    if (closeBtn) closeBtn.addEventListener('click', function () {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        window.location.reload();
+    });
+})();

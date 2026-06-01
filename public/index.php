@@ -1448,6 +1448,87 @@ if ($route === 'admin/autopilot/toggle' && ($_SERVER['REQUEST_METHOD'] ?? 'GET')
     exit;
 }
 
+if ($route === 'admin/autopilot/step') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    @set_time_limit(120);
+    $in = json_decode((string) file_get_contents('php://input'), true);
+    if (!is_array($in)) {
+        $in = $_POST;
+    }
+    $op = (string) ($in['op'] ?? '');
+    $cfg = pipeline_config();
+    $resp = ['ok' => false, 'error' => 'unknown op'];
+    try {
+        db_live(); // ensure a live connection for this short step
+        if ($op === 'plan') {
+            $cats = [];
+            foreach (get_categories() as $c) {
+                $cats[] = ['slug' => (string) $c['slug'], 'name' => (string) ($c['name'] ?? $c['slug'])];
+            }
+            $resp = [
+                'ok' => true,
+                'categories' => $cats,
+                'synth_limit' => (int) $cfg['synthesize_limit'],
+            ];
+        } elseif ($op === 'ingest') {
+            $r = ingest_all_news_sources();
+            $n = (int) ($r['new_items'] ?? 0);
+            $resp = ['ok' => true, 'count' => $n, 'detail' => '新增素材 ' . $n . ' 条（扫描 ' . (int) ($r['sources'] ?? 0) . ' 个源）'];
+        } elseif ($op === 'cluster') {
+            $r = cluster_news_for_category((string) ($in['slug'] ?? ''));
+            $resp = ['ok' => true, 'count' => (int) ($r['clusters'] ?? 0), 'detail' => (string) ($r['message'] ?? '')];
+        } elseif ($op === 'synth_targets') {
+            $limit = max(1, (int) $cfg['synthesize_limit']);
+            $ids = [];
+            foreach (story_clusters(['status' => 'selected']) as $c) {
+                if (count($ids) >= $limit) {
+                    break;
+                }
+                if (empty($c['draft_id'])) { // not yet synthesized
+                    $ids[] = (int) $c['id'];
+                }
+            }
+            $resp = ['ok' => true, 'ids' => $ids];
+        } elseif ($op === 'synthesize') {
+            $r = synthesize_cluster_to_draft((int) ($in['id'] ?? 0));
+            $isNew = !empty($r['ok']) && ($r['code'] ?? '') !== 'exists';
+            $resp = ['ok' => !empty($r['ok']), 'created' => $isNew, 'detail' => (string) ($r['message'] ?? '')];
+        } elseif ($op === 'assess') {
+            $r = assess_pending_drafts((int) $cfg['assess_limit']);
+            $resp = ['ok' => true, 'auto' => (int) ($r['auto'] ?? 0), 'review' => (int) ($r['review'] ?? 0),
+                'detail' => '自动通过 ' . (int) ($r['auto'] ?? 0) . ' · 转人工 ' . (int) ($r['review'] ?? 0)];
+        } elseif ($op === 'publish') {
+            $r = run_auto_publish_and_assemble((int) $cfg['publish_limit']);
+            $resp = ['ok' => true, 'articles' => (int) ($r['publish']['ok'] ?? 0), 'issues' => (int) ($r['assemble']['issues'] ?? 0),
+                'detail' => '发布 ' . (int) ($r['publish']['ok'] ?? 0) . ' 篇 · 早报 ' . (int) ($r['assemble']['issues'] ?? 0) . ' 份'];
+        } elseif ($op === 'finish') {
+            $stages = (array) ($in['stages'] ?? []);
+            $elapsed = max(0, (int) ($in['elapsed'] ?? 0));
+            $summary = sprintf(
+                '抓取 %d · 聚类 %d · 草稿 %d · 自动通过 %d/转人工 %d · 发布 %d · 早报 %d',
+                (int) ($stages['ingest']['new_items'] ?? 0),
+                (int) ($stages['cluster']['clusters'] ?? 0),
+                (int) ($stages['synthesize']['drafts'] ?? 0),
+                (int) ($stages['assess']['auto'] ?? 0),
+                (int) ($stages['assess']['review'] ?? 0),
+                (int) ($stages['publish']['articles'] ?? 0),
+                (int) ($stages['assemble']['issues'] ?? 0)
+            );
+            db(true);
+            log_pipeline_run('manual', 'ok', $stages, $summary, $elapsed);
+            set_pipeline_setting('last_run_at', date('Y-m-d H:i:s'));
+            set_pipeline_setting('last_run_status', 'ok');
+            $resp = ['ok' => true, 'summary' => $summary];
+        }
+    } catch (Throwable $exception) {
+        $resp = ['ok' => false, 'error' => $exception->getMessage()];
+    }
+    echo json_encode($resp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'admin/autopilot') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
@@ -2092,7 +2173,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-2-db-reconnect',
+            'release'    => 'sprint1-run-modal',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

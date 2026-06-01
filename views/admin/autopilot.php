@@ -95,15 +95,17 @@ $on = !empty($config['enabled']);
     <div class="autopilot-cols">
         <section class="newsletter-block">
             <h2>▶️ 手动运行一次</h2>
-            <p>立即跑一遍完整流水线（不受开关限制，用于测试）。</p>
-            <form method="post" action="<?= e(url('admin/autopilot')) ?>" class="news-fetch-form" data-news-fetch>
-                <input type="hidden" name="action" value="run_now">
-                <button class="button" type="submit" data-news-fetch-btn <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
-                    <span class="news-fetch-label">▶️ 立即运行一次</span>
-                    <span class="news-fetch-spinner" hidden></span>
-                </button>
-            </form>
-            <p class="news-action-hint">完整自动化请用下方 Cron（网页可能因主机限制中途结束，但每步都会保存进度，可再次点击或交给 Cron 续跑）。手动运行用较小的批量上限。</p>
+            <p>立即跑一遍完整流水线（不受开关限制，用于测试）。运行时弹出进度窗，分步执行、实时显示进度，不会因网页超时而中断。</p>
+            <button class="button" type="button" data-run-pipeline
+                data-step-url="<?= e(url('admin/autopilot/step')) ?>"
+                <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+                ▶️ 立即运行一次
+            </button>
+            <?php if (empty($aiReady['ready'])): ?>
+                <p class="news-action-hint">AI 引擎当前离线，暂不可运行。请先到 <a href="<?= e(url('admin/diagnostics')) ?>">诊断</a> 检查。</p>
+            <?php else: ?>
+                <p class="news-action-hint">分步执行：抓取 → 逐栏目聚类 → 逐条写稿 → 审核 → 发布。每步独立短请求，自动避开主机超时，并为免费额度的 AI 留出节流间隔。</p>
+            <?php endif; ?>
         </section>
 
         <section class="newsletter-block">
@@ -158,3 +160,38 @@ $on = !empty($config['enabled']);
         </div>
     </section>
 </section>
+
+<!-- ── Pipeline run progress modal (Day 9 polish) ─────────────────────────── -->
+<div class="run-modal" data-run-modal hidden>
+    <div class="run-modal-backdrop"></div>
+    <div class="run-modal-card" role="dialog" aria-modal="true" aria-labelledby="runModalTitle">
+        <div class="run-modal-head">
+            <span class="run-modal-spark" data-run-spark>🛰</span>
+            <h3 id="runModalTitle" data-run-title>正在运行流水线…</h3>
+            <p data-run-subtitle>请稍候，分步执行中，请勿关闭本页。</p>
+        </div>
+
+        <div class="run-progress">
+            <div class="run-progress-bar"><span class="run-progress-fill" data-run-fill style="width:0%"></span></div>
+            <div class="run-progress-meta">
+                <span data-run-percent>0%</span>
+                <span data-run-stepcount>步骤 0 / 0</span>
+            </div>
+        </div>
+
+        <ul class="run-steps" data-run-steps>
+            <li data-run-step="ingest"><span class="run-step-ic">🛰</span><span class="run-step-label">抓取新闻素材</span><span class="run-step-state"></span></li>
+            <li data-run-step="cluster"><span class="run-step-ic">🧩</span><span class="run-step-label">聚类选题</span><span class="run-step-state"></span></li>
+            <li data-run-step="synthesize"><span class="run-step-ic">✍️</span><span class="run-step-label">AI 写稿</span><span class="run-step-state"></span></li>
+            <li data-run-step="assess"><span class="run-step-ic">🔍</span><span class="run-step-label">AI 审核闸门</span><span class="run-step-state"></span></li>
+            <li data-run-step="publish"><span class="run-step-ic">🚀</span><span class="run-step-label">发布与早报组装</span><span class="run-step-state"></span></li>
+        </ul>
+
+        <p class="run-modal-detail" data-run-detail aria-live="polite">准备中…</p>
+
+        <div class="run-modal-foot" data-run-foot hidden>
+            <p class="run-modal-summary" data-run-summary></p>
+            <button class="button" type="button" data-run-close>完成并刷新</button>
+        </div>
+    </div>
+</div>
