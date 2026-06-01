@@ -30,7 +30,7 @@ foreach ((function_exists('get_categories') ? get_categories() : ($categories ??
         <p>钱潮早报把全球市场、商业、科技、加密、政策和理财信息压缩成一封可以快速读完的中文邮件。</p>
         <div class="subscribe-proof-grid">
             <div><strong>5 分钟</strong><span>读完今日关键市场信号</span></div>
-            <div><strong>7 个频道</strong><span>覆盖财经、科技与全球趋势</span></div>
+            <div><strong><?= e((string) count($topics)) ?> 个频道</strong><span>覆盖财经、科技与全球趋势</span></div>
             <?php // 原“首发阶段免费订阅”文案保留备查，未来如恢复限时定价可改回此处显示。 ?>
             <div><strong>0 元</strong><span>永久免费订阅</span></div>
         </div>
