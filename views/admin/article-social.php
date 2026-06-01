@@ -17,13 +17,55 @@ $articleId = (int) ($article['id'] ?? 0);
     </div>
 
     <?php if ($flash !== ''): ?>
-        <div class="status-banner is-ready"><strong>提示</strong><span><?= e($flash) ?></span></div>
+        <div class="status-banner <?= mb_strpos($flash, '⚠️') === 0 ? 'is-warning' : 'is-ready' ?> ap-flash"><strong>提示</strong><span><?= e($flash) ?></span></div>
     <?php endif; ?>
 
     <div class="status-banner is-ready">
         <strong><?= e((string) $article['title']) ?></strong>
         <span><?= e((string) ($article['dek'] ?? '')) ?> · 今日 AI: <?= e((string) $aiUsage['used_today']) ?>/<?= e((string) $aiUsage['daily_limit']) ?></span>
     </div>
+
+    <!-- ── Day 10·4: WeChat draft + one-click assisted packages ──────────── -->
+    <?php $assistedPackages = $assistedPackages ?? []; ?>
+    <section class="newsletter-block assisted-export" id="assisted" data-assisted>
+        <div class="ops-section-head">
+            <h2>📦 一键分发包</h2>
+            <a class="ghost-link" href="<?= e(url('admin/channels')) ?>">渠道设置 →</a>
+        </div>
+        <p>AI 已按各平台风格排好版，复制即可粘贴。微信走「半自动」：一键创建草稿，你在公众号后台审核后群发。</p>
+
+        <div class="assisted-wechat">
+            <div class="assisted-wechat-info">
+                <strong>💬 微信公众号草稿</strong>
+                <p>在公众号草稿箱创建一篇草稿（不自动群发，保留你的最终审核）。</p>
+            </div>
+            <?php if (!empty($wechatConfigured)): ?>
+                <form method="post" action="<?= e(url('admin/articles/' . $articleId . '/wechat-draft')) ?>" class="news-fetch-form" data-news-fetch>
+                    <button class="button" type="submit" data-news-fetch-btn data-loading-label="创建草稿中…">
+                        <span class="news-fetch-label">💬 创建微信草稿</span>
+                        <span class="news-fetch-spinner" hidden></span>
+                    </button>
+                </form>
+            <?php else: ?>
+                <a class="button button-ghost" href="<?= e(url('admin/channels')) ?>">先配置公众号 →</a>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($assistedPackages): ?>
+            <div class="assisted-tabs" role="tablist">
+                <?php $first = true; foreach ($assistedPackages as $k => $p): ?>
+                    <button class="assisted-tab <?= $first ? 'is-active' : '' ?>" type="button" role="tab" data-assisted-tab="<?= e($k) ?>"><?= e($p['icon'] . ' ' . $p['label']) ?></button>
+                <?php $first = false; endforeach; ?>
+            </div>
+            <?php $first = true; foreach ($assistedPackages as $k => $p): ?>
+                <div class="assisted-panel <?= $first ? 'is-active' : '' ?>" data-assisted-panel="<?= e($k) ?>">
+                    <p class="assisted-tip">💡 <?= e((string) $p['tips']) ?></p>
+                    <textarea class="assisted-text" rows="10" readonly data-assisted-text><?= e((string) $p['text']) ?></textarea>
+                    <button class="button button-small" type="button" data-assisted-copy>📋 复制到剪贴板</button>
+                </div>
+            <?php $first = false; endforeach; ?>
+        <?php endif; ?>
+    </section>
 
     <div class="social-channel-grid">
         <?php foreach ($channels as $channelKey => $meta): ?>
@@ -186,5 +228,34 @@ $articleId = (int) ($article['id'] ?? 0);
         try { document.execCommand('copy'); } catch (_) {}
         document.body.removeChild(ta);
     }
+
+    // Assisted packages: tab switching
+    document.querySelectorAll('[data-assisted-tab]').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            var key = tab.getAttribute('data-assisted-tab');
+            document.querySelectorAll('[data-assisted-tab]').forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+            document.querySelectorAll('[data-assisted-panel]').forEach(function (p) {
+                p.classList.toggle('is-active', p.getAttribute('data-assisted-panel') === key);
+            });
+        });
+    });
+    // Assisted packages: copy
+    document.querySelectorAll('[data-assisted-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var panel = btn.closest('[data-assisted-panel]');
+            var ta = panel ? panel.querySelector('[data-assisted-text]') : null;
+            var text = ta ? ta.value : '';
+            if (!text) return;
+            var done = function () {
+                var original = btn.textContent;
+                btn.textContent = '已复制 ✓';
+                btn.classList.add('is-copied');
+                setTimeout(function () { btn.textContent = original; btn.classList.remove('is-copied'); }, 1600);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+            } else { fallbackCopy(text); done(); }
+        });
+    });
 })();
 </script>

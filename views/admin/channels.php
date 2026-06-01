@@ -8,8 +8,11 @@ $xConfigured = trim((string) ($xc['api_key'] ?? '')) !== '' && trim((string) ($x
 $xReady = !empty($xc['enabled']) && $xConfigured;
 $xBudget = (int) ($xc['monthly_budget'] ?? 450);
 $xUsed = (int) ($xUsage ?? 0);
+$wc = $wechat ?? [];
+$wcConfigured = trim((string) ($wc['app_id'] ?? '')) !== '' && trim((string) ($wc['app_secret'] ?? '')) !== '';
+$wcReady = !empty($wc['enabled']) && $wcConfigured && trim((string) ($wc['thumb_media_id'] ?? '')) !== '';
 $kindLabels = ['article' => '文章', 'digest' => '早报', 'test' => '测试'];
-$channelLabels = ['telegram' => '✈️ Telegram', 'x' => '𝕏 X'];
+$channelLabels = ['telegram' => '✈️ Telegram', 'x' => '𝕏 X', 'wechat' => '💬 WeChat'];
 ?>
 <section class="admin-shell" data-channels>
     <div class="admin-topbar">
@@ -124,6 +127,45 @@ $channelLabels = ['telegram' => '✈️ Telegram', 'x' => '𝕏 X'];
                 <li><strong>拿 4 项凭证填到左边。</strong><small>Keys and tokens 页：API Key/Secret + Access Token/Secret。保存后点「发送测试推文」确认（会真的发一条到你时间线）。</small></li>
             </ol>
             <p class="news-action-hint">提示：凭证也可用部署 Secrets（X_API_KEY 等），但此页填写无需重新部署。预算保护让你不会超出免费额度被封。</p>
+        </section>
+    </div>
+
+    <!-- WeChat (semi-auto draft) -->
+    <div class="autopilot-cols">
+        <section class="newsletter-block">
+            <h2>💬 微信公众号（半自动） <span class="ch-dot <?= $wcReady ? 'is-on' : 'is-off' ?>"></span></h2>
+            <p>发布即在公众号<strong>草稿箱</strong>自动建一篇草稿，你在后台审核后<strong>手动群发</strong>（不会自动发送，保留你的最终把关）。</p>
+            <form method="post" action="<?= e(url('admin/channels')) ?>" class="cms-form">
+                <input type="hidden" name="action" value="save_wechat">
+                <label class="pa-switch-row">
+                    <input type="checkbox" name="wechat_enabled" value="1" <?= !empty($wc['enabled']) ? 'checked' : '' ?>>
+                    <span>开启自动创建微信草稿</span>
+                </label>
+                <div class="cms-form-grid">
+                    <label>AppID<input type="text" name="wechat_app_id" value="<?= e((string) ($wc['app_id'] ?? '')) ?>" placeholder="公众号 AppID"></label>
+                    <label>AppSecret<input type="password" name="wechat_app_secret" autocomplete="off" placeholder="<?= trim((string) ($wc['app_secret'] ?? '')) !== '' ? '已配置 ••••（留空不改）' : '公众号 AppSecret' ?>"></label>
+                    <label>封面 thumb_media_id<input type="text" name="wechat_thumb_media_id" value="<?= e((string) ($wc['thumb_media_id'] ?? '')) ?>" placeholder="永久图片素材 media_id（草稿必填）"></label>
+                    <label>作者署名<input type="text" name="wechat_author" value="<?= e((string) ($wc['author'] ?? '钱潮 Money Tide')) ?>"></label>
+                </div>
+                <div class="cms-form-actions"><button class="button button-small" type="submit">保存设置</button></div>
+            </form>
+            <form method="post" action="<?= e(url('admin/channels')) ?>" class="news-fetch-form" data-news-fetch style="margin-top:0.6rem">
+                <input type="hidden" name="action" value="test_wechat">
+                <button class="button button-small button-ghost" type="submit" data-news-fetch-btn data-loading-label="验证中…" <?= $wcConfigured ? '' : 'disabled' ?>>
+                    <span class="news-fetch-label">🔌 验证凭证</span>
+                    <span class="news-fetch-spinner" hidden></span>
+                </button>
+            </form>
+        </section>
+
+        <section class="newsletter-block">
+            <h2>🛠 接好微信公众号草稿 API</h2>
+            <ol class="qa-list">
+                <li><strong>用已认证的服务号。</strong><small>公众平台 → 设置与开发 → 基本配置：拿 <code>AppID</code> 和 <code>AppSecret</code>。草稿/发布 API 需要已认证账号。</small></li>
+                <li><strong>把服务器 IP 加入白名单。</strong><small>基本配置 → IP 白名单，加入本主机出口 IP（<code>145.223.77.32</code>），否则 access_token 会被拒。</small></li>
+                <li><strong>上传一张封面图，填 media_id。</strong><small>草稿必须有封面：在「素材管理 / 永久素材」上传一张图片，拿到其 <code>media_id</code> 填到左边。</small></li>
+            </ol>
+            <p class="news-action-hint">每篇文章只走「草稿」——绝不自动群发。也可用部署 Secrets（WECHAT_APP_ID 等）。文章页（社交分发）还提供小红书/头条/百家号/知乎的一键复制分发包。</p>
         </section>
     </div>
 

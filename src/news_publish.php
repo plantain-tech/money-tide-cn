@@ -114,6 +114,7 @@ function publish_one_approved_draft(int $draftId): array
                 'slug' => $slug,
                 'title' => $title,
                 'brief' => (string) ($payload['brief'] ?? ''),
+                'body' => $bodyText,
                 'social_headline' => (string) ($payload['social_headline'] ?? ''),
                 'tags' => (array) ($payload['tags'] ?? []),
                 'category_name' => function_exists('category_name_by_slug') ? category_name_by_slug((string) $draft['section_slug']) : '',

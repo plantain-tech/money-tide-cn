@@ -508,6 +508,28 @@ if ($route === 'admin/social/schedule.csv') {
     exit;
 }
 
+if (preg_match('#^admin/articles/(\d+)/wechat-draft$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    require_admin();
+    $articleId = (int) $matches[1];
+    $article = admin_article_by_id($articleId);
+    if (!$article) {
+        http_response_code(404);
+        render_page('404', compact('site', 'categories'));
+        exit;
+    }
+    $url = canonical_url('article/' . (string) ($article['slug'] ?? ''));
+    $html = wechat_build_content_html((string) ($article['body'] ?? ''), $url);
+    $r = wechat_create_draft((string) ($article['title'] ?? ''), (string) ($article['brief'] ?? ''), $html, $url);
+    if (function_exists('record_social_dispatch')) {
+        record_social_dispatch('wechat', 'article', $articleId, !empty($r['ok']), (string) ($r['media_id'] ?? ''), !empty($r['ok']) ? 'draft(manual)' : (string) ($r['error'] ?? ''));
+    }
+    $flash = !empty($r['ok'])
+        ? '✅ 已在公众号草稿箱创建草稿（media_id ' . (string) ($r['media_id'] ?? '') . '）。请到公众号后台审核后群发。'
+        : ('⚠️ 创建微信草稿失败：' . (string) ($r['error'] ?? ''));
+    header('Location: ' . url('admin/articles/' . $articleId . '/social') . '?flash=' . rawurlencode($flash) . '#assisted');
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
     require_admin();
     $articleId = (int) $matches[1];
@@ -517,6 +539,10 @@ if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
         render_page('404', compact('site', 'categories'));
         exit;
     }
+    $articleForExport = $article;
+    $articleForExport['tags'] = function_exists('article_tags')
+        ? array_map(static fn ($t) => (string) $t['name'], article_tags($articleId))
+        : [];
     render_page('admin/article-social', [
         'site' => $site,
         'categories' => $categories,
@@ -524,6 +550,9 @@ if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
         'posts' => social_posts_for_article($articleId),
         'channels' => social_channels(),
         'statusOptions' => social_post_status_options(),
+        'assistedPackages' => function_exists('assisted_export_packages') ? assisted_export_packages($articleForExport) : [],
+        'wechatStatus' => function_exists('wechat_config') ? wechat_config() : [],
+        'wechatConfigured' => function_exists('wechat_configured') && wechat_configured(),
         'flash' => (string) ($_GET['flash'] ?? ''),
         'aiUsage' => ai_usage_summary(),
     ]);
@@ -1470,6 +1499,14 @@ if ($route === 'admin/channels') {
             $flash = !empty($testResult['ok'])
                 ? '✅ 测试推文已发布（请在 X 时间线查看）。'
                 : ('⚠️ X 测试失败：' . (string) ($testResult['error'] ?? ''));
+        } elseif ($action === 'save_wechat') {
+            save_wechat_settings($_POST);
+            $flash = '已保存微信公众号设置。';
+        } elseif ($action === 'test_wechat') {
+            $testResult = wechat_send_test();
+            $flash = !empty($testResult['ok'])
+                ? ('✅ ' . (string) ($testResult['message'] ?? '微信凭证有效。'))
+                : ('⚠️ 微信测试失败：' . (string) ($testResult['error'] ?? ''));
         }
     }
     render_page('admin/channels', [
@@ -1479,6 +1516,7 @@ if ($route === 'admin/channels') {
         'telegram' => telegram_config(),
         'x' => x_config(),
         'xUsage' => function_exists('x_month_usage') ? x_month_usage() : 0,
+        'wechat' => function_exists('wechat_config') ? wechat_config() : [],
         'summary' => social_publish_summary(),
         'dispatches' => social_dispatches(40),
         'testResult' => $testResult,
@@ -2212,7 +2250,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-3-x',
+            'release'    => 'week-10-day-4-wechat',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

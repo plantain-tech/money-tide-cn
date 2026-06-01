@@ -61,6 +61,12 @@ function social_dispatch_channels(): array
             'configured' => function_exists('x_configured') && x_configured(),
             'ready' => function_exists('x_ready') && x_ready(),
         ],
+        'wechat' => [
+            'label' => 'WeChat 公众号',
+            'icon' => '💬',
+            'configured' => function_exists('wechat_configured') && wechat_configured(),
+            'ready' => function_exists('wechat_ready') && wechat_ready(),
+        ],
     ];
 }
 
@@ -159,6 +165,15 @@ function dispatch_article_to_channels(array $article): array
                 // article stays eligible to post once the quota resets.
                 $out['x'] = ['ok' => false, 'skipped' => true, 'error' => '本月 X 配额已用完'];
             }
+        }
+    }
+    if (function_exists('wechat_ready') && wechat_ready()) {
+        if (!social_dispatch_already('wechat', 'article', $articleId)) {
+            $url = canonical_url('article/' . (string) ($article['slug'] ?? ''));
+            $html = wechat_build_content_html((string) ($article['body'] ?? ''), $url);
+            $r = wechat_create_draft((string) ($article['title'] ?? ''), (string) ($article['brief'] ?? ''), $html, $url);
+            record_social_dispatch('wechat', 'article', $articleId, !empty($r['ok']), (string) ($r['media_id'] ?? ''), !empty($r['ok']) ? 'draft' : (string) ($r['error'] ?? ''));
+            $out['wechat'] = $r;
         }
     }
     return $out;
@@ -300,6 +315,23 @@ function save_x_settings(array $input): void
     if (isset($input['x_monthly_budget'])) {
         set_pipeline_setting('x_monthly_budget', (string) max(1, min(10000, (int) $input['x_monthly_budget'])));
     }
+}
+
+function save_wechat_settings(array $input): void
+{
+    if (!function_exists('set_pipeline_setting')) {
+        return;
+    }
+    foreach (['wechat_app_id', 'wechat_thumb_media_id', 'wechat_author'] as $field) {
+        if (isset($input[$field])) {
+            set_pipeline_setting($field, trim((string) $input[$field]));
+        }
+    }
+    $secret = trim((string) ($input['wechat_app_secret'] ?? ''));
+    if ($secret !== '' && strpos($secret, '•') === false) {
+        set_pipeline_setting('wechat_app_secret', $secret);
+    }
+    set_pipeline_setting('wechat_enabled', !empty($input['wechat_enabled']) ? '1' : '0');
 }
 
 function send_channel_test(): array
