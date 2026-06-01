@@ -555,6 +555,9 @@ HTML;
     $subjectHtml = htmlspecialchars($subject, ENT_QUOTES, 'UTF-8');
     $introHtml = nl2br(htmlspecialchars($intro, ENT_QUOTES, 'UTF-8'));
     $outroHtml = nl2br(htmlspecialchars($outro, ENT_QUOTES, 'UTF-8'));
+    // Day 10·5: native sponsor slot (disclosed) in the email template.
+    $sponsorHtml = function_exists('monetize_sponsor_html') ? monetize_sponsor_html('email') : '';
+    $blocks .= $sponsorHtml;
 
     $footerExtra = '';
     if ($unsubscribeUrl !== '') {

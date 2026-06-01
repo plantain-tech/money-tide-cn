@@ -24,6 +24,7 @@
     </div>
 
     <form class="cms-form" method="post" action="<?= e(url('admin/monetization')) ?>">
+        <input type="hidden" name="section" value="premium">
         <label>
             付费墙模式
             <select name="paywall_mode">
@@ -43,4 +44,51 @@
             <button class="button" type="submit">保存设置</button>
         </div>
     </form>
+
+    <?php $m = $monetize ?? []; ?>
+    <!-- ── Day 10·5: affiliate links + sponsor slot ─────────────────────── -->
+    <section class="newsletter-block monetize-block">
+        <div class="ops-section-head">
+            <h2>💰 联盟链接与赞助位</h2>
+            <span class="monetize-flags">
+                <span class="monetize-flag <?= !empty($m['affiliate_enabled']) ? 'is-on' : '' ?>">联盟 <?= !empty($m['affiliate_enabled']) ? '开' : '关' ?></span>
+                <span class="monetize-flag <?= !empty($m['sponsor_enabled']) ? 'is-on' : '' ?>">赞助 <?= !empty($m['sponsor_enabled']) ? '开' : '关' ?></span>
+            </span>
+        </div>
+        <p>在文章正文里按关键词自动插入<strong>带披露</strong>的联盟链接（每个关键词每篇最多一次），并可在文末渲染一个清晰标注的<strong>原生赞助位</strong>。合规优先：链接带 <code>rel="sponsored nofollow"</code> 与 ↗ 标记，赞助位带「赞助」标签。</p>
+
+        <form class="cms-form" method="post" action="<?= e(url('admin/monetization')) ?>">
+            <input type="hidden" name="section" value="monetize">
+
+            <h3 class="monetize-sub">🔗 联盟链接</h3>
+            <label class="pa-switch-row"><input type="checkbox" name="affiliate_enabled" value="1" <?= !empty($m['affiliate_enabled']) ? 'checked' : '' ?>> <span>开启联盟链接自动插入</span></label>
+            <label>规则（每行一条：<code>关键词 | https://联盟链接 | 可选标签</code>）
+                <textarea name="affiliate_rules" rows="5" placeholder="英伟达 | https://aff.example.com/nvidia | 合作券商&#10;比特币 ETF | https://aff.example.com/btc-etf"><?= e((string) ($rulesText ?? '')) ?></textarea>
+            </label>
+            <div class="cms-form-grid">
+                <label>每篇最多链接数<input type="number" name="affiliate_max" min="1" max="10" value="<?= e((string) ($m['affiliate_max'] ?? 3)) ?>"></label>
+            </div>
+            <label>披露声明（显示在含联盟链接文章的正文顶部）
+                <textarea name="affiliate_disclosure" rows="2"><?= e((string) ($m['affiliate_disclosure'] ?? '')) ?></textarea>
+            </label>
+
+            <h3 class="monetize-sub">🎯 原生赞助位</h3>
+            <label class="pa-switch-row"><input type="checkbox" name="sponsor_enabled" value="1" <?= !empty($m['sponsor_enabled']) ? 'checked' : '' ?>> <span>在文章/早报渲染赞助位</span></label>
+            <div class="cms-form-grid">
+                <label>赞助标签<input type="text" name="sponsor_label" value="<?= e((string) ($m['sponsor_label'] ?? '赞助 · Sponsored')) ?>"></label>
+                <label>赞助商名称<input type="text" name="sponsor_name" value="<?= e((string) ($m['sponsor_name'] ?? '')) ?>" placeholder="例：某券商 / 某交易所"></label>
+                <label>按钮文案<input type="text" name="sponsor_cta" value="<?= e((string) ($m['sponsor_cta'] ?? '了解更多')) ?>"></label>
+                <label>落地链接<input type="url" name="sponsor_url" value="<?= e((string) ($m['sponsor_url'] ?? '')) ?>" placeholder="https://..."></label>
+            </div>
+            <label>赞助文案<textarea name="sponsor_blurb" rows="2" placeholder="一句话介绍赞助商，清晰、不夸大。"><?= e((string) ($m['sponsor_blurb'] ?? '')) ?></textarea></label>
+
+            <div class="cms-form-actions"><button class="button" type="submit">保存广告与联盟设置</button></div>
+            <p class="news-action-hint">提示：联盟链接只在正文里命中关键词时插入，并自动加披露；赞助位为空（名称/文案缺失）时不渲染。两者都清晰标注，符合 AdSense / 广告法的披露要求。</p>
+        </form>
+
+        <?php if (function_exists('monetize_sponsor_html') && monetize_sponsor_enabled()): ?>
+            <h3 class="monetize-sub">预览</h3>
+            <?= monetize_sponsor_html('article') ?>
+        <?php endif; ?>
+    </section>
 </section>

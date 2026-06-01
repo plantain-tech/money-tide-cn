@@ -153,9 +153,17 @@ $schema = [
         </aside>
 
         <div class="article-body article-reading-body reveal-on-scroll">
+            <?php if (function_exists('monetize_body_has_affiliate') && monetize_body_has_affiliate((array) $article['body'])): ?>
+                <p class="affiliate-disclosure">🔗 <?= e(monetize_affiliate_disclosure()) ?></p>
+            <?php endif; ?>
+            <?php $monetizeState = function_exists('monetize_new_state') ? monetize_new_state() : ['used' => [], 'count' => 0]; ?>
             <?php foreach ($article['body'] as $paragraph): ?>
-                <p><?= e($paragraph) ?></p>
+                <p><?= function_exists('monetize_render_paragraph') ? monetize_render_paragraph((string) $paragraph, $monetizeState) : e($paragraph) ?></p>
             <?php endforeach; ?>
+
+            <?php if (function_exists('monetize_sponsor_html')): ?>
+                <?= monetize_sponsor_html('article') ?>
+            <?php endif; ?>
 
             <?php if (!empty($article['is_premium'])): ?>
                 <aside class="premium-soft-wall">

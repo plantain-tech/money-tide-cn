@@ -189,13 +189,21 @@ if ($route === 'admin/monetization') {
     require_admin();
     $flash = '';
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-        $result = save_monetization_settings($_POST);
-        $flash = $result['message'] ?? '';
+        $section = (string) ($_POST['section'] ?? 'premium');
+        if ($section === 'monetize') {
+            save_monetize_config($_POST);
+            $flash = '已保存广告与联盟设置。';
+        } else {
+            $result = save_monetization_settings($_POST);
+            $flash = $result['message'] ?? '';
+        }
     }
     render_page('admin/monetization', [
         'site' => $site,
         'categories' => $categories,
         'summary' => monetization_summary(),
+        'monetize' => function_exists('monetize_config') ? monetize_config() : [],
+        'rulesText' => function_exists('monetize_rules_textarea') ? monetize_rules_textarea() : '',
         'flash' => $flash,
     ]);
     exit;
@@ -2250,7 +2258,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-4-wechat',
+            'release'    => 'week-10-day-5-monetize',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
