@@ -66,52 +66,73 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
         </script>
     <?php endif; ?>
 </head>
-<body>
-    <header class="site-header">
-        <a class="brand" href="<?= e(url()) ?>" aria-label="钱潮 Money Tide 首页">
-            <span class="brand-mark">钱潮</span>
-            <span class="brand-name">Money Tide</span>
-        </a>
-        <nav class="top-nav" aria-label="主导航">
-            <?php foreach (array_slice($categories, 0, 10) as $navCategory): ?>
-                <?php $navPath = 'category/' . $navCategory['slug']; ?>
-                <a class="<?= $currentPath === $navPath ? 'is-active' : '' ?>" href="<?= e(url($navPath)) ?>"><?= e($navCategory['name']) ?></a>
-            <?php endforeach; ?>
-        </nav>
-        <div class="header-actions">
-            <form class="header-search" method="get" action="<?= e(url('search')) ?>" role="search">
-                <input type="search" name="q" placeholder="搜索" value="<?= e((string) ($_GET['q'] ?? '')) ?>" aria-label="搜索文章">
-            </form>
-            <a class="ghost-link" href="<?= e(url('latest')) ?>">最新</a>
-            <a class="ghost-link" href="<?= e(url('topics')) ?>">话题</a>
-            <a class="ghost-link" href="<?= e(url('newsletter')) ?>">早报</a>
-            <?php if (function_exists('reader_session') && reader_session() !== null): ?>
-                <a class="ghost-link" href="<?= e(url('account')) ?>">账号</a>
-            <?php else: ?>
-                <a class="ghost-link" href="<?= e(url('account/login')) ?>">登录</a>
-            <?php endif; ?>
-            <a class="button button-small" href="<?= e(url('subscribe')) ?>">免费订阅</a>
-        </div>
-    </header>
+<?php $isAdminArea = strpos($currentPath, 'admin') === 0; ?>
+<body class="<?= $isAdminArea ? 'is-admin-area' : '' ?>">
+    <?php if ($isAdminArea): ?>
+        <!-- Admin console bar: no public nav; a clean "view site" guide instead. -->
+        <header class="admin-bar">
+            <a class="admin-bar-brand" href="<?= e(url('admin')) ?>" aria-label="钱潮 编辑后台">
+                <span class="brand-mark">钱潮</span>
+                <span class="admin-bar-tag">编辑后台</span>
+            </a>
+            <div class="admin-bar-actions">
+                <a class="admin-bar-view" href="<?= e(url()) ?>" target="_blank" rel="noopener" title="在新标签页打开网站首页，便于预览">
+                    <span class="admin-bar-view-ic" aria-hidden="true">🏠</span>
+                    <span class="admin-bar-view-text">查看网站</span>
+                    <span class="admin-bar-view-arrow" aria-hidden="true">↗</span>
+                </a>
+                <a class="admin-bar-logout ghost-link" href="<?= e(url('admin/logout')) ?>">退出</a>
+            </div>
+        </header>
+    <?php else: ?>
+        <header class="site-header">
+            <a class="brand" href="<?= e(url()) ?>" aria-label="钱潮 Money Tide 首页">
+                <span class="brand-mark">钱潮</span>
+                <span class="brand-name">Money Tide</span>
+            </a>
+            <nav class="top-nav" aria-label="主导航">
+                <?php foreach (array_slice($categories, 0, 10) as $navCategory): ?>
+                    <?php $navPath = 'category/' . $navCategory['slug']; ?>
+                    <a class="<?= $currentPath === $navPath ? 'is-active' : '' ?>" href="<?= e(url($navPath)) ?>"><?= e($navCategory['name']) ?></a>
+                <?php endforeach; ?>
+            </nav>
+            <div class="header-actions">
+                <form class="header-search" method="get" action="<?= e(url('search')) ?>" role="search">
+                    <input type="search" name="q" placeholder="搜索" value="<?= e((string) ($_GET['q'] ?? '')) ?>" aria-label="搜索文章">
+                </form>
+                <a class="ghost-link" href="<?= e(url('latest')) ?>">最新</a>
+                <a class="ghost-link" href="<?= e(url('topics')) ?>">话题</a>
+                <a class="ghost-link" href="<?= e(url('newsletter')) ?>">早报</a>
+                <?php if (function_exists('reader_session') && reader_session() !== null): ?>
+                    <a class="ghost-link" href="<?= e(url('account')) ?>">账号</a>
+                <?php else: ?>
+                    <a class="ghost-link" href="<?= e(url('account/login')) ?>">登录</a>
+                <?php endif; ?>
+                <a class="button button-small" href="<?= e(url('subscribe')) ?>">免费订阅</a>
+            </div>
+        </header>
+    <?php endif; ?>
 
     <main>
         <?= $content ?>
     </main>
 
-    <footer class="site-footer">
-        <div>
-            <strong>钱潮 Money Tide</strong>
-            <p>面向中文读者的全球财经、科技与商业简报。</p>
-        </div>
-        <nav aria-label="页脚导航">
-            <a href="<?= e(url('about')) ?>">关于</a>
-            <a href="<?= e(url('editorial-standards')) ?>">编辑标准</a>
-            <a href="<?= e(url('disclaimer')) ?>">免责声明</a>
-            <a href="<?= e(url('subscribe')) ?>">订阅</a>
-            <a href="<?= e(url('search')) ?>">搜索</a>
-            <a href="<?= e(url('feed/all.xml')) ?>">RSS</a>
-        </nav>
-    </footer>
+    <?php if (!$isAdminArea): ?>
+        <footer class="site-footer">
+            <div>
+                <strong>钱潮 Money Tide</strong>
+                <p>面向中文读者的全球财经、科技与商业简报。</p>
+            </div>
+            <nav aria-label="页脚导航">
+                <a href="<?= e(url('about')) ?>">关于</a>
+                <a href="<?= e(url('editorial-standards')) ?>">编辑标准</a>
+                <a href="<?= e(url('disclaimer')) ?>">免责声明</a>
+                <a href="<?= e(url('subscribe')) ?>">订阅</a>
+                <a href="<?= e(url('search')) ?>">搜索</a>
+                <a href="<?= e(url('feed/all.xml')) ?>">RSS</a>
+            </nav>
+        </footer>
+    <?php endif; ?>
     <?php if (strpos($currentPath, 'admin') !== 0 && $currentPath !== 'subscribe'): ?>
         <aside class="newsletter-slidein" data-newsletter-slidein hidden aria-live="polite">
             <button class="slidein-close" type="button" data-newsletter-slidein-close aria-label="关闭订阅提示">×</button>
