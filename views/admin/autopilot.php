@@ -77,10 +77,10 @@ $on = !empty($config['enabled']);
             <div class="pa-kpi-grid">
                 <article class="pa-kpi pa-kpi-accent">
                     <span class="pa-kpi-icon">💵</span>
-                    <strong>¥<span data-countup="<?= e((string) (int) round($ov['est_rev_total'])) ?>">0</span></strong>
-                    <small>预计累计收入（估算）· 今日 ¥<?= e((string) $ov['est_rev_today']) ?></small>
+                    <strong>$<span data-countup="<?= e((string) (int) round($ov['est_rev_total'])) ?>">0</span></strong>
+                    <small>预计累计收入（估算·USD）· 今日 $<?= e((string) $ov['est_rev_today']) ?></small>
                 </article>
-                <article class="pa-kpi"><span class="pa-kpi-icon">📈</span><strong>¥<?= e((string) $ov['rpm']) ?></strong><small>目标 RPM（每千次浏览）</small></article>
+                <article class="pa-kpi"><span class="pa-kpi-icon">📈</span><strong>$<?= e((string) $ov['rpm']) ?></strong><small>目标 RPM（每千次浏览·USD）</small></article>
                 <article class="pa-kpi"><span class="pa-kpi-icon">👁</span><strong data-countup="<?= e((string) $ov['views_today']) ?>">0</strong><small>今日浏览 · 累计 <?= e((string) $ov['views_total']) ?></small></article>
                 <article class="pa-kpi"><span class="pa-kpi-icon">📧</span><strong data-countup="<?= e((string) $ov['subscribers']) ?>">0</strong><small>订阅用户</small></article>
                 <article class="pa-kpi <?= $ov['success_rate'] >= 80 ? 'pa-kpi-accent' : ($ov['success_rate'] > 0 ? 'pa-kpi-warn' : '') ?>">

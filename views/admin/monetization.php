@@ -87,7 +87,7 @@
             <div class="cms-form-grid">
                 <label>Publisher ID<input type="text" name="adsense_client" value="<?= e((string) ($m['adsense_client'] ?? '')) ?>" placeholder="ca-pub-xxxxxxxxxxxxxxxx"></label>
                 <label>文章版位 Slot ID<input type="text" name="adsense_slot_article" value="<?= e((string) ($m['adsense_slot_article'] ?? '')) ?>" placeholder="如 1234567890"></label>
-                <label>目标 RPM（用于收入估算）<input type="number" step="0.1" min="0" name="target_rpm" value="<?= e((string) ($m['target_rpm'] ?? 0)) ?>"></label>
+                <label>目标 RPM（USD/每千次浏览，用于收入估算）<input type="number" step="0.1" min="0" name="target_rpm" value="<?= e((string) ($m['target_rpm'] ?? 0)) ?>"></label>
             </div>
 
             <div class="cms-form-actions"><button class="button" type="submit">保存广告与联盟设置</button></div>
