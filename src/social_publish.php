@@ -55,6 +55,12 @@ function social_dispatch_channels(): array
             'configured' => function_exists('telegram_configured') && telegram_configured(),
             'ready' => function_exists('telegram_ready') && telegram_ready(),
         ],
+        'x' => [
+            'label' => 'X (Twitter)',
+            'icon' => '𝕏',
+            'configured' => function_exists('x_configured') && x_configured(),
+            'ready' => function_exists('x_ready') && x_ready(),
+        ],
     ];
 }
 
@@ -142,7 +148,43 @@ function dispatch_article_to_channels(array $article): array
             $out['telegram'] = $r;
         }
     }
+    if (function_exists('x_ready') && x_ready()) {
+        if (!social_dispatch_already('x', 'article', $articleId)) {
+            if (function_exists('x_budget_remaining') && x_budget_remaining() > 0) {
+                $r = x_post_tweet(build_x_caption($article));
+                record_social_dispatch('x', 'article', $articleId, !empty($r['ok']), (string) ($r['id'] ?? ''), !empty($r['ok']) ? 'tweet' : (string) ($r['error'] ?? ''));
+                $out['x'] = $r;
+            } else {
+                // Monthly free-tier budget spent — skip WITHOUT recording, so the
+                // article stays eligible to post once the quota resets.
+                $out['x'] = ['ok' => false, 'skipped' => true, 'error' => '本月 X 配额已用完'];
+            }
+        }
+    }
     return $out;
+}
+
+/**
+ * Build a tweet: AI social headline (from synthesis) + up to 2 English hashtags
+ * + a UTM-tagged article link. Trimmed to stay well under the 280-char limit.
+ */
+function build_x_caption(array $a): string
+{
+    $base = trim((string) ($a['social_headline'] ?? '')) ?: trim((string) ($a['title'] ?? ''));
+    $base = mb_substr($base, 0, 150, 'UTF-8');
+    $hashtags = '';
+    $count = 0;
+    foreach ((array) ($a['tags'] ?? []) as $t) {
+        $t = trim((string) $t);
+        if ($t !== '' && preg_match('/^[A-Za-z0-9]{2,20}$/', $t)) {
+            $hashtags .= ' #' . $t;
+            if (++$count >= 2) {
+                break;
+            }
+        }
+    }
+    $url = canonical_url('article/' . (string) ($a['slug'] ?? '')) . '?utm_source=x&utm_medium=social&utm_campaign=auto_dispatch';
+    return $base . $hashtags . "\n" . $url;
 }
 
 /**
@@ -241,6 +283,23 @@ function save_telegram_settings(array $input): void
         set_pipeline_setting('telegram_channel_id', trim((string) $input['telegram_channel_id']));
     }
     set_pipeline_setting('telegram_enabled', !empty($input['telegram_enabled']) ? '1' : '0');
+}
+
+function save_x_settings(array $input): void
+{
+    if (!function_exists('set_pipeline_setting')) {
+        return;
+    }
+    foreach (['x_api_key', 'x_api_secret', 'x_access_token', 'x_access_token_secret'] as $field) {
+        $v = trim((string) ($input[$field] ?? ''));
+        if ($v !== '' && strpos($v, '•') === false) { // ignore masked placeholder
+            set_pipeline_setting($field, $v);
+        }
+    }
+    set_pipeline_setting('x_enabled', !empty($input['x_enabled']) ? '1' : '0');
+    if (isset($input['x_monthly_budget'])) {
+        set_pipeline_setting('x_monthly_budget', (string) max(1, min(10000, (int) $input['x_monthly_budget'])));
+    }
 }
 
 function send_channel_test(): array

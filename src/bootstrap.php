@@ -39,6 +39,7 @@ require_once __DIR__ . '/news_select.php';
 require_once __DIR__ . '/news_synthesize.php';
 require_once __DIR__ . '/auto_review.php';
 require_once __DIR__ . '/channels/telegram.php';
+require_once __DIR__ . '/channels/x.php';
 require_once __DIR__ . '/social_publish.php';
 require_once __DIR__ . '/news_publish.php';
 require_once __DIR__ . '/pipeline.php';

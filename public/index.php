@@ -1456,12 +1456,20 @@ if ($route === 'admin/channels') {
         $action = (string) ($_POST['action'] ?? '');
         if ($action === 'save_settings') {
             save_telegram_settings($_POST);
-            $flash = '已保存渠道设置。';
+            $flash = '已保存 Telegram 设置。';
         } elseif ($action === 'test') {
             $testResult = send_channel_test();
             $flash = !empty($testResult['ok'])
                 ? '✅ 测试消息已发送，请在 Telegram 频道查看。'
-                : ('⚠️ 测试失败：' . (string) ($testResult['error'] ?? ''));
+                : ('⚠️ Telegram 测试失败：' . (string) ($testResult['error'] ?? ''));
+        } elseif ($action === 'save_x') {
+            save_x_settings($_POST);
+            $flash = '已保存 X 设置。';
+        } elseif ($action === 'test_x') {
+            $testResult = x_send_test();
+            $flash = !empty($testResult['ok'])
+                ? '✅ 测试推文已发布（请在 X 时间线查看）。'
+                : ('⚠️ X 测试失败：' . (string) ($testResult['error'] ?? ''));
         }
     }
     render_page('admin/channels', [
@@ -1469,6 +1477,8 @@ if ($route === 'admin/channels') {
         'categories' => $categories,
         'channels' => social_dispatch_channels(),
         'telegram' => telegram_config(),
+        'x' => x_config(),
+        'xUsage' => function_exists('x_month_usage') ? x_month_usage() : 0,
         'summary' => social_publish_summary(),
         'dispatches' => social_dispatches(40),
         'testResult' => $testResult,
@@ -2202,7 +2212,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-2-telegram',
+            'release'    => 'week-10-day-3-x',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
