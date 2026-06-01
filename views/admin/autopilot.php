@@ -21,6 +21,31 @@ $on = !empty($config['enabled']);
         <div class="status-banner is-ready"><strong>提示</strong><span><?= e($flash) ?></span></div>
     <?php endif; ?>
 
+    <?php
+    $diag = $diag ?? [];
+    $diagProblem = !empty($diag['schema_error']) || !empty($diag['log_error']) || (isset($diag['runs_exists']) && !$diag['runs_exists']);
+    if ($diagProblem):
+    ?>
+        <div class="status-banner is-error">
+            <strong>⚠️ 运行记录写入诊断</strong>
+            <span>
+                <?php if (!empty($diag['schema_error'])): ?>建表错误：<?= e((string) $diag['schema_error']) ?>。<?php endif; ?>
+                <?php if (!empty($diag['log_error'])): ?>写入错误：<?= e((string) $diag['log_error']) ?>。<?php endif; ?>
+                <?php if (isset($diag['runs_exists']) && !$diag['runs_exists']): ?>pipeline_runs 表不可读。<?php endif; ?>
+                （当前已存 <?= e((string) ($diag['runs_count'] ?? 0)) ?> 条记录）可先试「重建运行记录表」，或把这条信息发给开发者。
+            </span>
+            <form method="post" action="<?= e(url('admin/autopilot')) ?>" style="margin-top:0.6rem">
+                <input type="hidden" name="action" value="rebuild_runs">
+                <button class="button button-small" type="submit">🔧 重建运行记录表</button>
+            </form>
+        </div>
+    <?php elseif (isset($diag['runs_count']) && (int) $diag['runs_count'] === 0): ?>
+        <div class="status-banner is-warning">
+            <strong>ℹ️ 暂无运行记录</strong>
+            <span>数据库连接与建表正常，但还没有成功写入的运行。点下方「立即运行一次」后若仍为 0，会在此显示具体错误。</span>
+        </div>
+    <?php endif; ?>
+
     <!-- ── Master kill-switch ─────────────────────────────────────────────── -->
     <div class="autopilot-master <?= $on ? 'is-on' : 'is-off' ?>" data-autopilot-master>
         <div class="autopilot-master-info">

@@ -1469,6 +1469,30 @@ if ($route === 'admin/autopilot') {
             // Manual run forces past the kill-switch, with conservative caps to fit the web window.
             $runResult = run_daily_pipeline('manual', ['force' => true, 'synthesize_limit' => 3, 'assess_limit' => 4, 'publish_limit' => 12]);
             $flash = '手动运行完成：' . ($runResult['message'] ?? '');
+        } elseif ($action === 'rebuild_runs') {
+            // Remedy: drop + recreate the (empty/broken) run-log table from scratch.
+            $pdo = db();
+            if ($pdo instanceof PDO) {
+                try {
+                    $pdo->exec('DROP TABLE IF EXISTS pipeline_runs');
+                    $pdo->exec("CREATE TABLE pipeline_runs (
+                        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        trigger_type VARCHAR(20) NOT NULL DEFAULT 'cron',
+                        status VARCHAR(20) NOT NULL DEFAULT 'ok',
+                        stages LONGTEXT NULL,
+                        summary VARCHAR(600) NULL,
+                        duration_sec INT UNSIGNED NOT NULL DEFAULT 0,
+                        started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        finished_at DATETIME NULL,
+                        INDEX idx_runs_time (started_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                    set_pipeline_setting('last_schema_error', '');
+                    set_pipeline_setting('last_log_error', '');
+                    $flash = '✅ 已重建运行记录表。请再点「立即运行一次」测试是否能写入。';
+                } catch (Throwable $exception) {
+                    $flash = '重建失败：' . $exception->getMessage();
+                }
+            }
         }
     }
     render_page('admin/autopilot', [
@@ -1480,6 +1504,7 @@ if ($route === 'admin/autopilot') {
         'runResult' => $runResult,
         'flash' => $flash,
         'aiReady' => ai_provider_status(),
+        'diag' => pipeline_logging_diag(),
         'cliPath' => rtrim((string) (getenv('APP_BASE_PATH') ?: APP_BASE_PATH), '/') . '/cli/run-daily.php',
     ]);
     exit;
@@ -2067,7 +2092,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-2-resilience',
+            'release'    => 'week-10-day-2-runlog-fix',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

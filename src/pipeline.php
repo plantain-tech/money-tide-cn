@@ -24,12 +24,20 @@ function ensure_pipeline_schema(): void
     if (!$pdo instanceof PDO) {
         return;
     }
+    $ensured = true; // set early so the raw diag writer below cannot recurse
+    // Each table gets its OWN try/catch — a failure creating one must not block
+    // the other, and any DDL error is captured (not silently swallowed) so the
+    // autopilot page can show why run logging might be failing.
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS pipeline_settings (
             setting_key VARCHAR(60) PRIMARY KEY,
             setting_value VARCHAR(255) NOT NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $exception) {
+        pipeline_write_setting_raw($pdo, 'last_schema_error', 'settings: ' . $exception->getMessage());
+    }
+    try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS pipeline_runs (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             trigger_type VARCHAR(20) NOT NULL DEFAULT 'cron',
@@ -37,13 +45,63 @@ function ensure_pipeline_schema(): void
             stages LONGTEXT NULL,
             summary VARCHAR(600) NULL,
             duration_sec INT UNSIGNED NOT NULL DEFAULT 0,
-            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            finished_at TIMESTAMP NULL,
+            started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            finished_at DATETIME NULL,
             INDEX idx_runs_time (started_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        $ensured = true;
+    } catch (Throwable $exception) {
+        pipeline_write_setting_raw($pdo, 'last_schema_error', 'runs: ' . $exception->getMessage());
+    }
+}
+
+/**
+ * Write a pipeline_settings row directly (no static-cache round-trip, no
+ * recursion into ensure_pipeline_schema) — used by the diagnostics path.
+ */
+function pipeline_write_setting_raw(PDO $pdo, string $key, string $value): void
+{
+    try {
+        $pdo->prepare('INSERT INTO pipeline_settings (setting_key, setting_value) VALUES (:k, :v)
+            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+            ->execute(['k' => $key, 'v' => mb_substr($value, 0, 250, 'UTF-8')]);
     } catch (Throwable $exception) {
     }
+}
+
+/**
+ * Live, uncached health read for the run-logging path: does the runs table
+ * exist, how many rows, and the last captured schema/insert error. Powers the
+ * diagnostic banner on /admin/autopilot.
+ */
+function pipeline_logging_diag(): array
+{
+    $pdo = db();
+    $out = ['runs_exists' => false, 'runs_count' => 0, 'schema_error' => '', 'log_error' => '', 'log_ok_at' => ''];
+    if (!$pdo instanceof PDO) {
+        $out['log_error'] = 'no database connection';
+        return $out;
+    }
+    try {
+        $out['runs_count'] = (int) $pdo->query('SELECT COUNT(*) FROM pipeline_runs')->fetchColumn();
+        $out['runs_exists'] = true;
+    } catch (Throwable $exception) {
+        $out['log_error'] = 'read pipeline_runs failed: ' . $exception->getMessage();
+    }
+    try {
+        $rows = $pdo->query("SELECT setting_key, setting_value FROM pipeline_settings
+            WHERE setting_key IN ('last_schema_error','last_log_error','last_log_ok_at')")->fetchAll() ?: [];
+        foreach ($rows as $r) {
+            if ($r['setting_key'] === 'last_schema_error') {
+                $out['schema_error'] = (string) $r['setting_value'];
+            } elseif ($r['setting_key'] === 'last_log_error') {
+                $out['log_error'] = $out['log_error'] ?: (string) $r['setting_value'];
+            } elseif ($r['setting_key'] === 'last_log_ok_at') {
+                $out['log_ok_at'] = (string) $r['setting_value'];
+            }
+        }
+    } catch (Throwable $exception) {
+    }
+    return $out;
 }
 
 function pipeline_setting(string $key, string $default = ''): string
@@ -249,20 +307,39 @@ function log_pipeline_run(string $trigger, string $status, array $stages, string
     if (!$pdo instanceof PDO) {
         return;
     }
+    // JSON_PARTIAL_OUTPUT_ON_ERROR: a stray bad byte in a stage error/title must
+    // never make the encode return false and blank the column.
+    $stagesJson = json_encode($stages, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+    if (!is_string($stagesJson)) {
+        $stagesJson = '{}';
+    }
     try {
-        $pdo->prepare('INSERT INTO pipeline_runs (trigger_type, status, stages, summary, duration_sec, finished_at)
-            VALUES (:t, :s, :st, :sum, :d, NOW())')
-            ->execute([
-                't' => $trigger,
-                's' => $status,
-                'st' => json_encode($stages, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'sum' => mb_substr($summary, 0, 590, 'UTF-8'),
-                'd' => $duration,
-            ]);
+        $stmt = $pdo->prepare('INSERT INTO pipeline_runs (trigger_type, status, stages, summary, duration_sec, finished_at)
+            VALUES (:t, :s, :st, :sum, :d, NOW())');
+        $ok = $stmt->execute([
+            't' => $trigger,
+            's' => $status,
+            'st' => $stagesJson,
+            'sum' => mb_substr($summary, 0, 590, 'UTF-8'),
+            'd' => $duration,
+        ]);
+        if ($ok) {
+            // Clear any stale error + stamp success so the diagnostic banner hides.
+            pipeline_write_setting_raw($pdo, 'last_log_error', '');
+            pipeline_write_setting_raw($pdo, 'last_log_ok_at', date('Y-m-d H:i:s'));
+        } else {
+            // SILENT errmode: execute() returned false without throwing — capture
+            // the driver error so we can actually see what went wrong.
+            pipeline_write_setting_raw($pdo, 'last_log_error', 'insert failed: ' . json_encode($stmt->errorInfo(), JSON_UNESCAPED_UNICODE));
+        }
     } catch (Throwable $exception) {
+        pipeline_write_setting_raw($pdo, 'last_log_error', 'insert threw: ' . $exception->getMessage());
     }
     if (function_exists('record_event')) {
-        record_event('pipeline_run', ['source' => $trigger . ':' . $status]);
+        try {
+            record_event('pipeline_run', ['source' => $trigger . ':' . $status]);
+        } catch (Throwable $exception) {
+        }
     }
 }
 
