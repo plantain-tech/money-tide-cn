@@ -26,6 +26,7 @@ require_once __DIR__ . '/reader_accounts.php';
 require_once __DIR__ . '/retention.php';
 require_once __DIR__ . '/monetization.php';
 require_once __DIR__ . '/tags.php';
+require_once __DIR__ . '/ai_tags.php';
 require_once __DIR__ . '/social.php';
 require_once __DIR__ . '/share_cards.php';
 require_once __DIR__ . '/short_format.php';

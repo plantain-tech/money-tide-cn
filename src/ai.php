@@ -288,15 +288,25 @@ function normalize_source_links(string $value): array
 
 function build_ai_draft_prompt(array $form, array $sources, array $template): string
 {
+    $trendHint = function_exists('trend_hint_for_prompt') ? trend_hint_for_prompt() : '';
+    $trendBlock = $trendHint !== ''
+        ? "Trending across mainstream coverage in the last 2 weeks: {$trendHint}.\n"
+        : '';
+
     return "You are {$template['name']} for Money Tide, a Chinese financial news product.\n"
         . "Section mission: {$template['prompt']}\n"
         . "Topic angle: {$form['topic_angle']}\n"
         . "Target reader: {$form['target_reader']}\n"
         . "Urgency: {$form['urgency']}\n"
         . "Source links:\n- " . implode("\n- ", $sources) . "\n\n"
+        . $trendBlock
         . "Write in Simplified Chinese. Do not invent facts, numbers, quotes, or source details. "
         . "Keep editor verification reminders, source concerns, and risk notes in source_notes or risk_notes only. "
         . "Do not add editor notes, AI-assisted labels, or disclaimers at the end of the article body. "
+        . "Also return `tags`: 3-6 short topic tags for this article, no duplicates. Use the common ENGLISH "
+        . "name for proper nouns (e.g. Apple, Nvidia, Bitcoin, Fed) and concise Simplified Chinese for themes "
+        . "(e.g. 人工智能, 关税, 财报). Tags must be specific to THIS article; only lean into the trending "
+        . "topics above when genuinely relevant. "
         . "Return fields that can become a CMS article draft."
         . ai_proper_noun_rule();
 }
@@ -318,7 +328,7 @@ function call_ollama_cloud_draft_api(string $prompt): array
 
     $apiKey = (string) app_config('ai.ollama_api_key', '');
     $model = (string) app_config('ai.model', 'gemma4:31b-cloud');
-    $jsonInstruction = "\n\nReturn strict JSON only. No Markdown. Required keys: title, dek, brief, why_it_matters, body, body_outline, social_headline, newsletter_blurb, source_notes, risk_notes, disclaimer. body, body_outline, source_notes, and risk_notes must be arrays of strings.";
+    $jsonInstruction = "\n\nReturn strict JSON only. No Markdown. Required keys: title, dek, brief, why_it_matters, body, body_outline, social_headline, newsletter_blurb, source_notes, risk_notes, tags, disclaimer. body, body_outline, source_notes, risk_notes, and tags must be arrays of strings (tags: 3-6 short, de-duplicated topic tags).";
     $payload = [
         'model' => $model,
         'stream' => false,
@@ -424,10 +434,11 @@ function normalize_ai_payload(array $draft): array
         'newsletter_blurb' => '',
         'source_notes' => [],
         'risk_notes' => [],
+        'tags' => [],
         'disclaimer' => 'This is for information only and is not investment advice.',
     ];
     $draft = array_replace($defaults, $draft);
-    foreach (['body', 'body_outline', 'source_notes', 'risk_notes'] as $field) {
+    foreach (['body', 'body_outline', 'source_notes', 'risk_notes', 'tags'] as $field) {
         if (!is_array($draft[$field])) {
             $draft[$field] = [(string) $draft[$field]];
         }
@@ -440,7 +451,7 @@ function ai_draft_json_schema(): array
     return [
         'type' => 'object',
         'additionalProperties' => false,
-        'required' => ['title', 'dek', 'brief', 'why_it_matters', 'body', 'body_outline', 'social_headline', 'newsletter_blurb', 'source_notes', 'risk_notes', 'disclaimer'],
+        'required' => ['title', 'dek', 'brief', 'why_it_matters', 'body', 'body_outline', 'social_headline', 'newsletter_blurb', 'source_notes', 'risk_notes', 'tags', 'disclaimer'],
         'properties' => [
             'title' => ['type' => 'string'],
             'dek' => ['type' => 'string'],
@@ -452,6 +463,7 @@ function ai_draft_json_schema(): array
             'newsletter_blurb' => ['type' => 'string'],
             'source_notes' => ['type' => 'array', 'items' => ['type' => 'string']],
             'risk_notes' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
             'disclaimer' => ['type' => 'string'],
         ],
     ];
@@ -573,6 +585,7 @@ function convert_ai_draft_to_article(int $id): array
         'why_it_matters' => (string) ($payload['why_it_matters'] ?? ''),
         'body' => implode("\n\n", $body),
         'read_time_minutes' => 4,
+        'tags' => function_exists('derive_article_tags') ? derive_article_tags($payload, (string) $draft['section_slug']) : '',
         'published_at' => '',
     ]);
 
