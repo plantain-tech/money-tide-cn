@@ -12,7 +12,7 @@ declare(strict_types=1);
  *   - prints progress per stage so hPanel "View Output" shows where it is,
  *   - paces AI calls to dodge free-tier throttling (the "草稿 0" cause),
  *   - honours a wall-clock budget so it logs a record before any host kill,
- *   - an overlap lock stops a fast test cron (e.g. */5) from piling up runs.
+ *   - an overlap lock stops a fast test cron (every-5-min) from piling up runs.
  *
  * Respects the autopilot kill-switch. CLI-only.
  *
