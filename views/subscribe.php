@@ -1,7 +1,6 @@
 <?php
 $pageTitle = '免费订阅 - 钱潮 Money Tide';
 $referralCode = normalize_referral_code((string) ($_GET['ref'] ?? ''));
-<?php
 // Friendly subscribe-page labels; any category without an override falls back to
 // its own name. Built from the live category list so every section (incl. 出海)
 // always appears here and new categories show up automatically.
