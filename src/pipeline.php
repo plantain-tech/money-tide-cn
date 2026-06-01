@@ -75,7 +75,7 @@ function pipeline_write_setting_raw(PDO $pdo, string $key, string $value): void
  */
 function pipeline_logging_diag(): array
 {
-    $pdo = db();
+    $pdo = db_live();
     $out = ['runs_exists' => false, 'runs_count' => 0, 'schema_error' => '', 'log_error' => '', 'log_ok_at' => ''];
     if (!$pdo instanceof PDO) {
         $out['log_error'] = 'no database connection';
@@ -281,6 +281,10 @@ function run_daily_pipeline(string $trigger = 'cron', array $opts = []): array
         $summary .= ' · 失败阶段：' . implode('/', $errors);
     }
 
+    // The AI stages above can idle the DB connection past MySQL's wait_timeout,
+    // so the connection may be dead by now. Force a fresh one before the tail
+    // writes so the run record + settings actually persist.
+    db(true);
     log_pipeline_run($trigger, $status, $stages, $summary, $duration);
     set_pipeline_setting('last_run_at', date('Y-m-d H:i:s'));
     set_pipeline_setting('last_run_status', $status);
@@ -303,37 +307,50 @@ function run_daily_pipeline(string $trigger = 'cron', array $opts = []): array
 function log_pipeline_run(string $trigger, string $status, array $stages, string $summary, int $duration): void
 {
     ensure_pipeline_schema();
-    $pdo = db();
-    if (!$pdo instanceof PDO) {
-        return;
-    }
     // JSON_PARTIAL_OUTPUT_ON_ERROR: a stray bad byte in a stage error/title must
     // never make the encode return false and blank the column.
     $stagesJson = json_encode($stages, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
     if (!is_string($stagesJson)) {
         $stagesJson = '{}';
     }
-    try {
-        $stmt = $pdo->prepare('INSERT INTO pipeline_runs (trigger_type, status, stages, summary, duration_sec, finished_at)
-            VALUES (:t, :s, :st, :sum, :d, NOW())');
-        $ok = $stmt->execute([
-            't' => $trigger,
-            's' => $status,
-            'st' => $stagesJson,
-            'sum' => mb_substr($summary, 0, 590, 'UTF-8'),
-            'd' => $duration,
-        ]);
-        if ($ok) {
-            // Clear any stale error + stamp success so the diagnostic banner hides.
+    $params = [
+        't' => $trigger,
+        's' => $status,
+        'st' => $stagesJson,
+        'sum' => mb_substr($summary, 0, 590, 'UTF-8'),
+        'd' => $duration,
+    ];
+    $sql = 'INSERT INTO pipeline_runs (trigger_type, status, stages, summary, duration_sec, finished_at)
+        VALUES (:t, :s, :st, :sum, :d, NOW())';
+
+    // Try, and on a dropped connection ("server has gone away") reconnect once
+    // and retry — this is the exact failure that left 运行记录 empty.
+    $lastError = '';
+    for ($attempt = 1; $attempt <= 2; $attempt++) {
+        $pdo = $attempt === 1 ? db_live() : db(true);
+        if (!$pdo instanceof PDO) {
+            $lastError = 'no database connection';
+            continue;
+        }
+        try {
+            $pdo->prepare($sql)->execute($params);
             pipeline_write_setting_raw($pdo, 'last_log_error', '');
             pipeline_write_setting_raw($pdo, 'last_log_ok_at', date('Y-m-d H:i:s'));
-        } else {
-            // SILENT errmode: execute() returned false without throwing — capture
-            // the driver error so we can actually see what went wrong.
-            pipeline_write_setting_raw($pdo, 'last_log_error', 'insert failed: ' . json_encode($stmt->errorInfo(), JSON_UNESCAPED_UNICODE));
+            $lastError = '';
+            break;
+        } catch (Throwable $exception) {
+            $lastError = $exception->getMessage();
+            // Retry only if it looks like a dropped connection.
+            if ($attempt === 1 && stripos($lastError, 'gone away') === false && stripos($lastError, 'Lost connection') === false) {
+                break; // a real error (schema/data) — don't bother retrying
+            }
         }
-    } catch (Throwable $exception) {
-        pipeline_write_setting_raw($pdo, 'last_log_error', 'insert threw: ' . $exception->getMessage());
+    }
+    if ($lastError !== '') {
+        $pdoErr = db();
+        if ($pdoErr instanceof PDO) {
+            pipeline_write_setting_raw($pdoErr, 'last_log_error', 'insert failed: ' . $lastError);
+        }
     }
     if (function_exists('record_event')) {
         try {

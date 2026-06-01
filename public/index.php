@@ -2092,7 +2092,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'week-10-day-2-runlog-fix',
+            'release'    => 'week-10-day-2-db-reconnect',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
