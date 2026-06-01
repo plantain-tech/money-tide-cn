@@ -72,12 +72,13 @@ function publish_one_approved_draft(int $draftId): array
     }
     $bodyText = implode("\n\n", array_map('strval', $body));
     $title = (string) ($payload['title'] ?? 'AI 草稿');
+    $slug = unique_article_slug(slugify($title) ?: ('ai-' . $draftId));
 
     $result = save_article([
         'category_id' => $categoryId,
         'status' => 'published',
         'title' => $title,
-        'slug' => unique_article_slug(slugify($title) ?: ('ai-' . $draftId)),
+        'slug' => $slug,
         'dek' => (string) ($payload['dek'] ?? ''),
         'brief' => (string) ($payload['brief'] ?? ''),
         'why_it_matters' => (string) ($payload['why_it_matters'] ?? ''),
@@ -103,6 +104,20 @@ function publish_one_approved_draft(int $draftId): array
     }
     if (function_exists('record_event')) {
         record_event('draft_published', ['slug' => (string) $draft['section_slug'], 'source' => 'article:' . $articleId]);
+    }
+    // Day 10·2: auto-post the new article to enabled channels (Telegram).
+    // Best-effort — a channel failure must never fail the publish.
+    if (function_exists('dispatch_article_to_channels')) {
+        try {
+            dispatch_article_to_channels([
+                'id' => $articleId,
+                'slug' => $slug,
+                'title' => $title,
+                'brief' => (string) ($payload['brief'] ?? ''),
+                'category_name' => function_exists('category_name_by_slug') ? category_name_by_slug((string) $draft['section_slug']) : '',
+            ]);
+        } catch (Throwable $exception) {
+        }
     }
     return ['ok' => true, 'code' => 'ok', 'article_id' => $articleId, 'title' => $title, 'message' => '已发布文章 #' . $articleId];
 }
@@ -244,6 +259,14 @@ function run_auto_publish_and_assemble(int $publishLimit = 12, ?string $date = n
     $assemble = assemble_daily_newsletters($date);
     if (function_exists('record_event')) {
         record_event('auto_publish_run', ['source' => $publish['ok'] . ' published / ' . $assemble['issues'] . ' issues']);
+    }
+    // Day 10·2: once per run, post a daily digest (links to today's articles) to
+    // enabled channels. Idempotent (one per day per channel) + best-effort.
+    if (function_exists('dispatch_daily_digest_to_channels')) {
+        try {
+            dispatch_daily_digest_to_channels($date);
+        } catch (Throwable $exception) {
+        }
     }
     return ['publish' => $publish, 'assemble' => $assemble];
 }

@@ -1448,6 +1448,35 @@ if ($route === 'admin/autopilot/toggle' && ($_SERVER['REQUEST_METHOD'] ?? 'GET')
     exit;
 }
 
+if ($route === 'admin/channels') {
+    require_admin();
+    $flash = (string) ($_GET['flash'] ?? '');
+    $testResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'save_settings') {
+            save_telegram_settings($_POST);
+            $flash = '已保存渠道设置。';
+        } elseif ($action === 'test') {
+            $testResult = send_channel_test();
+            $flash = !empty($testResult['ok'])
+                ? '✅ 测试消息已发送，请在 Telegram 频道查看。'
+                : ('⚠️ 测试失败：' . (string) ($testResult['error'] ?? ''));
+        }
+    }
+    render_page('admin/channels', [
+        'site' => $site,
+        'categories' => $categories,
+        'channels' => social_dispatch_channels(),
+        'telegram' => telegram_config(),
+        'summary' => social_publish_summary(),
+        'dispatches' => social_dispatches(40),
+        'testResult' => $testResult,
+        'flash' => $flash,
+    ]);
+    exit;
+}
+
 if ($route === 'admin/autopilot/step') {
     require_admin();
     header('Content-Type: application/json; charset=utf-8');
@@ -2173,7 +2202,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'sprint1-channel-count',
+            'release'    => 'week-10-day-2-telegram',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,

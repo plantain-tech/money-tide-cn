@@ -132,6 +132,10 @@
             <strong>🔔 流水线告警与自愈</strong>
             <span>失败、限流、停摆自动报警并可邮件通知；写稿被限流时自动退避重试一次。引擎的安全网。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/channels')) ?>">
+            <strong>✈️ 分发渠道（Telegram）</strong>
+            <span>发布即自动把文章标题、摘要与链接推送到 Telegram 频道，并每日推送早报；消息 ID 全程记录。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/ai-drafts')) ?>">
             <strong>AI 草稿</strong>
             <span>查看栏目机器人生成的新闻草稿。</span>

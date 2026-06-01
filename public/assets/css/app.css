@@ -7099,3 +7099,11 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
 @media (prefers-reduced-motion: reduce) {
     .admin-bar-view, .admin-bar-view-arrow { transition: none; }
 }
+
+/* ===== Day 10·2 — channels (Telegram dispatch) status dot ===== */
+[data-channels] .ch-dot {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--ink); vertical-align: middle; margin-left: 0.3rem;
+}
+[data-channels] .ch-dot.is-on { background: #2ecc71; animation: autonomy-pulse 2s infinite; }
+[data-channels] .ch-dot.is-off { background: #cfcabb; }

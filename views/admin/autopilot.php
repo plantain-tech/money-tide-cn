@@ -11,6 +11,7 @@ $on = !empty($config['enabled']);
         </div>
         <div class="admin-actions">
             <a class="ghost-link" href="<?= e(url('admin/pipeline-analytics')) ?>">流水线分析</a>
+            <a class="ghost-link" href="<?= e(url('admin/channels')) ?>">分发渠道</a>
             <a class="ghost-link" href="<?= e(url('admin/review-queue')) ?>">AI 审核台</a>
             <a class="ghost-link" href="<?= e(url('admin/auto-publish')) ?>">发布与组装</a>
             <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
