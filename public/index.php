@@ -2300,7 +2300,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'interstitial-ad',
+            'release'    => 'privacy-contact-pages',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2604,6 +2604,22 @@ if ($route === 'editorial-standards') {
 
 if ($route === 'disclaimer') {
     render_page('disclaimer', [
+        'site' => $site,
+        'categories' => $categories,
+    ]);
+    exit;
+}
+
+if ($route === 'privacy') {
+    render_page('privacy', [
+        'site' => $site,
+        'categories' => $categories,
+    ]);
+    exit;
+}
+
+if ($route === 'contact') {
+    render_page('contact', [
         'site' => $site,
         'categories' => $categories,
     ]);

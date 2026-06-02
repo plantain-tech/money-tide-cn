@@ -131,6 +131,8 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
                 <a href="<?= e(url('about')) ?>">关于</a>
                 <a href="<?= e(url('editorial-standards')) ?>">编辑标准</a>
                 <a href="<?= e(url('disclaimer')) ?>">免责声明</a>
+                <a href="<?= e(url('privacy')) ?>">隐私政策</a>
+                <a href="<?= e(url('contact')) ?>">联系我们</a>
                 <a href="<?= e(url('subscribe')) ?>">订阅</a>
                 <a href="<?= e(url('search')) ?>">搜索</a>
                 <a href="<?= e(url('feed/all.xml')) ?>">RSS</a>
