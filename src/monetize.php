@@ -46,7 +46,55 @@ function monetize_config(): array
         'adsense_client' => trim((string) ($s['adsense_client'] ?? '')),
         'adsense_slot_article' => trim((string) ($s['adsense_slot_article'] ?? '')),
         'target_rpm' => max(0.0, (float) ($s['target_rpm'] ?? 0)),
+        // Interstitial (blocking modal on article/newsletter open) — house/sponsor
+        // ad only, NEVER AdSense code (that would violate AdSense policy).
+        'interstitial_enabled' => ($s['interstitial_enabled'] ?? '0') === '1',
+        'interstitial_delay' => max(0, min(30, (int) ($s['interstitial_delay'] ?? 8))),
+        'interstitial_freq' => in_array((string) ($s['interstitial_freq'] ?? 'session'), ['always', 'session', 'daily'], true) ? (string) ($s['interstitial_freq'] ?? 'session') : 'session',
+        'interstitial_title' => trim((string) ($s['interstitial_title'] ?? '')),
+        'interstitial_text' => trim((string) ($s['interstitial_text'] ?? '')),
+        'interstitial_image' => trim((string) ($s['interstitial_image'] ?? '')),
+        'interstitial_url' => trim((string) ($s['interstitial_url'] ?? '')),
+        'interstitial_cta' => trim((string) ($s['interstitial_cta'] ?? '打开')) ?: '打开',
+        'interstitial_brand' => trim((string) ($s['interstitial_brand'] ?? '')),
     ];
+}
+
+function monetize_interstitial_enabled(): bool
+{
+    $c = monetize_config();
+    return $c['interstitial_enabled'] && $c['interstitial_title'] !== '' && $c['interstitial_text'] !== '';
+}
+
+/**
+ * Full-screen interstitial markup (hidden; JS shows it, runs the close-delay
+ * countdown, and applies the frequency cap). Sponsor/house ad only.
+ */
+function monetize_interstitial_html(): string
+{
+    if (!monetize_interstitial_enabled()) {
+        return '';
+    }
+    $c = monetize_config();
+    $hasUrl = filter_var($c['interstitial_url'], FILTER_VALIDATE_URL) !== false;
+    $img = $c['interstitial_image'] !== ''
+        ? '<img class="interstitial-img" src="' . e($c['interstitial_image']) . '" alt="" loading="lazy">'
+        : '';
+    $cta = $hasUrl
+        ? '<a class="interstitial-cta" href="' . e($c['interstitial_url']) . '" rel="sponsored nofollow noopener" target="_blank">' . e($c['interstitial_cta']) . ' →</a>'
+        : '';
+    $brand = $c['interstitial_brand'] !== '' ? '<span class="interstitial-brand">' . e($c['interstitial_brand']) . '</span>' : '<span></span>';
+    return '<div class="interstitial" data-interstitial data-delay="' . e((string) $c['interstitial_delay']) . '" data-freq="' . e($c['interstitial_freq']) . '" hidden>'
+        . '<div class="interstitial-backdrop"></div>'
+        . '<div class="interstitial-card" role="dialog" aria-modal="true" aria-label="赞助内容">'
+        . '<button class="interstitial-close" type="button" data-interstitial-close hidden aria-label="关闭广告">关闭 ✕</button>'
+        . '<span class="interstitial-timer" data-interstitial-timer aria-hidden="true"></span>'
+        . '<span class="interstitial-tag">赞助 · Sponsored</span>'
+        . $img
+        . '<h3 class="interstitial-title">' . e($c['interstitial_title']) . '</h3>'
+        . '<p class="interstitial-text">' . e($c['interstitial_text']) . '</p>'
+        . '<div class="interstitial-foot">' . $brand . $cta . '</div>'
+        . '</div></div>';
 }
 
 /** AdSense is "on" only when explicitly enabled AND a real publisher id is set. */
@@ -254,6 +302,15 @@ function save_monetize_config(array $input): void
         'adsense_client' => trim((string) ($input['adsense_client'] ?? '')),
         'adsense_slot_article' => trim((string) ($input['adsense_slot_article'] ?? '')),
         'target_rpm' => (string) max(0.0, (float) ($input['target_rpm'] ?? 0)),
+        'interstitial_enabled' => !empty($input['interstitial_enabled']) ? '1' : '0',
+        'interstitial_delay' => (string) max(0, min(30, (int) ($input['interstitial_delay'] ?? 8))),
+        'interstitial_freq' => in_array((string) ($input['interstitial_freq'] ?? 'session'), ['always', 'session', 'daily'], true) ? (string) $input['interstitial_freq'] : 'session',
+        'interstitial_title' => trim((string) ($input['interstitial_title'] ?? '')),
+        'interstitial_text' => trim((string) ($input['interstitial_text'] ?? '')),
+        'interstitial_image' => trim((string) ($input['interstitial_image'] ?? '')),
+        'interstitial_url' => trim((string) ($input['interstitial_url'] ?? '')),
+        'interstitial_cta' => trim((string) ($input['interstitial_cta'] ?? '打开')) ?: '打开',
+        'interstitial_brand' => trim((string) ($input['interstitial_brand'] ?? '')),
     ];
     try {
         $stmt = $pdo->prepare('INSERT INTO monetization_settings (setting_key, setting_value) VALUES (:k, :v)

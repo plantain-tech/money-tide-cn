@@ -983,3 +983,67 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
         window.location.reload();
     });
 })();
+
+// Interstitial (house/sponsor) modal: blocking on open, close unlocks after a
+// countdown (Android-app style), with a frequency cap.
+(function () {
+    var box = document.querySelector('[data-interstitial]');
+    if (!box) return;
+    var delay = parseInt(box.getAttribute('data-delay') || '8', 10);
+    if (isNaN(delay) || delay < 0) delay = 8;
+    var freq = box.getAttribute('data-freq') || 'session';
+    var KEY = 'mtInterstitialSeen';
+    var now = Date.now();
+
+    // Frequency cap: 'always' = every open, 'session' = once per tab session,
+    // 'daily' = once per 24h.
+    try {
+        if (freq === 'session' && sessionStorage.getItem(KEY)) return;
+        if (freq === 'daily') {
+            var last = parseInt(localStorage.getItem(KEY) || '0', 10);
+            if (last && (now - last) < 86400000) return;
+        }
+    } catch (e) { /* storage blocked — just show it */ }
+
+    var timerEl = box.querySelector('[data-interstitial-timer]');
+    var closeBtn = box.querySelector('[data-interstitial-close]');
+    var remaining = delay;
+
+    function markSeen() {
+        try {
+            if (freq === 'session') sessionStorage.setItem(KEY, '1');
+            else if (freq === 'daily') localStorage.setItem(KEY, String(now));
+        } catch (e) {}
+    }
+    function dismiss() {
+        box.hidden = true;
+        document.body.style.overflow = '';
+        markSeen();
+    }
+
+    // Show, lock the page.
+    box.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    if (remaining > 0 && timerEl) {
+        timerEl.textContent = String(remaining);
+        var iv = setInterval(function () {
+            remaining--;
+            if (remaining > 0) {
+                timerEl.textContent = String(remaining);
+            } else {
+                clearInterval(iv);
+                timerEl.hidden = true;
+                if (closeBtn) closeBtn.hidden = false;
+            }
+        }, 1000);
+    } else if (closeBtn) {
+        if (timerEl) timerEl.hidden = true;
+        closeBtn.hidden = false;
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', dismiss);
+    // Closing via the CTA also counts as seen.
+    var cta = box.querySelector('.interstitial-cta');
+    if (cta) cta.addEventListener('click', markSeen);
+})();

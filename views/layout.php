@@ -156,6 +156,12 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
         </aside>
     <?php endif; ?>
     <button class="back-to-top" type="button" data-back-to-top aria-label="返回顶部">↑</button>
+    <?php // Interstitial (house/sponsor) modal on public article + newsletter pages only.
+    if (!$isAdminArea
+        && (strpos($currentPath, 'article/') === 0 || strpos($currentPath, 'newsletter') === 0)
+        && function_exists('monetize_interstitial_html')): ?>
+        <?= monetize_interstitial_html() ?>
+    <?php endif; ?>
     <script src="<?= e(asset('js/app.js')) ?>?v=<?= $jsVersion ?>"></script>
 </body>
 </html>

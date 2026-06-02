@@ -90,8 +90,29 @@
                 <label>目标 RPM（USD/每千次浏览，用于收入估算）<input type="number" step="0.1" min="0" name="target_rpm" value="<?= e((string) ($m['target_rpm'] ?? 0)) ?>"></label>
             </div>
 
+            <h3 class="monetize-sub">🪧 开屏插页广告（赞助/自有，弹窗拦截）</h3>
+            <p class="news-action-hint" style="margin-top:0">读者打开文章/早报时弹出全屏弹窗（拦截页面），倒计时后才出现关闭按钮——和安卓 App 插页广告一样。<strong>⚠️ 只能放你自己的赞助/自有/联盟广告，绝不能放 Google AdSense 代码</strong>（在自建弹窗里强制倒计时 AdSense 会被封号）。</p>
+            <label class="pa-switch-row"><input type="checkbox" name="interstitial_enabled" value="1" <?= !empty($m['interstitial_enabled']) ? 'checked' : '' ?>> <span>开启开屏插页广告</span></label>
+            <div class="cms-form-grid">
+                <label>关闭按钮延迟（秒）<input type="number" name="interstitial_delay" min="0" max="30" value="<?= e((string) ($m['interstitial_delay'] ?? 8)) ?>"></label>
+                <label>展示频率
+                    <select name="interstitial_freq">
+                        <?php $freq = (string) ($m['interstitial_freq'] ?? 'session'); ?>
+                        <option value="session" <?= $freq === 'session' ? 'selected' : '' ?>>每个会话一次（推荐）</option>
+                        <option value="daily" <?= $freq === 'daily' ? 'selected' : '' ?>>每天一次</option>
+                        <option value="always" <?= $freq === 'always' ? 'selected' : '' ?>>每次打开都弹（较激进）</option>
+                    </select>
+                </label>
+                <label>标题<input type="text" name="interstitial_title" value="<?= e((string) ($m['interstitial_title'] ?? '')) ?>" placeholder="例：Super Marka 2026"></label>
+                <label>品牌/赞助方<input type="text" name="interstitial_brand" value="<?= e((string) ($m['interstitial_brand'] ?? '')) ?>" placeholder="例：某品牌"></label>
+                <label>按钮文案<input type="text" name="interstitial_cta" value="<?= e((string) ($m['interstitial_cta'] ?? '打开')) ?>"></label>
+                <label>落地链接<input type="url" name="interstitial_url" value="<?= e((string) ($m['interstitial_url'] ?? '')) ?>" placeholder="https://..."></label>
+                <label>图片 URL（可选）<input type="url" name="interstitial_image" value="<?= e((string) ($m['interstitial_image'] ?? '')) ?>" placeholder="https://...jpg"></label>
+            </div>
+            <label>文案<textarea name="interstitial_text" rows="2" placeholder="一两句广告文案。"><?= e((string) ($m['interstitial_text'] ?? '')) ?></textarea></label>
+
             <div class="cms-form-actions"><button class="button" type="submit">保存广告与联盟设置</button></div>
-            <p class="news-action-hint">提示：联盟链接只在正文里命中关键词时插入，并自动加披露；赞助位为空（名称/文案缺失）时不渲染。AdSense 仅在公开文章页的批准版位加载（后台与缩略页绝不出现），并带「广告」标注。三者都清晰披露，符合 AdSense / 广告法要求。</p>
+            <p class="news-action-hint">提示：联盟链接只在正文里命中关键词时插入，并自动加披露；赞助位/插页为空（标题或文案缺失）时不渲染。AdSense 仅在公开文章页的批准版位加载（后台与缩略页绝不出现）。所有广告都清晰披露，符合 AdSense / 广告法要求。</p>
         </form>
 
         <?php if (function_exists('monetize_sponsor_html') && monetize_sponsor_enabled()): ?>
