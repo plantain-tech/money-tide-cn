@@ -655,11 +655,203 @@ function send_contact_message(array $input): array
         . nl2br($esc($message)) . '</div>'
         . '<p style="color:#999;font-size:12px;margin-top:18px">直接回复本邮件即可联系该访客（Reply-To 已设为其邮箱）。</p></div>';
 
+    // Persist first so the message is never lost even if the notification email
+    // fails — the admin replies from the in-site console (no mailbox needed).
+    $stored = store_contact_message($name, $email, $subject, $message);
+
     $subjectLine = '【钱潮·联系】' . ($subject !== '' ? $subject : '网站留言') . '（来自 ' . ($name !== '' ? $name : $email) . '）';
-    $r = send_email_via_provider($to, $subjectLine, $html, $email);
-    return !empty($r['ok'])
-        ? ['ok' => true, 'message' => '已发送，感谢你的留言！我们会尽快回复。']
-        : ['ok' => false, 'message' => '发送失败，请稍后重试或直接发邮件给我们。' . (!empty($r['message']) ? '（' . $r['message'] . '）' : '')];
+    // Best-effort heads-up to the admin inbox; delivery is not required for success.
+    @send_email_via_provider($to, $subjectLine, $html, $email);
+
+    return $stored
+        ? ['ok' => true, 'message' => '已收到，感谢你的留言！我们会尽快回复。']
+        : ['ok' => false, 'message' => '提交失败，请稍后重试或直接发邮件给我们。'];
+}
+
+/** Contact-message store: every submission lands here for the admin reply tool. */
+function ensure_contact_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS contact_messages (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(120) NULL,
+            email VARCHAR(190) NOT NULL,
+            subject VARCHAR(200) NULL,
+            message TEXT NOT NULL,
+            status VARCHAR(12) NOT NULL DEFAULT 'new',
+            reply_body TEXT NULL,
+            replied_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_contact_status (status),
+            INDEX idx_contact_time (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $ensured = true;
+    } catch (Throwable $exception) {
+    }
+}
+
+function store_contact_message(string $name, string $email, string $subject, string $message): bool
+{
+    ensure_contact_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $stmt = $pdo->prepare('INSERT INTO contact_messages (name, email, subject, message, status) VALUES (?, ?, ?, ?, \'new\')');
+        $stmt->execute([
+            $name !== '' ? mb_substr($name, 0, 120) : null,
+            $email,
+            $subject !== '' ? mb_substr($subject, 0, 200) : null,
+            $message,
+        ]);
+        return true;
+    } catch (Throwable $exception) {
+        return false;
+    }
+}
+
+/** List contact messages, newest first. $status: '' = all, or new|replied|archived. */
+function admin_contact_messages(string $status = '', int $limit = 100): array
+{
+    ensure_contact_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        $limit = max(1, min(500, $limit));
+        if ($status !== '' && in_array($status, ['new', 'replied', 'archived'], true)) {
+            $stmt = $pdo->prepare('SELECT * FROM contact_messages WHERE status = ? ORDER BY created_at DESC LIMIT ' . $limit);
+            $stmt->execute([$status]);
+        } else {
+            $stmt = $pdo->query('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT ' . $limit);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function contact_message_get(int $id): ?array
+{
+    ensure_contact_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return null;
+    }
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM contact_messages WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    } catch (Throwable $exception) {
+        return null;
+    }
+}
+
+/** Counts per status, for the inbox badge. */
+function contact_message_counts(): array
+{
+    ensure_contact_schema();
+    $out = ['new' => 0, 'replied' => 0, 'archived' => 0, 'total' => 0];
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return $out;
+    }
+    try {
+        foreach ($pdo->query('SELECT status, COUNT(*) c FROM contact_messages GROUP BY status') as $row) {
+            $s = (string) $row['status'];
+            if (isset($out[$s])) {
+                $out[$s] = (int) $row['c'];
+            }
+            $out['total'] += (int) $row['c'];
+        }
+    } catch (Throwable $exception) {
+    }
+    return $out;
+}
+
+function set_contact_message_status(int $id, string $status): bool
+{
+    if (!in_array($status, ['new', 'replied', 'archived'], true)) {
+        return false;
+    }
+    ensure_contact_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $stmt = $pdo->prepare('UPDATE contact_messages SET status = ? WHERE id = ?');
+        $stmt->execute([$status, $id]);
+        return true;
+    } catch (Throwable $exception) {
+        return false;
+    }
+}
+
+/**
+ * Reply to a visitor from inside the admin console — the site sends the email
+ * via Brevo, FROM the brand address (newsletter@…), TO the visitor. The visitor
+ * never sees a personal Gmail. Records the reply and marks the thread replied.
+ */
+function reply_to_contact_message(int $id, string $replyBody): array
+{
+    $msg = contact_message_get($id);
+    if ($msg === null) {
+        return ['ok' => false, 'message' => '留言不存在。'];
+    }
+    $replyBody = trim($replyBody);
+    if (mb_strlen($replyBody, 'UTF-8') < 2) {
+        return ['ok' => false, 'message' => '回复内容太短了。'];
+    }
+    $to = (string) $msg['email'];
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'message' => '该留言的邮箱无效，无法回复。'];
+    }
+    $provider = function_exists('email_provider_status') ? email_provider_status() : ['ready' => false];
+    if (empty($provider['ready'])) {
+        return ['ok' => false, 'message' => '邮件服务暂未配置。'];
+    }
+
+    $esc = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+    $name = trim((string) ($msg['name'] ?? ''));
+    $origSubject = trim((string) ($msg['subject'] ?? ''));
+    $subjectLine = 'Re: ' . ($origSubject !== '' ? $origSubject : '你的留言') . ' — 钱潮 Money Tide';
+    $html = '<div style="font-family:system-ui,sans-serif;max-width:600px;color:#1a1a1a">'
+        . '<p>' . $esc($name !== '' ? $name : '你好') . '，</p>'
+        . '<div style="white-space:pre-wrap;line-height:1.6">' . nl2br($esc($replyBody)) . '</div>'
+        . '<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
+        . '<p style="color:#888;font-size:13px">— 钱潮 Money Tide 团队</p>'
+        . '<blockquote style="color:#999;font-size:12px;border-left:3px solid #eee;padding-left:10px;margin-top:14px">'
+        . '你于 ' . $esc((string) ($msg['created_at'] ?? '')) . ' 的留言：<br>'
+        . nl2br($esc((string) ($msg['message'] ?? ''))) . '</blockquote></div>';
+
+    // Reply-To left empty → defaults to the brand From address (keeps it consistent).
+    $r = send_email_via_provider($to, $subjectLine, $html);
+    if (empty($r['ok'])) {
+        return ['ok' => false, 'message' => '发送失败：' . (string) ($r['message'] ?? '未知错误')];
+    }
+
+    ensure_contact_schema();
+    $pdo = db();
+    if ($pdo instanceof PDO) {
+        try {
+            $stmt = $pdo->prepare('UPDATE contact_messages SET reply_body = ?, replied_at = NOW(), status = \'replied\' WHERE id = ?');
+            $stmt->execute([$replyBody, $id]);
+        } catch (Throwable $exception) {
+        }
+    }
+    return ['ok' => true, 'message' => '回复已发送给 ' . $to . '。'];
 }
 
 function send_email_via_provider(string $to, string $subject, string $html, string $replyTo = ''): array

@@ -975,6 +975,47 @@ if ($route === 'admin/subscribers.csv') {
     exit;
 }
 
+if ($route === 'admin/contact') {
+    require_admin();
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $action = (string) ($_POST['action'] ?? '');
+        $id = (int) ($_POST['id'] ?? 0);
+        $back = (string) ($_POST['status'] ?? '');
+        $flash = '';
+        if ($action === 'reply') {
+            $r = reply_to_contact_message($id, (string) ($_POST['reply_body'] ?? ''));
+            $flash = (string) ($r['message'] ?? '');
+        } elseif ($action === 'archive') {
+            set_contact_message_status($id, 'archived');
+            $flash = '已归档。';
+        } elseif ($action === 'unarchive') {
+            set_contact_message_status($id, 'new');
+            $flash = '已恢复为未回复。';
+        }
+        $query = [];
+        if ($back !== '') {
+            $query['status'] = $back;
+        }
+        if ($flash !== '') {
+            $query['flash'] = $flash;
+        }
+        $target = url('admin/contact') . ($query ? ('?' . http_build_query($query)) : '');
+        header('Location: ' . $target);
+        exit;
+    }
+    $activeStatus = (string) ($_GET['status'] ?? '');
+    render_page('admin/contact', [
+        'site' => $site,
+        'categories' => $categories,
+        'messages' => admin_contact_messages($activeStatus),
+        'counts' => contact_message_counts(),
+        'activeStatus' => $activeStatus,
+        'openId' => (int) ($_GET['reply'] ?? 0),
+        'flash' => (string) ($_GET['flash'] ?? ''),
+    ]);
+    exit;
+}
+
 if (preg_match('#^admin/ai-drafts/(\d+)/tone$#', $route, $matches) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     require_admin();
     $draftId = (int) $matches[1];

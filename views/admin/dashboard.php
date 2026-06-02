@@ -96,6 +96,10 @@
             <strong>订阅用户</strong>
             <span>搜索订阅者、查看偏好并导出 CSV。</span>
         </a>
+        <a class="admin-module" href="<?= e(url('admin/contact')) ?>">
+            <strong>📬 联系留言<?php $cc = function_exists('contact_message_counts') ? contact_message_counts() : ['new' => 0]; if (!empty($cc['new'])): ?> <span style="background:#dcff00;border-radius:999px;padding:1px 8px;font-size:.75rem"><?= (int) $cc['new'] ?></span><?php endif; ?></strong>
+            <span>访客留言收件箱。在后台直接回复——以 newsletter@ 的名义通过 Brevo 发出，不暴露个人邮箱。</span>
+        </a>
         <a class="admin-module" href="<?= e(url('admin/categories')) ?>">
             <strong>栏目</strong>
             <span>查看当前栏目和公开频道结构。</span>
