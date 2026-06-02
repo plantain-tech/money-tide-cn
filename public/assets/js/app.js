@@ -984,6 +984,116 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
     });
 })();
 
+// Staged AI assessment runner (review queue): drives "批量审核" and "重新评估"
+// one draft per AJAX call so no single request times out (fixes the 503), with a
+// blocking, animated progress modal like the pipeline run.
+(function () {
+    var modal = document.querySelector('[data-assess-modal]');
+    var btns = document.querySelectorAll('[data-assess-run]');
+    if (!modal || !btns.length) return;
+
+    var fill = modal.querySelector('[data-run-fill]');
+    var pctEl = modal.querySelector('[data-run-percent]');
+    var stepCountEl = modal.querySelector('[data-run-stepcount]');
+    var detailEl = modal.querySelector('[data-run-detail]');
+    var titleEl = modal.querySelector('[data-run-title]');
+    var subEl = modal.querySelector('[data-run-subtitle]');
+    var footEl = modal.querySelector('[data-run-foot]');
+    var summaryEl = modal.querySelector('[data-run-summary]');
+    var closeBtn = modal.querySelector('[data-run-close]');
+    var sparkEl = modal.querySelector('[data-run-spark]');
+    var running = false;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function post(url, payload) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status + '（主机可能限制了该步骤时长）');
+            return res.json();
+        });
+    }
+    function setBar(done, total) {
+        var p = total > 0 ? Math.round(done / total * 100) : 0;
+        if (p > 100) p = 100;
+        fill.style.width = p + '%';
+        pctEl.textContent = p + '%';
+        stepCountEl.textContent = '已评估 ' + done + ' / ' + total;
+    }
+
+    function run(btn) {
+        if (running) return;
+        running = true;
+        btns.forEach(function (b) { b.disabled = true; });
+        var url = btn.getAttribute('data-step-url');
+        var mode = btn.getAttribute('data-mode') || 'new';
+        var title = btn.getAttribute('data-title') || 'AI 审核中…';
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        if (footEl) footEl.hidden = true;
+        if (sparkEl) sparkEl.textContent = '🔍';
+        if (titleEl) titleEl.textContent = title;
+        if (subEl) subEl.textContent = '正在逐篇调用 AI 事实核查，请勿关闭本页。';
+        if (detailEl) detailEl.textContent = '正在规划…';
+        setBar(0, 0);
+        var auto = 0, review = 0, failed = 0, t0 = Date.now();
+
+        (async function () {
+            try {
+                var plan = await post(url, { op: 'plan', mode: mode });
+                if (!plan.ok) throw new Error(plan.error || '规划失败');
+                var ids = plan.ids || [];
+                var total = ids.length;
+                setBar(0, total);
+                if (total === 0) {
+                    if (titleEl) titleEl.textContent = '没有需要处理的草稿';
+                    if (sparkEl) sparkEl.textContent = '👍';
+                    if (subEl) subEl.textContent = ' ';
+                    if (detailEl) detailEl.textContent = mode === 'requeue' ? '人工队列里没有待重新评估的草稿。' : '没有「已起草未审核」的草稿。';
+                    if (summaryEl) summaryEl.textContent = '无需处理。';
+                    if (footEl) footEl.hidden = false;
+                    return;
+                }
+                for (var i = 0; i < ids.length; i++) {
+                    if (detailEl) detailEl.textContent = '评估草稿 #' + ids[i] + ' …（' + (i + 1) + '/' + total + '）';
+                    var r;
+                    try { r = await post(url, { op: 'assess', id: ids[i] }); }
+                    catch (e) { r = { ok: false, detail: e.message }; }
+                    if (r.ok) { (r.recommendation === 'auto_approve') ? auto++ : review++; }
+                    else { failed++; }
+                    if (detailEl) detailEl.textContent = '#' + ids[i] + '：' + (r.detail || '') + ' · 累计 自动通过 ' + auto + ' / 转人工 ' + review;
+                    setBar(i + 1, total);
+                    if (i < ids.length - 1) await sleep(1500);
+                }
+                var elapsed = Math.round((Date.now() - t0) / 1000);
+                if (titleEl) titleEl.textContent = '✅ 评估完成';
+                if (subEl) subEl.textContent = '结果已写入审核台。';
+                if (sparkEl) sparkEl.textContent = '✅';
+                if (summaryEl) summaryEl.textContent = '自动通过 ' + auto + ' · 转人工 ' + review + (failed ? (' · 失败 ' + failed) : '') + ' · 用时 ' + elapsed + ' 秒';
+                if (footEl) footEl.hidden = false;
+            } catch (err) {
+                if (titleEl) titleEl.textContent = '⚠️ 评估中断';
+                if (subEl) subEl.textContent = '出错已停止，已完成的进度已保存。';
+                if (detailEl) detailEl.textContent = '错误：' + (err && err.message ? err.message : err);
+                if (sparkEl) sparkEl.textContent = '⚠️';
+                if (footEl) footEl.hidden = false;
+            } finally {
+                running = false;
+                btns.forEach(function (b) { b.disabled = false; });
+            }
+        })();
+    }
+
+    btns.forEach(function (btn) { btn.addEventListener('click', function () { run(btn); }); });
+    if (closeBtn) closeBtn.addEventListener('click', function () {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        window.location.reload();
+    });
+})();
+
 // Interstitial (house/sponsor) modal: blocking on open, close unlocks after a
 // countdown (Android-app style), with a frequency cap.
 (function () {

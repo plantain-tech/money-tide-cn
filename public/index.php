@@ -1659,6 +1659,38 @@ if ($route === 'admin/autopilot/step') {
     exit;
 }
 
+if ($route === 'admin/review-queue/step') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    @set_time_limit(120);
+    $in = json_decode((string) file_get_contents('php://input'), true);
+    if (!is_array($in)) {
+        $in = $_POST;
+    }
+    $op = (string) ($in['op'] ?? '');
+    $resp = ['ok' => false, 'error' => 'unknown op'];
+    try {
+        db_live();
+        if ($op === 'plan') {
+            $ids = assess_queue_ids((string) ($in['mode'] ?? 'new'));
+            $resp = ['ok' => true, 'ids' => $ids];
+        } elseif ($op === 'assess') {
+            $r = assess_draft((int) ($in['id'] ?? 0));
+            $resp = [
+                'ok' => !empty($r['ok']),
+                'recommendation' => (string) ($r['recommendation'] ?? ''),
+                'confidence' => (int) ($r['confidence'] ?? 0),
+                'detail' => (string) ($r['message'] ?? ($r['error'] ?? '')),
+            ];
+        }
+    } catch (Throwable $exception) {
+        $resp = ['ok' => false, 'error' => $exception->getMessage()];
+    }
+    echo json_encode($resp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'admin/autopilot') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');

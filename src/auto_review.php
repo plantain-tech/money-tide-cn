@@ -322,6 +322,39 @@ function reassess_review_queue(int $limit = 20, int $pauseSec = 2, int $maxTries
     return $summary;
 }
 
+/**
+ * Draft ids to feed the staged (AJAX) assessor.
+ *   mode 'new'     → freshly generated drafts with no review yet (max 8)
+ *   mode 'requeue' → drafts already routed to needs_review/pending (max 20)
+ */
+function assess_queue_ids(string $mode = 'new'): array
+{
+    ensure_auto_review_schema();
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        if ($mode === 'requeue') {
+            $sql = "SELECT ar.draft_id AS id
+                FROM auto_reviews ar
+                INNER JOIN ai_drafts d ON d.id = ar.draft_id
+                WHERE ar.recommendation = 'needs_review' AND ar.decision = 'pending'
+                  AND d.status <> 'converted'
+                ORDER BY ar.draft_id DESC LIMIT 20";
+        } else {
+            $sql = "SELECT d.id
+                FROM ai_drafts d
+                LEFT JOIN auto_reviews ar ON ar.draft_id = d.id
+                WHERE d.status = 'generated' AND ar.id IS NULL
+                ORDER BY d.id DESC LIMIT 8";
+        }
+        return array_map('intval', array_column($pdo->query($sql)->fetchAll() ?: [], 'id'));
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
 function auto_review_for_draft(int $draftId): ?array
 {
     ensure_auto_review_schema();

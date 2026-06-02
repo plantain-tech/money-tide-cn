@@ -41,24 +41,48 @@ $confClass = static function (int $s): string {
         <div class="news-stat"><span>已退回</span><strong><?= e((string) $summary['rejected']) ?></strong><small>累计</small></div>
     </div>
 
-    <!-- Assess action bar -->
+    <!-- Assess action bar — staged AJAX with a blocking progress modal (no 503) -->
     <div class="news-action-bar">
-        <form method="post" action="<?= e(url('admin/review-queue')) ?>" class="news-fetch-form" data-news-fetch>
-            <input type="hidden" name="action" value="assess_all">
-            <button class="button" type="submit" data-news-fetch-btn <?= (empty($aiReady['ready']) || ($summary['unassessed'] ?? 0) < 1) ? 'disabled' : '' ?>>
-                <span class="news-fetch-label">🔍 AI 批量审核（最多8篇）</span>
-                <span class="news-fetch-spinner" hidden></span>
-            </button>
-        </form>
+        <button class="button" type="button"
+            data-assess-run data-mode="new"
+            data-step-url="<?= e(url('admin/review-queue/step')) ?>"
+            data-title="AI 批量审核中…"
+            <?= (empty($aiReady['ready']) || ($summary['unassessed'] ?? 0) < 1) ? 'disabled' : '' ?>>
+            🔍 AI 批量审核（最多8篇）
+        </button>
         <small class="news-action-hint">对「已起草未审核」的草稿运行 AI 事实核查，每篇耗 1 次 AI 额度。强草稿自动通过，可疑的留给你。</small>
-        <form method="post" action="<?= e(url('admin/review-queue')) ?>" class="news-fetch-form" data-news-fetch>
-            <input type="hidden" name="action" value="reassess">
-            <button class="button button-ghost" type="submit" data-news-fetch-btn <?= (empty($aiReady['ready']) || ($summary['pending_review'] ?? 0) < 1) ? 'disabled' : '' ?>>
-                <span class="news-fetch-label">♻️ 重新评估队列（最多20篇）</span>
-                <span class="news-fetch-spinner" hidden></span>
-            </button>
-        </form>
+        <button class="button button-ghost" type="button"
+            data-assess-run data-mode="requeue"
+            data-step-url="<?= e(url('admin/review-queue/step')) ?>"
+            data-title="重新评估队列中…"
+            <?= (empty($aiReady['ready']) || ($summary['pending_review'] ?? 0) < 1) ? 'disabled' : '' ?>>
+            ♻️ 重新评估队列（最多20篇）
+        </button>
         <small class="news-action-hint">用当前规则/阈值重新给「已转人工」的草稿打分。置信度达标的会立即转为自动通过（在下次发布阶段发布），不再卡在这里。</small>
+    </div>
+
+    <!-- Blocking, animated progress modal for the two batch actions above. -->
+    <div class="run-modal" data-assess-modal hidden>
+        <div class="run-modal-backdrop"></div>
+        <div class="run-modal-card" role="dialog" aria-modal="true" aria-labelledby="assessModalTitle">
+            <div class="run-modal-head">
+                <span class="run-modal-spark" data-run-spark>🔍</span>
+                <h3 id="assessModalTitle" data-run-title>AI 审核中…</h3>
+                <p data-run-subtitle>正在逐篇调用 AI 事实核查，请勿关闭本页。</p>
+            </div>
+            <div class="run-progress">
+                <div class="run-progress-bar"><span class="run-progress-fill" data-run-fill style="width:0%"></span></div>
+                <div class="run-progress-meta">
+                    <span data-run-percent>0%</span>
+                    <span data-run-stepcount>已评估 0 / 0</span>
+                </div>
+            </div>
+            <p class="run-modal-detail" data-run-detail aria-live="polite">准备中…</p>
+            <div class="run-modal-foot" data-run-foot hidden>
+                <p class="run-modal-summary" data-run-summary></p>
+                <button class="button" type="button" data-run-close>完成并刷新</button>
+            </div>
+        </div>
     </div>
 
     <!-- Assess run result -->
