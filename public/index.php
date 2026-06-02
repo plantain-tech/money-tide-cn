@@ -2300,7 +2300,7 @@ if ($route === 'admin/smoke') {
         echo json_encode([
             'status'     => $failCount === 0 ? 'ok' : ($failCount <= 2 ? 'degraded' : 'critical'),
             'app'        => 'money-tide',
-            'release'    => 'privacy-contact-pages',
+            'release'    => 'contact-form-brevo',
             'checked_at' => gmdate('c'),
             'summary'    => [
                 'total'     => $total,
@@ -2619,9 +2619,16 @@ if ($route === 'privacy') {
 }
 
 if ($route === 'contact') {
+    $contactResult = null;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $contactResult = function_exists('send_contact_message')
+            ? send_contact_message($_POST)
+            : ['ok' => false, 'message' => '暂不可用。'];
+    }
     render_page('contact', [
         'site' => $site,
         'categories' => $categories,
+        'contactResult' => $contactResult,
     ]);
     exit;
 }

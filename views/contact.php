@@ -23,17 +23,26 @@ if ($contactEmail === '') {
 
 <section class="newsletter-block">
     <h2>✍️ 给我们留言</h2>
-    <p>填写下面的表单，会通过你的邮件客户端把内容发给我们。</p>
-    <form class="cms-form contact-form" action="mailto:<?= e($contactEmail) ?>" method="post" enctype="text/plain">
-        <div class="cms-form-grid">
-            <label>你的称呼<input type="text" name="name" placeholder="怎么称呼你"></label>
-            <label>你的邮箱<input type="email" name="email" placeholder="you@example.com"></label>
+    <?php $cr = $contactResult ?? null; ?>
+    <?php if (is_array($cr)): ?>
+        <div class="status-banner <?= !empty($cr['ok']) ? 'is-ready' : 'is-warning' ?> ap-flash">
+            <strong><?= !empty($cr['ok']) ? '✅ 已发送' : '⚠️ 未发送' ?></strong>
+            <span><?= e((string) ($cr['message'] ?? '')) ?></span>
         </div>
-        <label>主题<input type="text" name="subject" placeholder="一句话主题"></label>
-        <label>留言<textarea name="message" rows="5" placeholder="想对我们说的话…"></textarea></label>
+    <?php endif; ?>
+    <p>填写下面的表单，直接发送到我们的邮箱（我们会用你填写的邮箱回复你）。</p>
+    <form class="cms-form contact-form" action="<?= e(url('contact')) ?>" method="post">
+        <div class="cms-form-grid">
+            <label>你的称呼<input type="text" name="name" maxlength="80" placeholder="怎么称呼你"></label>
+            <label>你的邮箱<input type="email" name="email" required placeholder="you@example.com"></label>
+        </div>
+        <label>主题<input type="text" name="subject" maxlength="140" placeholder="一句话主题"></label>
+        <label>留言<textarea name="message" rows="5" required minlength="5" placeholder="想对我们说的话…"></textarea></label>
+        <!-- honeypot: hidden from humans, bots fill it -->
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
         <div class="cms-form-actions"><button class="button" type="submit">发送留言</button></div>
     </form>
-    <p class="news-action-hint">提交会打开你的邮件客户端并预填内容。若未弹出，请直接发邮件到上面的邮箱。</p>
+    <p class="news-action-hint">我们会通过你填写的邮箱回复你。也可直接发邮件到 <a href="mailto:<?= e($contactEmail) ?>"><?= e($contactEmail) ?></a>。</p>
 </section>
 
 <section class="newsletter-block">

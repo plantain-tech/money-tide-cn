@@ -612,12 +612,60 @@ function email_provider_status(): array
     ];
 }
 
-function send_email_via_provider(string $to, string $subject, string $html): array
+/**
+ * Contact-form submission → email to the admin inbox via the configured
+ * provider (Brevo), with the visitor's email as Reply-To so the admin can
+ * reply directly. Honeypot + validation guard against spam.
+ */
+function send_contact_message(array $input): array
+{
+    // Honeypot: real users leave this hidden field empty.
+    if (trim((string) ($input['website'] ?? '')) !== '') {
+        return ['ok' => true, 'message' => '已收到。']; // silently drop bots
+    }
+    $name = trim((string) ($input['name'] ?? ''));
+    $email = trim((string) ($input['email'] ?? ''));
+    $subject = trim((string) ($input['subject'] ?? ''));
+    $message = trim((string) ($input['message'] ?? ''));
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'message' => '请填写有效的邮箱，方便我们回复你。'];
+    }
+    if (mb_strlen($message, 'UTF-8') < 5) {
+        return ['ok' => false, 'message' => '留言太短了，请多写几句。'];
+    }
+
+    $provider = function_exists('email_provider_status') ? email_provider_status() : ['ready' => false];
+    if (empty($provider['ready'])) {
+        return ['ok' => false, 'message' => '邮件服务暂未配置，请直接发邮件给我们。'];
+    }
+
+    $to = (string) app_config('email.contact_to', 'newsletter@moneytidecn.avanturadeals.com');
+    $esc = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+    $html = '<div style="font-family:system-ui,sans-serif;max-width:560px">'
+        . '<h2 style="margin:0 0 12px">钱潮 Money Tide · 网站留言</h2>'
+        . '<p><strong>称呼：</strong>' . $esc($name !== '' ? $name : '（未填）') . '</p>'
+        . '<p><strong>邮箱：</strong>' . $esc($email) . '</p>'
+        . '<p><strong>主题：</strong>' . $esc($subject !== '' ? $subject : '（未填）') . '</p>'
+        . '<p><strong>留言：</strong></p>'
+        . '<div style="white-space:pre-wrap;border-left:3px solid #dcff00;padding:8px 12px;background:#faf7ef">'
+        . nl2br($esc($message)) . '</div>'
+        . '<p style="color:#999;font-size:12px;margin-top:18px">直接回复本邮件即可联系该访客（Reply-To 已设为其邮箱）。</p></div>';
+
+    $subjectLine = '【钱潮·联系】' . ($subject !== '' ? $subject : '网站留言') . '（来自 ' . ($name !== '' ? $name : $email) . '）';
+    $r = send_email_via_provider($to, $subjectLine, $html, $email);
+    return !empty($r['ok'])
+        ? ['ok' => true, 'message' => '已发送，感谢你的留言！我们会尽快回复。']
+        : ['ok' => false, 'message' => '发送失败，请稍后重试或直接发邮件给我们。' . (!empty($r['message']) ? '（' . $r['message'] . '）' : '')];
+}
+
+function send_email_via_provider(string $to, string $subject, string $html, string $replyTo = ''): array
 {
     $provider = (string) app_config('email.provider', 'log');
     $apiKey = (string) app_config('email.api_key', '');
     $fromAddr = (string) app_config('email.from_address', 'no-reply@moneytidecn.avanturadeals.com');
     $fromName = (string) app_config('email.from_name', '钱潮 Money Tide');
+    $replyTo = filter_var($replyTo, FILTER_VALIDATE_EMAIL) ? $replyTo : '';
 
     if ($provider === 'log') {
         return ['ok' => true, 'message' => 'logged'];
@@ -640,6 +688,9 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
                 'subject' => $subject,
                 'html' => $html,
             ];
+            if ($replyTo !== '') {
+                $payload['reply_to'] = $replyTo;
+            }
             break;
         case 'brevo':
             $endpoint = 'https://api.brevo.com/v3/smtp/email';
@@ -647,7 +698,7 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
             $payload = [
                 'sender' => ['name' => $fromName, 'email' => $fromAddr],
                 'to' => [['email' => $to]],
-                'replyTo' => ['email' => $fromAddr, 'name' => $fromName],
+                'replyTo' => ['email' => $replyTo !== '' ? $replyTo : $fromAddr, 'name' => $replyTo !== '' ? $replyTo : $fromName],
                 'subject' => $subject,
                 'htmlContent' => $html,
             ];
@@ -658,17 +709,21 @@ function send_email_via_provider(string $to, string $subject, string $html): arr
                 return ['ok' => false, 'message' => 'mailgun domain missing'];
             }
             $endpoint = 'https://api.mailgun.net/v3/' . $domain . '/messages';
+            $mgFields = [
+                'from' => $fromName . ' <' . $fromAddr . '>',
+                'to' => $to,
+                'subject' => $subject,
+                'html' => $html,
+            ];
+            if ($replyTo !== '') {
+                $mgFields['h:Reply-To'] = $replyTo;
+            }
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST => true,
                 CURLOPT_USERPWD => 'api:' . $apiKey,
-                CURLOPT_POSTFIELDS => http_build_query([
-                    'from' => $fromName . ' <' . $fromAddr . '>',
-                    'to' => $to,
-                    'subject' => $subject,
-                    'html' => $html,
-                ]),
+                CURLOPT_POSTFIELDS => http_build_query($mgFields),
                 CURLOPT_TIMEOUT => 30,
             ]);
             $body = curl_exec($ch);
