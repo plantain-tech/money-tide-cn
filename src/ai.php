@@ -307,6 +307,10 @@ function build_ai_draft_prompt(array $form, array $sources, array $template): st
         . "name for proper nouns (e.g. Apple, Nvidia, Bitcoin, Fed) and concise Simplified Chinese for themes "
         . "(e.g. 人工智能, 关税, 财报). Tags must be specific to THIS article; only lean into the trending "
         . "topics above when genuinely relevant. "
+        . "Also return `image_alt`: ONE concise Simplified-Chinese sentence (≤ 100 characters) that works as the "
+        . "hero image's alt text for accessibility and SEO — describe the most likely visual subject/scene of "
+        . "this story (people, place, product, chart). Do not start with 「图」「图片」「配图」, do not wrap it in "
+        . "quotes, and do not just repeat the title verbatim. "
         . "Return fields that can become a CMS article draft."
         . ai_proper_noun_rule();
 }
@@ -328,7 +332,7 @@ function call_ollama_cloud_draft_api(string $prompt): array
 
     $apiKey = (string) app_config('ai.ollama_api_key', '');
     $model = (string) app_config('ai.model', 'gemma4:31b-cloud');
-    $jsonInstruction = "\n\nReturn strict JSON only. No Markdown. Required keys: title, dek, brief, why_it_matters, body, body_outline, social_headline, newsletter_blurb, source_notes, risk_notes, tags, disclaimer. body, body_outline, source_notes, risk_notes, and tags must be arrays of strings (tags: 3-6 short, de-duplicated topic tags).";
+    $jsonInstruction = "\n\nReturn strict JSON only. No Markdown. Required keys: title, dek, brief, why_it_matters, body, body_outline, social_headline, newsletter_blurb, source_notes, risk_notes, tags, image_alt, disclaimer. body, body_outline, source_notes, risk_notes, and tags must be arrays of strings (tags: 3-6 short, de-duplicated topic tags). image_alt must be a single short Simplified-Chinese string describing the hero image.";
     $payload = [
         'model' => $model,
         'stream' => false,

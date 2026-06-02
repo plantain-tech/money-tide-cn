@@ -83,7 +83,14 @@ function publish_one_approved_draft(int $draftId): array
         'brief' => (string) ($payload['brief'] ?? ''),
         'why_it_matters' => (string) ($payload['why_it_matters'] ?? ''),
         'body' => $bodyText,
-        'hero_image_alt' => mb_substr($title, 0, 120, 'UTF-8'),
+        // Prefer the AI-generated descriptive alt text from the draft; fall back
+        // to the title only if the model didn't return one.
+        'hero_image_alt' => mb_substr(
+            (trim((string) ($payload['image_alt'] ?? '')) !== '' ? (string) $payload['image_alt'] : $title),
+            0,
+            120,
+            'UTF-8'
+        ),
         'read_time_minutes' => estimate_read_time($bodyText),
         'tags' => function_exists('derive_article_tags') ? derive_article_tags($payload, (string) $draft['section_slug']) : '',
         'published_at' => date('Y-m-d H:i:s'),
