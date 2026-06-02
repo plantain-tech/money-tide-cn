@@ -640,7 +640,10 @@ function send_contact_message(array $input): array
         return ['ok' => false, 'message' => '邮件服务暂未配置，请直接发邮件给我们。'];
     }
 
-    $to = (string) app_config('email.contact_to', 'newsletter@moneytidecn.avanturadeals.com');
+    // Deliver straight to the real inbox (Gmail MX is reliable). Routing through
+    // newsletter@…subdomain has no working MX → Brevo defers with "connection
+    // timeout". Override with the email.contact_to secret if you set up a mailbox.
+    $to = (string) app_config('email.contact_to', 'plantain.tech@gmail.com');
     $esc = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     $html = '<div style="font-family:system-ui,sans-serif;max-width:560px">'
         . '<h2 style="margin:0 0 12px">钱潮 Money Tide · 网站留言</h2>'
