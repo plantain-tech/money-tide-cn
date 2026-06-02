@@ -67,34 +67,15 @@ $days = [
         <section class="newsletter-block">
             <h2>▶️ 运行一次完整 Dry Run</h2>
             <p>用真实数据端到端跑一遍六个阶段（强制运行，保守批量，给 Day 9·7 演示用）。仍走人工闸门 —— 可疑草稿不会自动发布。</p>
-            <form method="post" action="<?= e(url('admin/week9-checklist')) ?>" class="news-fetch-form" data-news-fetch>
-                <input type="hidden" name="action" value="dry_run">
-                <button class="button" type="submit" data-news-fetch-btn data-loading-label="运行中…（约 1–2 分钟）" <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
-                    <span class="news-fetch-label">🚀 运行完整 Dry Run</span>
-                    <span class="news-fetch-spinner" hidden></span>
-                </button>
-            </form>
+            <button class="button" type="button" data-run-pipeline
+                data-step-url="<?= e(url('admin/autopilot/step')) ?>"
+                <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+                🚀 运行完整 Dry Run
+            </button>
             <?php if (empty($aiReady['ready'])): ?>
                 <p class="news-action-hint">AI 引擎当前离线，dry run 暂不可用。请先到 <a href="<?= e(url('admin/diagnostics')) ?>">诊断</a> 检查 provider。</p>
             <?php else: ?>
-                <p class="news-action-hint">网页可能因主机时限中途结束，但每步都会保存进度，可再次点击或交给 Cron 续跑。</p>
-            <?php endif; ?>
-
-            <?php if (!empty($dryRun)): ?>
-                <div class="dryrun-result" data-dryrun>
-                    <div class="dryrun-flow">
-                        <?php foreach ($dryRun['cards'] as $j => $card): ?>
-                            <div class="dryrun-card" style="--j: <?= e((string) $j) ?>">
-                                <span class="dryrun-icon"><?= e($card['icon']) ?></span>
-                                <strong data-countup="<?= e((string) $card['value']) ?>">0</strong>
-                                <small><?= e($card['label']) ?></small>
-                                <em><?= e($card['unit']) ?><?= !empty($card['extra']) ? ' · ' . e($card['extra']) : '' ?></em>
-                            </div>
-                            <?php if ($j < count($dryRun['cards']) - 1): ?><span class="dryrun-arrow" aria-hidden="true">→</span><?php endif; ?>
-                        <?php endforeach; ?>
-                    </div>
-                    <p class="dryrun-summary">⏱ 用时 <?= e((string) ($dryRun['duration'] ?? 0)) ?> 秒 · <?= e((string) ($dryRun['message'] ?? '')) ?></p>
-                </div>
+                <p class="news-action-hint">弹出进度窗分步执行、实时显示进度，不会因网页超时而中断；每步进度都会保存。</p>
             <?php endif; ?>
         </section>
 
@@ -195,3 +176,34 @@ $days = [
         </div>
     </section>
 </section>
+
+<!-- ── Staged run progress modal (shared orchestrator in app.js) ──────────── -->
+<div class="run-modal" data-run-modal hidden>
+    <div class="run-modal-backdrop"></div>
+    <div class="run-modal-card" role="dialog" aria-modal="true" aria-labelledby="runModalTitle9">
+        <div class="run-modal-head">
+            <span class="run-modal-spark" data-run-spark>🛰</span>
+            <h3 id="runModalTitle9" data-run-title>正在运行流水线…</h3>
+            <p data-run-subtitle>请稍候，分步执行中，请勿关闭本页。</p>
+        </div>
+        <div class="run-progress">
+            <div class="run-progress-bar"><span class="run-progress-fill" data-run-fill style="width:0%"></span></div>
+            <div class="run-progress-meta">
+                <span data-run-percent>0%</span>
+                <span data-run-stepcount>步骤 0 / 0</span>
+            </div>
+        </div>
+        <ul class="run-steps" data-run-steps>
+            <li data-run-step="ingest"><span class="run-step-ic">🛰</span><span class="run-step-label">抓取新闻素材</span><span class="run-step-state"></span></li>
+            <li data-run-step="cluster"><span class="run-step-ic">🧩</span><span class="run-step-label">聚类选题</span><span class="run-step-state"></span></li>
+            <li data-run-step="synthesize"><span class="run-step-ic">✍️</span><span class="run-step-label">AI 写稿</span><span class="run-step-state"></span></li>
+            <li data-run-step="assess"><span class="run-step-ic">🔍</span><span class="run-step-label">AI 审核闸门</span><span class="run-step-state"></span></li>
+            <li data-run-step="publish"><span class="run-step-ic">🚀</span><span class="run-step-label">发布与早报组装</span><span class="run-step-state"></span></li>
+        </ul>
+        <p class="run-modal-detail" data-run-detail aria-live="polite">准备中…</p>
+        <div class="run-modal-foot" data-run-foot hidden>
+            <p class="run-modal-summary" data-run-summary></p>
+            <button class="button" type="button" data-run-close>完成并刷新</button>
+        </div>
+    </div>
+</div>
