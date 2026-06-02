@@ -117,11 +117,15 @@ function all_tags(): array
         return [];
     }
     try {
-        return $pdo->query("SELECT t.slug, t.name, COUNT(at.article_id) AS article_count
+        // Merge duplicate tag rows that share the same name (e.g. several
+        // "人工智能" rows with different slugs) into ONE topic, counting distinct
+        // published articles across all of them. A representative slug is picked
+        // so the link works; the detail page also merges by name.
+        return $pdo->query("SELECT MIN(t.slug) AS slug, t.name, COUNT(DISTINCT a.id) AS article_count
             FROM tags t
-            LEFT JOIN article_tags at ON at.tag_id = t.id
-            LEFT JOIN articles a ON a.id = at.article_id AND a.status = 'published'
-            GROUP BY t.id, t.slug, t.name
+            INNER JOIN article_tags at ON at.tag_id = t.id
+            INNER JOIN articles a ON a.id = at.article_id AND a.status = 'published'
+            GROUP BY t.name
             HAVING article_count > 0
             ORDER BY article_count DESC, t.name ASC
             LIMIT 50")->fetchAll() ?: [];
@@ -153,14 +157,18 @@ function articles_by_tag(string $slug): array
         return [];
     }
     try {
+        // Match by NAME, not just this slug, so a merged topic (duplicate tag
+        // rows sharing a name) shows every article tagged under any of them.
         $statement = $pdo->prepare("SELECT a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
                 a.hero_image_path, a.hero_image_alt, a.read_time_minutes, a.published_at,
                 c.slug AS category, c.name AS category_name
             FROM articles a
-            INNER JOIN article_tags at ON at.article_id = a.id
-            INNER JOIN tags t ON t.id = at.tag_id
             INNER JOIN categories c ON c.id = a.category_id
-            WHERE a.status = 'published' AND t.slug = :slug
+            WHERE a.status = 'published' AND a.id IN (
+                SELECT at.article_id FROM article_tags at
+                INNER JOIN tags t ON t.id = at.tag_id
+                WHERE t.name = (SELECT name FROM tags WHERE slug = :slug LIMIT 1)
+            )
             ORDER BY a.published_at DESC, a.id DESC
             LIMIT 50");
         $statement->execute(['slug' => $slug]);
