@@ -827,11 +827,18 @@ function reply_to_contact_message(int $id, string $replyBody): array
     $name = trim((string) ($msg['name'] ?? ''));
     $origSubject = trim((string) ($msg['subject'] ?? ''));
     $subjectLine = 'Re: ' . ($origSubject !== '' ? $origSubject : '你的留言') . ' — 钱潮 Money Tide';
+    $contactUrl = function_exists('canonical_url') ? canonical_url('contact') : 'https://moneytidecn.avanturadeals.com/contact';
+    $brandLink = '<a href="' . $esc($contactUrl) . '" style="color:#0a7d33;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(10,125,51,.35);padding-bottom:1px">钱潮 Money Tide CN</a>';
     $html = '<div style="font-family:system-ui,sans-serif;max-width:600px;color:#1a1a1a">'
         . '<p>' . $esc($name !== '' ? $name : '你好') . '，</p>'
         . '<div style="white-space:pre-wrap;line-height:1.6">' . nl2br($esc($replyBody)) . '</div>'
         . '<hr style="border:none;border-top:1px solid #eee;margin:20px 0">'
         . '<p style="color:#888;font-size:13px">— 钱潮 Money Tide 团队</p>'
+        // Elegant "do not reply directly" note with a clean (no-underline) brand link to the contact page.
+        . '<div style="margin-top:18px;padding:12px 16px;background:#f7f9f7;border:1px solid #e6ece6;border-radius:10px;color:#5a655a;font-size:12.5px;line-height:1.6">'
+        . 'Note：请勿直接回复本邮件——此邮箱仅用于发送，不接收回信。如需继续联系，请前往 '
+        . $brandLink . ' 的联系页面给我们留言，我们会尽快回复你。'
+        . '</div>'
         . '<blockquote style="color:#999;font-size:12px;border-left:3px solid #eee;padding-left:10px;margin-top:14px">'
         . '你于 ' . $esc((string) ($msg['created_at'] ?? '')) . ' 的留言：<br>'
         . nl2br($esc((string) ($msg['message'] ?? ''))) . '</blockquote></div>';
