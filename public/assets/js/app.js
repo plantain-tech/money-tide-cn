@@ -1094,6 +1094,126 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
     });
 })();
 
+// Staged cluster/synthesis runner (story-clusters): drives "AI 聚类选题" and
+// "批量生成草稿" one item per AJAX call (no host 503), with the same blocking,
+// animated progress modal.
+(function () {
+    var modal = document.querySelector('[data-cluster-modal]');
+    var btns = document.querySelectorAll('[data-cluster-run]');
+    if (!modal || !btns.length) return;
+
+    var fill = modal.querySelector('[data-run-fill]');
+    var pctEl = modal.querySelector('[data-run-percent]');
+    var stepCountEl = modal.querySelector('[data-run-stepcount]');
+    var detailEl = modal.querySelector('[data-run-detail]');
+    var titleEl = modal.querySelector('[data-run-title]');
+    var subEl = modal.querySelector('[data-run-subtitle]');
+    var footEl = modal.querySelector('[data-run-foot]');
+    var summaryEl = modal.querySelector('[data-run-summary]');
+    var closeBtn = modal.querySelector('[data-run-close]');
+    var sparkEl = modal.querySelector('[data-run-spark]');
+    var running = false;
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function post(url, payload) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status + '（主机可能限制了该步骤时长）');
+            return res.json();
+        });
+    }
+    function setBar(done, total) {
+        var p = total > 0 ? Math.round(done / total * 100) : 0;
+        if (p > 100) p = 100;
+        fill.style.width = p + '%';
+        pctEl.textContent = p + '%';
+        stepCountEl.textContent = done + ' / ' + total;
+    }
+
+    function run(btn) {
+        if (running) return;
+        running = true;
+        btns.forEach(function (b) { b.disabled = true; });
+        var url = btn.getAttribute('data-step-url');
+        var planOp = btn.getAttribute('data-plan-op');
+        var stepOp = btn.getAttribute('data-step-op');
+        var noun = btn.getAttribute('data-noun') || '项';
+        var spark = btn.getAttribute('data-spark') || '⚙️';
+        var title = btn.getAttribute('data-title') || '处理中…';
+        // Category may come from a sibling <select> (clustering) or a static attr.
+        var slug = btn.getAttribute('data-slug') || '';
+        var wrap = btn.closest('[data-cluster-wrap]');
+        if (wrap) {
+            var sel = wrap.querySelector('select[name="category_slug"]');
+            if (sel) slug = sel.value;
+        }
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        if (footEl) footEl.hidden = true;
+        if (sparkEl) sparkEl.textContent = spark;
+        if (titleEl) titleEl.textContent = title;
+        if (subEl) subEl.textContent = '正在分步调用 AI，请勿关闭本页。';
+        if (detailEl) detailEl.textContent = '正在规划…';
+        setBar(0, 0);
+        var made = 0, fail = 0, t0 = Date.now();
+
+        (async function () {
+            try {
+                var plan = await post(url, { op: planOp, slug: slug });
+                if (!plan.ok) throw new Error(plan.error || '规划失败');
+                var items = plan.items || [];
+                var total = items.length;
+                setBar(0, total);
+                if (total === 0) {
+                    if (titleEl) titleEl.textContent = '没有需要处理的项目';
+                    if (sparkEl) sparkEl.textContent = '👍';
+                    if (subEl) subEl.textContent = ' ';
+                    if (detailEl) detailEl.textContent = planOp === 'synth_plan' ? '没有「已选用且未生成草稿」的 cluster。先在下面选用一些 cluster。' : '没有可聚类的栏目。';
+                    if (summaryEl) summaryEl.textContent = '无需处理。';
+                    if (footEl) footEl.hidden = false;
+                    return;
+                }
+                for (var i = 0; i < items.length; i++) {
+                    if (detailEl) detailEl.textContent = items[i].label + ' …（' + (i + 1) + '/' + total + '）';
+                    var r;
+                    try { r = await post(url, { op: stepOp, key: items[i].key }); }
+                    catch (e) { r = { ok: false, detail: e.message }; }
+                    if (r.ok) { made += (r.count != null ? r.count : (r.created ? 1 : 0)); }
+                    else { fail++; }
+                    if (detailEl) detailEl.textContent = items[i].label + '：' + (r.detail || '') + ' · 累计 ' + made + ' ' + noun;
+                    setBar(i + 1, total);
+                    if (i < items.length - 1) await sleep(1500);
+                }
+                var elapsed = Math.round((Date.now() - t0) / 1000);
+                if (titleEl) titleEl.textContent = '✅ 完成';
+                if (subEl) subEl.textContent = '结果已保存。';
+                if (sparkEl) sparkEl.textContent = '✅';
+                if (summaryEl) summaryEl.textContent = '共 ' + made + ' ' + noun + (fail ? (' · 失败 ' + fail) : '') + ' · 用时 ' + elapsed + ' 秒';
+                if (footEl) footEl.hidden = false;
+            } catch (err) {
+                if (titleEl) titleEl.textContent = '⚠️ 中断';
+                if (subEl) subEl.textContent = '出错已停止，已完成的进度已保存。';
+                if (detailEl) detailEl.textContent = '错误：' + (err && err.message ? err.message : err);
+                if (sparkEl) sparkEl.textContent = '⚠️';
+                if (footEl) footEl.hidden = false;
+            } finally {
+                running = false;
+                btns.forEach(function (b) { b.disabled = false; });
+            }
+        })();
+    }
+
+    btns.forEach(function (btn) { btn.addEventListener('click', function () { run(btn); }); });
+    if (closeBtn) closeBtn.addEventListener('click', function () {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        window.location.reload();
+    });
+})();
+
 // Interstitial (house/sponsor) modal: blocking on open, close unlocks after a
 // countdown (Android-app style), with a frequency cap.
 (function () {

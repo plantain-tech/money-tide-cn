@@ -43,29 +43,31 @@ $scoreClass = static function (int $s): string {
         <div class="news-stat"><span>素材待处理</span><strong><?= e((string) $newsSummary['items_new']) ?></strong><small>news status=new</small></div>
     </div>
 
-    <!-- Cluster action bar -->
+    <!-- Cluster action bar — staged AJAX with a blocking progress modal (no 503) -->
     <div class="news-action-bar">
-        <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="news-fetch-form" data-news-fetch>
-            <input type="hidden" name="action" value="cluster">
+        <span class="news-fetch-form" data-cluster-wrap>
             <select name="category_slug" aria-label="聚类范围">
                 <option value="">全部栏目</option>
                 <?php foreach ($adminCategories as $c): ?>
                     <option value="<?= e((string) $c['slug']) ?>"><?= e((string) $c['name']) ?></option>
                 <?php endforeach; ?>
             </select>
-            <button class="button" type="submit" data-news-fetch-btn <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
-                <span class="news-fetch-label">🧠 AI 聚类选题</span>
-                <span class="news-fetch-spinner" hidden></span>
+            <button class="button" type="button"
+                data-cluster-run data-plan-op="cluster_plan" data-step-op="cluster"
+                data-step-url="<?= e(url('admin/story-clusters/step')) ?>"
+                data-noun="个选题" data-spark="🧠" data-title="AI 聚类选题中…"
+                <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+                🧠 AI 聚类选题
             </button>
-        </form>
-        <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="news-fetch-form" data-news-fetch>
-            <input type="hidden" name="action" value="synthesize_all">
-            <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
-            <button class="button button-small" type="submit" data-news-fetch-btn <?= ($synthSummary['pending_selected'] ?? 0) < 1 ? 'disabled' : '' ?>>
-                <span class="news-fetch-label">✍️ 批量生成草稿<?= $filters['category_slug'] !== '' ? '（本栏目）' : '（最多8篇）' ?></span>
-                <span class="news-fetch-spinner" hidden></span>
-            </button>
-        </form>
+        </span>
+        <button class="button button-small" type="button"
+            data-cluster-run data-plan-op="synth_plan" data-step-op="synthesize"
+            data-step-url="<?= e(url('admin/story-clusters/step')) ?>"
+            data-slug="<?= e($filters['category_slug']) ?>"
+            data-noun="篇草稿" data-spark="✍️" data-title="批量生成草稿中…"
+            <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+            ✍️ 批量生成草稿<?= $filters['category_slug'] !== '' ? '（本栏目）' : '（最多8篇）' ?><?= ($synthSummary['pending_selected'] ?? 0) > 0 ? '：' . (int) $synthSummary['pending_selected'] . ' 个待生成' : '' ?>
+        </button>
         <form method="post" action="<?= e(url('admin/story-clusters')) ?>" class="inline-action">
             <input type="hidden" name="action" value="clear">
             <input type="hidden" name="category_slug" value="<?= e($filters['category_slug']) ?>">
@@ -75,6 +77,30 @@ $scoreClass = static function (int $s): string {
                 data-confirm-variant="danger" data-confirm-title="清空 cluster" data-confirm-confirm="清空">🗑 清空<?= $filters['category_slug'] !== '' ? '本栏目' : '全部' ?> cluster</button>
         </form>
         <small class="news-action-hint">聚类每栏目耗 1 次 AI 额度；生成草稿每篇耗 1 次。批量最多 8 篇（每栏目各 1 篇），可能需要 2-4 分钟。</small>
+    </div>
+
+    <!-- Blocking, animated progress modal for clustering + batch synthesis. -->
+    <div class="run-modal" data-cluster-modal hidden>
+        <div class="run-modal-backdrop"></div>
+        <div class="run-modal-card" role="dialog" aria-modal="true" aria-labelledby="clusterModalTitle">
+            <div class="run-modal-head">
+                <span class="run-modal-spark" data-run-spark>⚙️</span>
+                <h3 id="clusterModalTitle" data-run-title>处理中…</h3>
+                <p data-run-subtitle>正在分步调用 AI，请勿关闭本页。</p>
+            </div>
+            <div class="run-progress">
+                <div class="run-progress-bar"><span class="run-progress-fill" data-run-fill style="width:0%"></span></div>
+                <div class="run-progress-meta">
+                    <span data-run-percent>0%</span>
+                    <span data-run-stepcount>0 / 0</span>
+                </div>
+            </div>
+            <p class="run-modal-detail" data-run-detail aria-live="polite">准备中…</p>
+            <div class="run-modal-foot" data-run-foot hidden>
+                <p class="run-modal-summary" data-run-summary></p>
+                <button class="button" type="button" data-run-close>完成并刷新</button>
+            </div>
+        </div>
     </div>
 
     <!-- Per-run result -->

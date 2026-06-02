@@ -1436,6 +1436,69 @@ if ($route === 'admin/news-items') {
     exit;
 }
 
+if ($route === 'admin/story-clusters/step') {
+    require_admin();
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    @set_time_limit(120);
+    $in = json_decode((string) file_get_contents('php://input'), true);
+    if (!is_array($in)) {
+        $in = $_POST;
+    }
+    $op = (string) ($in['op'] ?? '');
+    $slug = (string) ($in['slug'] ?? '');
+    $key = (string) ($in['key'] ?? '');
+    $resp = ['ok' => false, 'error' => 'unknown op'];
+    try {
+        db_live();
+        if ($op === 'cluster_plan') {
+            $items = [];
+            if ($slug !== '') {
+                $name = $slug;
+                foreach (get_categories() as $c) {
+                    if ((string) $c['slug'] === $slug) {
+                        $name = (string) ($c['name'] ?? $slug);
+                        break;
+                    }
+                }
+                $items[] = ['key' => $slug, 'label' => $name];
+            } else {
+                foreach (get_categories() as $c) {
+                    $items[] = ['key' => (string) $c['slug'], 'label' => (string) ($c['name'] ?? $c['slug'])];
+                }
+            }
+            $resp = ['ok' => true, 'items' => $items];
+        } elseif ($op === 'cluster') {
+            $r = cluster_news_for_category($key);
+            $resp = ['ok' => !empty($r['ok']), 'count' => (int) ($r['clusters'] ?? 0), 'detail' => (string) ($r['message'] ?? '')];
+        } elseif ($op === 'synth_plan') {
+            $filters = ['status' => 'selected'];
+            if ($slug !== '') {
+                $filters['category_slug'] = $slug;
+            }
+            $items = [];
+            foreach (story_clusters($filters) as $c) {
+                if (!empty($c['draft_id'])) {
+                    continue; // already synthesized
+                }
+                $items[] = ['key' => (string) (int) $c['id'], 'label' => mb_substr((string) ($c['headline'] ?? ('cluster #' . (int) $c['id'])), 0, 40, 'UTF-8')];
+                if (count($items) >= 8) {
+                    break;
+                }
+            }
+            $resp = ['ok' => true, 'items' => $items];
+        } elseif ($op === 'synthesize') {
+            $r = synthesize_cluster_to_draft((int) $key);
+            $isNew = !empty($r['ok']) && (string) ($r['code'] ?? '') !== 'exists';
+            $resp = ['ok' => !empty($r['ok']), 'created' => $isNew, 'detail' => (string) ($r['message'] ?? '')];
+        }
+    } catch (Throwable $exception) {
+        $resp = ['ok' => false, 'error' => $exception->getMessage()];
+    }
+    echo json_encode($resp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'admin/story-clusters') {
     require_admin();
     $flash = (string) ($_GET['flash'] ?? '');
