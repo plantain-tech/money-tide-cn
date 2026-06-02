@@ -413,9 +413,12 @@ function public_newsletter_archive(int $limit = 30): array
         return [];
     }
     try {
+        // 'sent'/'archived' = manually broadcast issues; auto-generated 'ready'
+        // issues are the autonomous daily 早报 — publish them to the public
+        // archive too (autonomous mode never email-sends them, by the human gate).
         $statement = $pdo->query("SELECT id, slug, subject, intro, sent_at, created_at, status
             FROM newsletter_issues
-            WHERE status IN ('sent', 'archived')
+            WHERE status IN ('sent', 'archived') OR (status = 'ready' AND auto_generated = 1)
             ORDER BY COALESCE(sent_at, created_at) DESC
             LIMIT " . (int) $limit);
         return $statement->fetchAll() ?: [];
@@ -432,7 +435,7 @@ function public_newsletter_issue(string $slug): ?array
         return null;
     }
     try {
-        $statement = $pdo->prepare("SELECT * FROM newsletter_issues WHERE slug = :slug AND status IN ('sent','archived') LIMIT 1");
+        $statement = $pdo->prepare("SELECT * FROM newsletter_issues WHERE slug = :slug AND (status IN ('sent','archived') OR (status = 'ready' AND auto_generated = 1)) LIMIT 1");
         $statement->execute(['slug' => $slug]);
         $issue = $statement->fetch();
         if (!$issue) {
