@@ -15,7 +15,7 @@ $tabs = ['' => '全部', 'new' => '未回复', 'replied' => '已回复', 'archiv
             <p>访客在 <a href="<?= e(url('contact')) ?>" target="_blank" rel="noopener">联系页</a> 提交的留言都会落在这里。直接在后台回复——邮件由站点通过 Brevo 以 <strong>钱潮 Money Tide &lt;newsletter@…&gt;</strong> 的名义发出，访客看不到你的个人邮箱。</p>
         </div>
         <div class="admin-actions">
-            <a class="ghost-link" href="<?= e(url('admin')) ?>">工作台</a>
+            <a class="ghost-link" href="<?= e(url('admin')) ?>" style="white-space:nowrap">工作台</a>
         </div>
     </div>
 
