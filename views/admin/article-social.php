@@ -54,14 +54,35 @@ $articleId = (int) ($article['id'] ?? 0);
         <?php if ($assistedPackages): ?>
             <div class="assisted-tabs" role="tablist">
                 <?php $first = true; foreach ($assistedPackages as $k => $p): ?>
-                    <button class="assisted-tab <?= $first ? 'is-active' : '' ?>" type="button" role="tab" data-assisted-tab="<?= e($k) ?>"><?= e($p['icon'] . ' ' . $p['label']) ?></button>
+                    <?php $blockCount = !empty($p['blocks']) ? count($p['blocks']) : 0; ?>
+                    <button class="assisted-tab <?= $first ? 'is-active' : '' ?>" type="button" role="tab" data-assisted-tab="<?= e($k) ?>">
+                        <span class="assisted-tab-ic"><?= e((string) $p['icon']) ?></span>
+                        <span><?= e((string) $p['label']) ?></span>
+                        <?php if ($blockCount > 1): ?><span class="assisted-tab-badge"><?= (int) $blockCount ?></span><?php endif; ?>
+                    </button>
                 <?php $first = false; endforeach; ?>
             </div>
             <?php $first = true; foreach ($assistedPackages as $k => $p): ?>
                 <div class="assisted-panel <?= $first ? 'is-active' : '' ?>" data-assisted-panel="<?= e($k) ?>">
-                    <p class="assisted-tip">💡 <?= e((string) $p['tips']) ?></p>
-                    <textarea class="assisted-text" rows="10" readonly data-assisted-text><?= e((string) $p['text']) ?></textarea>
-                    <button class="button button-small" type="button" data-assisted-copy>📋 复制到剪贴板</button>
+                    <p class="assisted-tip"><span aria-hidden="true">💡</span> <?= e((string) $p['tips']) ?></p>
+                    <?php
+                        $blocks = !empty($p['blocks'])
+                            ? $p['blocks']
+                            : [['label' => '', 'text' => (string) ($p['text'] ?? '')]];
+                    ?>
+                    <?php foreach ($blocks as $blk): ?>
+                        <?php $btext = (string) ($blk['text'] ?? ''); $blabel = (string) ($blk['label'] ?? ''); ?>
+                        <div class="assisted-block" data-assisted-block>
+                            <div class="assisted-block-head">
+                                <span class="assisted-block-label"><?= $blabel !== '' ? e($blabel) : '内容' ?></span>
+                                <span class="assisted-charcount"><?= (int) mb_strlen($btext, 'UTF-8') ?> 字</span>
+                            </div>
+                            <textarea class="assisted-text" rows="<?= $blabel !== '' && mb_strlen($btext, 'UTF-8') < 200 ? 5 : 9 ?>" readonly data-assisted-text><?= e($btext) ?></textarea>
+                            <button class="button button-small assisted-copy-btn" type="button" data-assisted-copy>
+                                <span class="assisted-copy-ic" aria-hidden="true">📋</span> 复制
+                            </button>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             <?php $first = false; endforeach; ?>
         <?php endif; ?>
@@ -242,15 +263,15 @@ $articleId = (int) ($article['id'] ?? 0);
     // Assisted packages: copy
     document.querySelectorAll('[data-assisted-copy]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var panel = btn.closest('[data-assisted-panel]');
-            var ta = panel ? panel.querySelector('[data-assisted-text]') : null;
+            var block = btn.closest('[data-assisted-block]') || btn.closest('[data-assisted-panel]');
+            var ta = block ? block.querySelector('[data-assisted-text]') : null;
             var text = ta ? ta.value : '';
             if (!text) return;
             var done = function () {
-                var original = btn.textContent;
-                btn.textContent = '已复制 ✓';
+                var original = btn.innerHTML;
+                btn.innerHTML = '✓ 已复制';
                 btn.classList.add('is-copied');
-                setTimeout(function () { btn.textContent = original; btn.classList.remove('is-copied'); }, 1600);
+                setTimeout(function () { btn.innerHTML = original; btn.classList.remove('is-copied'); }, 1600);
             };
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
