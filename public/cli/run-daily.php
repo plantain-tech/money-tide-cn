@@ -64,7 +64,12 @@ set_pipeline_setting('cron_lock_since', date('Y-m-d H:i:s'));
 
 // Wall-clock budget: stop launching new AI work past this so we always reach
 // the logging tail before a host-imposed kill. Remaining work resumes next run.
-$budgetSec = 280;
+$budgetSec = 300;
+// Reserve roughly half the budget for synthesis. Clustering is slow (~60s per
+// category) and with a big ingest it would otherwise eat the whole budget and
+// starve the synthesize stage -> "草稿 0". Cap clustering so synthesis always
+// gets a turn; unclustered categories simply resume next tick.
+$clusterBudget = (int) round($budgetSec * 0.5);
 $cfg = pipeline_config();
 $stages = [
     'ingest' => ['new_items' => 0],
@@ -85,12 +90,13 @@ try {
         cli_out('ingest: +' . $stages['ingest']['new_items'] . ' items (' . (int) ($r['sources'] ?? 0) . ' sources)');
     }
 
-    // 2) Cluster — one category per step, paced.
+    // 2) Cluster — one category per step, paced. Capped at $clusterBudget so the
+    // synthesis stage below always gets time (avoids "草稿 0").
     $cats = function_exists('get_categories') ? get_categories() : [];
     foreach ($cats as $c) {
-        if ($elapsed() > $budgetSec) {
+        if ($elapsed() > $clusterBudget) {
             $overBudget = true;
-            cli_out('budget reached before clustering finished — will resume next run.');
+            cli_out('cluster budget reached — moving on to synthesis; remaining categories resume next run.');
             break;
         }
         if (function_exists('category_paused') && category_paused((string) $c['slug'])) {
@@ -103,8 +109,9 @@ try {
         sleep(2); // pace AI
     }
 
-    // 3) Synthesize — one selected cluster per step, paced.
-    if (!$overBudget && function_exists('synthesize_cluster_to_draft')) {
+    // 3) Synthesize — one selected cluster per step, paced. Runs every tick
+    // (even if clustering was capped above) using the remaining budget.
+    if (function_exists('synthesize_cluster_to_draft')) {
         $limit = max(1, (int) $cfg['synthesize_limit']);
         $ids = [];
         foreach (story_clusters(['status' => 'selected']) as $cl) {
