@@ -47,16 +47,16 @@ $confClass = static function (int $s): string {
             data-assess-run data-mode="new"
             data-step-url="<?= e(url('admin/review-queue/step')) ?>"
             data-title="AI 批量审核中…"
-            <?= (empty($aiReady['ready']) || ($summary['unassessed'] ?? 0) < 1) ? 'disabled' : '' ?>>
-            🔍 AI 批量审核（最多8篇）
+            <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+            🔍 AI 批量审核（最多8篇）<?= ($summary['unassessed'] ?? 0) > 0 ? '：' . (int) $summary['unassessed'] . ' 篇待评估' : '' ?>
         </button>
-        <small class="news-action-hint">对「已起草未审核」的草稿运行 AI 事实核查，每篇耗 1 次 AI 额度。强草稿自动通过，可疑的留给你。</small>
+        <small class="news-action-hint">对「已起草未审核」的草稿运行 AI 事实核查，每篇耗 1 次 AI 额度。强草稿自动通过，可疑的留给你。<?= ($summary['unassessed'] ?? 0) < 1 ? '（当前没有待评估的新草稿——要处理下面 ' . (int) ($summary['pending_review'] ?? 0) . ' 篇人工队列，请用右侧「重新评估队列」。）' : '' ?></small>
         <button class="button button-ghost" type="button"
             data-assess-run data-mode="requeue"
             data-step-url="<?= e(url('admin/review-queue/step')) ?>"
             data-title="重新评估队列中…"
-            <?= (empty($aiReady['ready']) || ($summary['pending_review'] ?? 0) < 1) ? 'disabled' : '' ?>>
-            ♻️ 重新评估队列（最多20篇）
+            <?= empty($aiReady['ready']) ? 'disabled' : '' ?>>
+            ♻️ 重新评估队列（最多20篇）<?= ($summary['pending_review'] ?? 0) > 0 ? '：' . (int) $summary['pending_review'] . ' 篇待人工' : '' ?>
         </button>
         <small class="news-action-hint">用当前规则/阈值重新给「已转人工」的草稿打分。置信度达标的会立即转为自动通过（在下次发布阶段发布），不再卡在这里。</small>
     </div>
