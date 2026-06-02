@@ -133,6 +133,9 @@ function assess_draft(int $draftId): array
     }
     $assessment = mb_substr(trim((string) ($payload['assessment'] ?? '')), 0, 500, 'UTF-8');
 
+    // HIGH-severity flags are still recorded and surfaced on the review screen,
+    // but are ADVISORY only — they no longer veto auto-approval. Auto-approval is
+    // governed purely by the confidence threshold (the slider on the control room).
     $hasHigh = false;
     foreach ($normFlags as $f) {
         if ($f['severity'] === 'high') {
@@ -141,7 +144,7 @@ function assess_draft(int $draftId): array
         }
     }
     $threshold = auto_review_threshold();
-    $recommendation = ($confidence >= $threshold && !$hasHigh) ? 'auto_approve' : 'needs_review';
+    $recommendation = ($confidence >= $threshold) ? 'auto_approve' : 'needs_review';
     $decision = $recommendation === 'auto_approve' ? 'approved' : 'pending';
     $decidedBy = $recommendation === 'auto_approve' ? 'ai' : null;
     $decidedAt = $recommendation === 'auto_approve' ? date('Y-m-d H:i:s') : null;
