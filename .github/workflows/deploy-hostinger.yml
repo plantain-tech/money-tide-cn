@@ -176,12 +176,32 @@ jobs:
           done
           echo "Deploy succeeded on attempt $attempt."
 
-      - name: Verify production homepage
+      - name: Flush OPcache and verify release marker is live
         env:
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
         run: |
-          if [ -n "$PRODUCTION_URL" ]; then
-            curl --fail --silent --show-error --location "$PRODUCTION_URL/health.php"
-          else
+          if [ -z "$PRODUCTION_URL" ]; then
             echo "PRODUCTION_URL secret is not set; skipping health check."
+            exit 0
           fi
+          # The marker we just deployed (parsed from the committed health.php).
+          EXPECTED=$(grep -oE "'release' => '[^']+'" public/health.php | head -1 | sed "s/.*=> '//; s/'.*//")
+          echo "Expected release marker: $EXPECTED"
+          # Flush server OPcache so the freshly mirrored PHP takes effect, then poll
+          # the live marker until it matches (Hostinger may serve stale bytecode for
+          # a few seconds). Fail loudly if it never catches up — no more silent
+          # "success" while the old code is still live.
+          for i in $(seq 1 12); do
+            curl --silent --max-time 20 "$PRODUCTION_URL/health.php?oc=1&nc=$RANDOM$i" > /tmp/health.json || true
+            LIVE=$(grep -oE '"release":"[^"]+"' /tmp/health.json | sed 's/.*:"//; s/"//')
+            echo "Attempt $i — live marker: ${LIVE:-<none>}"
+            if [ "$LIVE" = "$EXPECTED" ]; then
+              echo "✅ Live marker matches the deployed release ($EXPECTED)."
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ Live marker never reached '$EXPECTED' (last saw '${LIVE:-<none>}'). Files may not have mirrored or OPcache did not flush."
+          cat /tmp/health.json || true
+          exit 1
