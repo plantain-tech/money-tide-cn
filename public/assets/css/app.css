@@ -2051,6 +2051,14 @@ main {
     cursor: not-allowed;
 }
 
+/* Any primary/ghost button that is disabled should look disabled. */
+.button:disabled,
+.button[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.3);
+}
+
 .button-ghost {
     background: var(--paper);
 }
