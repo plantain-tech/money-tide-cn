@@ -1,9 +1,5 @@
 <?php
 $pageTitle = '隐私政策 Privacy Policy - 钱潮 Money Tide';
-$contactEmail = function_exists('app_config') ? trim((string) app_config('email.from_address', '')) : '';
-if ($contactEmail === '') {
-    $contactEmail = 'contact@avanturadeals.com';
-}
 $updated = date('Y-m-d');
 ?>
 <section class="page-hero compact">
@@ -68,5 +64,5 @@ $updated = date('Y-m-d');
 
 <section class="newsletter-block">
     <h2>政策更新与联系方式</h2>
-    <p>本政策可能不时更新，更新后会在本页标注新的「最后更新」日期。如对本政策有任何疑问，请通过 <a href="<?= e(url('contact')) ?>">联系我们</a> 页面，或发送邮件至 <a href="mailto:<?= e($contactEmail) ?>"><?= e($contactEmail) ?></a>。</p>
+    <p>本政策可能不时更新，更新后会在本页标注新的「最后更新」日期。如对本政策有任何疑问，请通过 <a href="<?= e(url('contact')) ?>">联系我们</a> 页面给我们留言。</p>
 </section>

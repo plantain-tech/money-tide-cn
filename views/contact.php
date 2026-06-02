@@ -1,19 +1,15 @@
 <?php
 $pageTitle = '联系我们 Contact - 钱潮 Money Tide';
-$contactEmail = function_exists('app_config') ? trim((string) app_config('email.from_address', '')) : '';
-if ($contactEmail === '') {
-    $contactEmail = 'contact@avanturadeals.com';
-}
 ?>
 <section class="page-hero compact">
     <p class="eyebrow">Contact</p>
     <h1>联系我们</h1>
-    <p>关于内容、合作、广告、更正或隐私的任何问题，欢迎随时联系钱潮 Money Tide 团队。我们会尽快回复。</p>
+    <p>关于内容、合作、广告、更正或隐私的任何问题，欢迎随时联系钱潮 Money Tide 团队。请使用下方的表单留言，我们会通过你填写的邮箱尽快回复。</p>
 </section>
 
 <section class="newsletter-block">
-    <h2>📧 电子邮箱</h2>
-    <p>最快的方式是邮件联系：<a class="contact-email" href="mailto:<?= e($contactEmail) ?>"><?= e($contactEmail) ?></a></p>
+    <h2>📨 联系方式</h2>
+    <p>请直接使用下方表单给我们留言——这是联系我们最快、最可靠的方式。我们会通过你填写的邮箱回复你。</p>
     <ul class="qa-list">
         <li><strong>内容与更正。</strong><small>发现事实错误或需要更正？请附上文章链接与说明。</small></li>
         <li><strong>广告与合作。</strong><small>赞助、联盟与品牌合作咨询。</small></li>
@@ -42,7 +38,7 @@ if ($contactEmail === '') {
         <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
         <div class="cms-form-actions"><button class="button" type="submit">发送留言</button></div>
     </form>
-    <p class="news-action-hint">我们会通过你填写的邮箱回复你。也可直接发邮件到 <a href="mailto:<?= e($contactEmail) ?>"><?= e($contactEmail) ?></a>。</p>
+    <p class="news-action-hint">我们会通过你填写的邮箱回复你，请确保邮箱填写正确。</p>
 </section>
 
 <section class="newsletter-block">
