@@ -188,12 +188,19 @@ $on = !empty($config['enabled']);
     <?php endif; ?>
 
     <!-- ── Cron guide ─────────────────────────────────────────────────────── -->
+    <?php $stagePath = str_replace('run-daily.php', 'run-stage.php', (string) $cliPath); ?>
     <section class="news-cron-guide">
-        <h2>⏰ 设置每日 Cron（真正的自动驾驶）</h2>
-        <p>在 Hostinger hPanel → 高级 → Cron Jobs 添加（每天早上 7 点跑一次）：</p>
+        <h2>⏰ 设置 Cron（真正的自动驾驶）</h2>
+
+        <p><strong>✅ 推荐：接力式三段 Cron（更稳，不会因主机时限中断）。</strong>把流水线拆成三棒接力，错峰运行、数据库交接：抓取聚类 → 写稿 → 发布分发。每段都短、可续跑、有防重叠锁。</p>
+        <code class="monitoring-url">0,30 * * * * /usr/bin/php <?= e($stagePath) ?> ingest</code>
+        <code class="monitoring-url">10,40 * * * * /usr/bin/php <?= e($stagePath) ?> synthesize</code>
+        <code class="monitoring-url">20,50 * * * * /usr/bin/php <?= e($stagePath) ?> publish</code>
+        <p class="news-action-hint">三条都用 Custom 模式。每 30 分钟跑一轮：第 0/30 分抓取+聚类，第 10/40 分写稿，第 20/50 分审核+发布+组装早报+推送渠道。运行记录里会看到 <code>cron:ingest</code> / <code>cron:synthesize</code> / <code>cron:publish</code> 三类记录。慢的聚类不再拖垮写稿 —— 这是「草稿 0」的根治办法。</p>
+
+        <p style="margin-top:1.2rem"><strong>或：单段 Cron（简单，但一次性跑完，受主机时限影响）。</strong>每天早上 7 点跑一次整条流水线：</p>
         <code class="monitoring-url">0 7 * * * /usr/bin/php <?= e($cliPath) ?></code>
-        <p><small>脚本会先检查上面的开关：关闭时直接跳过；开启时分步跑完整条流水线（每步都会打印进度，可在 hPanel「View Output」查看到哪一步）。建议也保留每 2 小时一次的抓取 Cron（cli/fetch-news.php）让素材更新更勤。该脚本仅命令行可运行。</small></p>
-        <p class="news-action-hint">⚠️ 测试时<strong>不要用每 5 分钟（*/5）</strong>：一次完整运行约需 5 分钟，过于频繁会让多次运行重叠。已内置防重叠锁（运行中会自动跳过），但仍建议测试用<strong>每 15–30 分钟</strong>、正式用<strong>每天一次</strong>。运行完成后到上方「运行记录」应出现一条 <code>cron</code> 记录。</p>
+        <p><small>两种都先检查上面的总开关：关闭时直接跳过。建议另保留每 2–4 小时一次的抓取 Cron（cli/fetch-news.php）让素材更新更勤。脚本仅命令行可运行。</small></p>
     </section>
 
     <!-- ── Run history ────────────────────────────────────────────────────── -->
