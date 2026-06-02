@@ -1800,6 +1800,10 @@ if ($route === 'admin/review-queue') {
             @set_time_limit(720);
             $assessRun = assess_pending_drafts(8);
             $flash = 'AI 审核完成：' . $assessRun['auto'] . ' 自动通过 / ' . $assessRun['review'] . ' 转人工 / ' . $assessRun['failed'] . ' 失败。';
+        } elseif ($action === 'reassess') {
+            @set_time_limit(720);
+            $assessRun = reassess_review_queue(20);
+            $flash = '重新评估完成：' . $assessRun['auto'] . ' 自动通过 / ' . $assessRun['review'] . ' 仍转人工 / ' . $assessRun['failed'] . ' 失败。自动通过的草稿将在下次发布阶段发布。';
         } elseif ($action === 'assess') {
             @set_time_limit(120);
             $r = assess_draft((int) ($_POST['id'] ?? 0));

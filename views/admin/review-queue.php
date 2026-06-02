@@ -51,6 +51,14 @@ $confClass = static function (int $s): string {
             </button>
         </form>
         <small class="news-action-hint">对「已起草未审核」的草稿运行 AI 事实核查，每篇耗 1 次 AI 额度。强草稿自动通过，可疑的留给你。</small>
+        <form method="post" action="<?= e(url('admin/review-queue')) ?>" class="news-fetch-form" data-news-fetch>
+            <input type="hidden" name="action" value="reassess">
+            <button class="button button-ghost" type="submit" data-news-fetch-btn <?= (empty($aiReady['ready']) || ($summary['pending_review'] ?? 0) < 1) ? 'disabled' : '' ?>>
+                <span class="news-fetch-label">♻️ 重新评估队列（最多20篇）</span>
+                <span class="news-fetch-spinner" hidden></span>
+            </button>
+        </form>
+        <small class="news-action-hint">用当前规则/阈值重新给「已转人工」的草稿打分。置信度达标的会立即转为自动通过（在下次发布阶段发布），不再卡在这里。</small>
     </div>
 
     <!-- Assess run result -->

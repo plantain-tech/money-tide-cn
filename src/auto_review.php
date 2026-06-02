@@ -254,6 +254,74 @@ function assess_pending_drafts(int $limit = 8, int $pauseSec = 2, int $maxTries 
     return $summary;
 }
 
+/**
+ * Re-score drafts ALREADY in the human queue (recommendation=needs_review, still
+ * pending) so a changed rule/threshold applies retroactively. assess_draft upserts
+ * the auto_reviews row, so confident drafts flip to auto_approve in place.
+ */
+function reassess_review_queue(int $limit = 20, int $pauseSec = 2, int $maxTries = 2): array
+{
+    ensure_auto_review_schema();
+    $pdo = db();
+    $summary = ['total' => 0, 'auto' => 0, 'review' => 0, 'failed' => 0, 'details' => []];
+    if (!$pdo instanceof PDO) {
+        return $summary;
+    }
+    try {
+        $rows = $pdo->query("SELECT ar.draft_id AS id, d.draft_payload
+            FROM auto_reviews ar
+            INNER JOIN ai_drafts d ON d.id = ar.draft_id
+            WHERE ar.recommendation = 'needs_review' AND ar.decision = 'pending'
+              AND d.status <> 'converted'
+            ORDER BY ar.draft_id DESC LIMIT " . max(1, min(40, $limit)))->fetchAll() ?: [];
+    } catch (Throwable $exception) {
+        return $summary;
+    }
+
+    foreach ($rows as $row) {
+        if (!ai_usage_allowed()) {
+            $summary['details'][] = ['id' => (int) $row['id'], 'ok' => false, 'message' => 'AI 额度用完，已停止。'];
+            $summary['failed']++;
+            break;
+        }
+        $payload = json_decode((string) ($row['draft_payload'] ?? '{}'), true) ?: [];
+        $title = (string) ($payload['title'] ?? ('草稿 #' . (int) $row['id']));
+
+        $attempt = 1;
+        $r = ['ok' => false, 'code' => 'unknown', 'message' => '未执行'];
+        while ($attempt <= $maxTries) {
+            $r = assess_draft((int) $row['id']);
+            if ($r['ok'] || in_array((string) ($r['code'] ?? ''), ['missing', 'provider'], true)) {
+                break;
+            }
+            if ((string) ($r['code'] ?? '') === 'quota') {
+                break 2;
+            }
+            if ($attempt < $maxTries) {
+                sleep($attempt * 3);
+            }
+            $attempt++;
+        }
+
+        $summary['total']++;
+        if ($r['ok']) {
+            ($r['recommendation'] ?? '') === 'auto_approve' ? $summary['auto']++ : $summary['review']++;
+        } else {
+            $summary['failed']++;
+        }
+        $summary['details'][] = ['id' => (int) $row['id'], 'title' => $title, 'ok' => $r['ok'], 'message' => $r['message']];
+
+        if ($pauseSec > 0) {
+            sleep($pauseSec);
+        }
+    }
+
+    if (function_exists('record_event')) {
+        record_event('draft_reassess_batch', ['source' => $summary['auto'] . ' auto / ' . $summary['review'] . ' review']);
+    }
+    return $summary;
+}
+
 function auto_review_for_draft(int $draftId): ?array
 {
     ensure_auto_review_schema();
