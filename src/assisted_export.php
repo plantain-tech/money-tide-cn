@@ -168,6 +168,28 @@ function assisted_export_packages(array $article): array
         }
     }
 
+    // ---- X / Twitter：punchy tweet (manual, free). CJK counts double on X, so keep tight. ----
+    $xHook = mb_substr($dek !== '' ? $dek : $title, 0, 100, 'UTF-8');
+    $xText = $xHook;
+    if ($brief !== '' && $brief !== $xHook) {
+        $xText .= "\n" . mb_substr($brief, 0, 60, 'UTF-8');
+    }
+    $xTags = '';
+    $xn = 0;
+    foreach ($tags as $t) {
+        $t = trim((string) $t);
+        if ($t !== '' && preg_match('/^[A-Za-z0-9]{2,20}$/', $t)) {
+            $xTags .= ' #' . $t;
+            if (++$xn >= 3) {
+                break;
+            }
+        }
+    }
+    if ($xTags !== '') {
+        $xText .= "\n" . trim($xTags);
+    }
+    $xText .= "\n" . assisted_export_article_url($article, 'x');
+
     // ---- 小红书：emoji, hooky, bullets, tags ----
     $xhsTitle = mb_substr('📈 ' . ($dek !== '' ? $dek : $title), 0, 20, 'UTF-8');
     $xhs = $xhsTitle . "\n\n";
@@ -251,6 +273,7 @@ function assisted_export_packages(array $article): array
     }
 
     return [
+        'x' => ['label' => 'X / Twitter', 'icon' => '𝕏', 'text' => trim($xText), 'tips' => '手动发推（免费，无需 API）：复制后到 X 发布。中文约 140 字内，配图更佳。把 Telegram 频道链接放简介，引流涨粉。'],
         'xueqiu' => [
             'label' => '雪球',
             'icon' => '❄️',

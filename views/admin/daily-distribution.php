@@ -9,6 +9,7 @@ $today = $today ?? date('Y-m-d');
 // Ordered easy→hard for a phone-only (no Chinese ID) account: 知乎 leads, the
 // ID-gated 百家号 is last and flagged.
 $platforms = [
+    'x'           => ['label' => 'X / Twitter', 'icon' => '𝕏', 'editor' => 'https://x.com/compose/post', 'tip' => '手动发推（免费）：复制 → 到 X 粘贴发布。中文约 140 字内，配图更佳。简介放 Telegram 链接引流。'],
     'zhihu'       => ['label' => '知乎',     'icon' => '🔵', 'editor' => 'https://zhuanlan.zhihu.com/write', 'tip' => '手机号即可发，无需实名。可发为专栏文章，更要去热门财经问题下贴「回答」——借现成流量最快涨粉。'],
     'xiaohongshu' => ['label' => '小红书',   'icon' => '📕', 'editor' => 'https://creator.xiaohongshu.com/publish/publish', 'tip' => '手机号即可发。配 9 宫格图或封面卡；标题短、多 emoji。'],
     'xueqiu'      => ['label' => '雪球',     'icon' => '❄️', 'editor' => 'https://xueqiu.com/', 'tip' => '手机号即可发。当长帖发；带 $股票$ 现金标签进个股讨论页（新号先养几天再放链接）。'],
@@ -16,7 +17,7 @@ $platforms = [
     'baijiahao'   => ['label' => '百家号',   'icon' => '🐾', 'editor' => 'https://baijiahao.baidu.com/builder/rc/edit?type=news', 'tip' => '⚠️ 需中国身份证实名认证，无 ID 暂时跳过。'],
 ];
 if (!isset($platforms[$platform])) {
-    $platform = 'zhihu';
+    $platform = 'x';
 }
 
 // Extract a single copy-ready string for a given platform from a package.
