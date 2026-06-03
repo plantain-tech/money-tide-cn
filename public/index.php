@@ -2595,7 +2595,7 @@ if ($route === 'admin/week9-checklist') {
             $dryRun = autonomy_dry_run();
             $flash = 'Dry run 完成：' . ($dryRun['message'] ?? '');
         } elseif ($action === 'save_threshold') {
-            $value = max(50, min(100, (int) ($_POST['review_threshold'] ?? 80)));
+            $value = max(30, min(100, (int) ($_POST['review_threshold'] ?? 80)));
             set_pipeline_setting('review_threshold', (string) $value);
             $flash = '已保存自动通过阈值：' . $value . ' 分。';
         }

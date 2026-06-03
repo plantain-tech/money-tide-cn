@@ -57,11 +57,11 @@ function auto_review_threshold(): int
     if (function_exists('pipeline_setting')) {
         $override = (int) pipeline_setting('review_threshold', '0');
         if ($override > 0) {
-            return max(50, min(100, $override));
+            return max(30, min(100, $override));
         }
     }
     $t = (int) app_config('ai.review_threshold', 80);
-    return max(50, min(100, $t > 0 ? $t : 80));
+    return max(30, min(100, $t > 0 ? $t : 80));
 }
 
 function auto_review_severity_labels(): array

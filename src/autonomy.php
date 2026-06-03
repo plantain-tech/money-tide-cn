@@ -25,7 +25,7 @@ function autonomy_review_threshold(): int
 {
     $override = function_exists('pipeline_setting') ? (int) pipeline_setting('review_threshold', '0') : 0;
     if ($override > 0) {
-        return max(50, min(100, $override));
+        return max(30, min(100, $override));
     }
     return function_exists('auto_review_threshold') ? auto_review_threshold() : 80;
 }

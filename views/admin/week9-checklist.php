@@ -86,12 +86,12 @@ $days = [
                 <input type="hidden" name="action" value="save_threshold">
                 <div class="threshold-control">
                     <output class="threshold-bubble" data-threshold-bubble><?= e((string) $threshold) ?></output>
-                    <input type="range" name="review_threshold" min="50" max="100" step="1"
+                    <input type="range" name="review_threshold" min="30" max="100" step="1"
                         value="<?= e((string) $threshold) ?>" data-threshold-range>
-                    <div class="threshold-scale"><span>50 大胆</span><span>75 平衡</span><span>100 谨慎</span></div>
+                    <div class="threshold-scale"><span>30 最激进</span><span>65 平衡</span><span>100 谨慎</span></div>
                 </div>
                 <div class="cms-form-actions"><button class="button button-small" type="submit">保存阈值</button></div>
-                <p class="news-action-hint">当前生效阈值 <strong><?= e((string) $threshold) ?></strong> 分。免费额度起步建议 75–85，跑顺后再按转人工量微调。</p>
+                <p class="news-action-hint">当前生效阈值 <strong><?= e((string) $threshold) ?></strong> 分。越低发布越多、但质量风险越高：30–40 = 最大产量（适合冲量/测试），50–65 = 平衡，75–85 = 稳健。低阈值时建议多留意 AI 审核台与已发布文章质量。</p>
             </form>
         </section>
     </div>
