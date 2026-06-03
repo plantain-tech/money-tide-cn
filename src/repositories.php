@@ -254,7 +254,7 @@ function category_fallback_image(string $categorySlug): string
         'wealth' => 'assets/img/hero-wealth.svg',
     ];
 
-    return canonical_url($map[$categorySlug] ?? 'assets/img/og-money-tide.svg');
+    return canonical_url($map[$categorySlug] ?? 'assets/img/og-money-tide.png');
 }
 
 function db_articles(?string $categorySlug = null): ?array

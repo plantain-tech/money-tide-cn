@@ -41,6 +41,12 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <meta property="og:description" content="<?= e($pageDescription) ?>">
     <meta property="og:url" content="<?= e($canonicalUrl) ?>">
     <meta property="og:image" content="<?= e($ogImage) ?>">
+    <?php $ogIsDefault = str_contains((string) $ogImage, 'og-money-tide.png'); ?>
+    <?php if ($ogIsDefault): ?>
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:image:type" content="image/png">
+    <?php endif; ?>
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<?= e($pageTitle) ?>">
     <meta name="twitter:description" content="<?= e($pageDescription) ?>">
