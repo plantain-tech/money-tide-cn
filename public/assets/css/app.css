@@ -7261,6 +7261,57 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
 .interstitial-cta:hover { transform: translateY(-1px); }
 @media (prefers-reduced-motion: reduce) { .interstitial-card, .interstitial-backdrop, .interstitial-close { animation: none !important; } }
 
+/* ===== Today's distribution (一键分发) ===== */
+.dist-platforms { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.4rem 0 1rem; }
+.dist-platform {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border: 2px solid var(--ink); background: var(--white); padding: 0.5rem 1rem;
+    font-weight: 700; font-size: 0.92rem; cursor: pointer; border-radius: 999px;
+    transition: transform 0.12s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.dist-platform .dist-platform-ic { font-size: 1.1rem; line-height: 1; }
+.dist-platform:hover { transform: translateY(-1px); background: var(--paper-strong); }
+.dist-platform.is-active { background: var(--ink); color: var(--lime); box-shadow: 0 4px 0 rgba(0,0,0,0.18); }
+.dist-progress-wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.dist-tip {
+    flex: 1 1 320px; color: var(--muted); font-size: 0.84rem; line-height: 1.5;
+    background: var(--paper-strong); border: 1px dashed var(--line, #d9d4c5); border-radius: 10px; padding: 0.5rem 0.8rem;
+}
+.dist-progress { display: flex; align-items: center; gap: 0.6rem; min-width: 240px; }
+.dist-progress-bar { flex: 1; height: 0.7rem; background: var(--paper-strong); border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; }
+.dist-progress-fill { display: block; height: 100%; width: 0; background: var(--lime); border-radius: 999px; transition: width 0.5s cubic-bezier(.2,.9,.3,1); }
+.dist-progress-label { font-size: 0.8rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
+.dist-card {
+    border: 2px solid var(--ink); border-radius: 14px; background: var(--white); padding: 1rem 1.05rem 1.05rem;
+    display: flex; flex-direction: column; box-shadow: 4px 4px 0 rgba(0,0,0,0.07);
+    animation: dist-pop 0.4s ease both; animation-delay: calc(var(--i, 0) * 55ms);
+    transition: box-shadow 0.2s ease, opacity 0.25s ease, transform 0.2s ease;
+}
+.dist-card:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.12); transform: translateY(-2px); }
+.dist-card-digest { border-color: var(--blue); background: #f3f7ff; }
+.dist-card.is-posted { opacity: 0.55; }
+.dist-card.is-posted h3 { text-decoration: line-through; text-decoration-thickness: 1px; }
+.dist-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.dist-card-tag { font-size: 0.72rem; font-weight: 800; background: var(--lime); color: var(--ink); padding: 0.15rem 0.6rem; border-radius: 999px; }
+.dist-card-tag.is-digest { background: var(--blue); color: #fff; }
+.dist-card h3 { font-size: 1.02rem; line-height: 1.4; margin: 0 0 0.6rem; }
+.dist-card h3 a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(0,0,0,0.15); }
+.dist-card h3 a:hover { border-bottom-color: var(--ink); }
+.dist-posted-toggle { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.dist-posted-toggle input { accent-color: #2ecc71; width: 1rem; height: 1rem; cursor: pointer; }
+.dist-block-bar { display: flex; justify-content: flex-end; margin-bottom: 0.3rem; }
+.dist-charcount { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dist-text {
+    width: 100%; border: 2px solid var(--ink); border-radius: 8px; padding: 0.7rem; font-size: 0.88rem; line-height: 1.65;
+    background: var(--paper-strong); resize: vertical; font-family: inherit; white-space: pre-wrap;
+}
+.dist-copy { margin-top: 0.55rem; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; transition: background 0.18s ease, color 0.18s ease, transform 0.1s ease; }
+.dist-copy:active { transform: scale(0.97); }
+.dist-copy.is-copied { background: #2ecc71 !important; color: #fff !important; border-color: #2ecc71 !important; }
+@keyframes dist-pop { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dist-card { animation: none; } .dist-progress-fill { transition: none; } }
+
 /* ===== Freshness light (homepage) + relative timestamps ===== */
 .freshness-pill {
     display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem;

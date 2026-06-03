@@ -140,6 +140,10 @@
             <strong>✈️ 分发渠道（Telegram）</strong>
             <span>发布即自动把文章标题、摘要与链接推送到 Telegram 频道，并每日推送早报；消息 ID 全程记录。</span>
         </a>
+        <a class="admin-module admin-module-feature" href="<?= e(url('admin/daily-distribution')) ?>">
+            <strong>📤 今日分发（头条/百家号/知乎/小红书/雪球）</strong>
+            <span>把今天已发布的文章+早报，在一个屏幕里按平台排好版、逐条一键复制去发；带发布进度与「已发」勾选。</span>
+        </a>
         <a class="admin-module admin-module-feature" href="<?= e(url('admin/week10-checklist')) ?>">
             <strong>🚀 自主上线签收（第 10 周）</strong>
             <span>Sprint 2 收尾：渠道状态、端到端 dry run、分栏目暂停、上线签收清单与第 11 周 backlog。</span>

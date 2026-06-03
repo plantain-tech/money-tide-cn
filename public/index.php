@@ -538,6 +538,31 @@ if (preg_match('#^admin/articles/(\d+)/wechat-draft$#', $route, $matches) && ($_
     exit;
 }
 
+if ($route === 'admin/daily-distribution') {
+    require_admin();
+    $platform = (string) ($_GET['platform'] ?? 'toutiao');
+    $todayArticles = function_exists('todays_distribution_articles') ? todays_distribution_articles() : [];
+    $distItems = [];
+    foreach ($todayArticles as $a) {
+        $distItems[] = [
+            'id' => (int) $a['id'],
+            'title' => (string) $a['title'],
+            'category' => (string) ($a['category_name'] ?? ''),
+            'slug' => (string) $a['slug'],
+            'packages' => function_exists('assisted_export_packages') ? assisted_export_packages($a) : [],
+        ];
+    }
+    render_page('admin/daily-distribution', [
+        'site' => $site,
+        'categories' => $categories,
+        'distItems' => $distItems,
+        'digestText' => function_exists('build_daily_digest_text') ? build_daily_digest_text($todayArticles, $platform) : '',
+        'platform' => $platform,
+        'today' => date('Y-m-d'),
+    ]);
+    exit;
+}
+
 if (preg_match('#^admin/articles/(\d+)/social$#', $route, $matches)) {
     require_admin();
     $articleId = (int) $matches[1];

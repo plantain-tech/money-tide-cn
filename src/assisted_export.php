@@ -13,6 +13,55 @@ declare(strict_types=1);
  * 百家号 read like news, 知乎 reads like an analytical answer.
  */
 
+/**
+ * Today's published articles (newest first) with their tags attached, shaped for
+ * assisted_export_packages(). Powers the one-screen daily distribution view.
+ */
+function todays_distribution_articles(): array
+{
+    $pdo = function_exists('db') ? db() : null;
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        $rows = $pdo->query("SELECT a.id, a.slug, a.title, a.dek, a.brief, a.why_it_matters, a.body,
+                a.published_at, c.name AS category_name, c.slug AS category
+            FROM articles a
+            INNER JOIN categories c ON c.id = a.category_id
+            WHERE a.status = 'published' AND DATE(a.published_at) = CURDATE()
+            ORDER BY a.published_at DESC, a.id DESC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $exception) {
+        return [];
+    }
+    foreach ($rows as &$r) {
+        $r['tags'] = function_exists('article_tags')
+            ? array_map(static fn ($t) => (string) $t['name'], article_tags((int) $r['id']))
+            : [];
+    }
+    unset($r);
+    return $rows;
+}
+
+/** A copy-ready daily 早报 roundup post from today's articles (platform-agnostic). */
+function build_daily_digest_text(array $articles, string $platform = 'toutiao'): string
+{
+    if (!$articles) {
+        return '';
+    }
+    $text = '【钱潮早报】' . date('n月j日') . ' · 今日 ' . count($articles) . " 条要闻\n\n";
+    foreach ($articles as $i => $a) {
+        $text .= ($i + 1) . '. ' . trim((string) ($a['title'] ?? '')) . "\n";
+        $brief = trim((string) (($a['brief'] ?? '') ?: ($a['dek'] ?? '')));
+        if ($brief !== '') {
+            $text .= '   ' . mb_substr($brief, 0, 60, 'UTF-8') . "\n";
+        }
+    }
+    $url = function_exists('canonical_url') ? canonical_url('newsletter') : '/newsletter';
+    $text .= "\n📬 完整早报：" . $url . '?utm_source=' . $platform . '&utm_medium=social&utm_campaign=daily';
+    $text .= "\n关注「钱潮 Money Tide」，每天 5 分钟看懂全球市场。";
+    return $text;
+}
+
 function assisted_export_article_url(array $a, string $platform): string
 {
     $slug = (string) ($a['slug'] ?? '');
