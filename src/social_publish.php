@@ -119,6 +119,23 @@ function category_name_by_slug(string $slug): string
     return $slug;
 }
 
+/**
+ * CTA footer for Telegram channel posts. Channel readers are already on Telegram,
+ * so this pushes (a) the email subscribe (move them to the owned list) and (b) a
+ * channel link, so when a post is FORWARDED into other groups the recipient can
+ * tap through to join. Links are UTM-tagged for attribution.
+ */
+function telegram_cta_footer(): string
+{
+    $sub = canonical_url('subscribe') . '?utm_source=telegram&utm_medium=channel&utm_campaign=footer';
+    $footer = "\n\n———\n📬 <a href=\"" . telegram_escape($sub) . "\">订阅邮件版早报（免费）</a>";
+    $tg = function_exists('telegram_channel_url') ? trim(telegram_channel_url()) : '';
+    if ($tg !== '') {
+        $footer .= '　·　✈️ <a href="' . telegram_escape($tg) . '">钱潮频道</a>';
+    }
+    return $footer;
+}
+
 function format_article_for_telegram(array $a): string
 {
     $title = telegram_escape((string) ($a['title'] ?? ''));
@@ -133,6 +150,7 @@ function format_article_for_telegram(array $a): string
         $text .= "\n" . $brief . "\n";
     }
     $text .= "\n🔗 <a href=\"" . telegram_escape($url) . "\">阅读全文 · 钱潮 Money Tide</a>";
+    $text .= telegram_cta_footer();
     return $text;
 }
 
@@ -229,6 +247,7 @@ function dispatch_daily_digest_to_channels(?string $date = null): array
         $i++;
     }
     $text .= "\n— 每天 5 分钟，看懂全球市场。";
+    $text .= telegram_cta_footer();
     $r = telegram_send_message($text, ['no_preview' => true]);
     record_social_dispatch('telegram', 'digest', $refId, !empty($r['ok']), (string) ($r['message_id'] ?? ''), !empty($r['ok']) ? count($articles) . ' 篇' : (string) ($r['error'] ?? ''));
     $out['telegram'] = $r;
@@ -339,6 +358,7 @@ function send_channel_test(): array
     if (!(function_exists('telegram_configured') && telegram_configured())) {
         return ['ok' => false, 'error' => '请先填写并保存 Bot Token 和频道 ID。'];
     }
-    $r = telegram_send_message('<b>✅ 钱潮 Money Tide</b>' . "\nTelegram 频道连接测试成功，自动分发已就绪。");
+    // Include the live CTA footer so the test message doubles as a footer preview.
+    $r = telegram_send_message('<b>✅ 钱潮 Money Tide</b>' . "\nTelegram 频道连接测试成功，自动分发已就绪。\n（下方为每条推送将自动附带的订阅页脚示例）" . telegram_cta_footer());
     return $r;
 }
