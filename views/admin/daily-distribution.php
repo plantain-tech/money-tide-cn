@@ -10,6 +10,7 @@ $today = $today ?? date('Y-m-d');
 // ID-gated 百家号 is last and flagged.
 $platforms = [
     'x'           => ['label' => 'X / Twitter', 'icon' => '𝕏', 'editor' => 'https://x.com/compose/post', 'tip' => '手动发推（免费）：复制 → 到 X 粘贴发布。中文约 140 字内，配图更佳。简介放 Telegram 链接引流。'],
+    'reddit'      => ['label' => 'Reddit', 'icon' => '👽', 'editor' => 'https://www.reddit.com/submit', 'tip' => '正文不放链接，发完后把「首条评论」里的链接贴到评论区（9:1 原则）。最适合 r/China_irl；先攒 karma 再发帖。'],
     'zhihu'       => ['label' => '知乎',     'icon' => '🔵', 'editor' => 'https://zhuanlan.zhihu.com/write', 'tip' => '手机号即可发，无需实名。可发为专栏文章，更要去热门财经问题下贴「回答」——借现成流量最快涨粉。'],
     'xiaohongshu' => ['label' => '小红书',   'icon' => '📕', 'editor' => 'https://creator.xiaohongshu.com/publish/publish', 'tip' => '手机号即可发。配 9 宫格图或封面卡；标题短、多 emoji。'],
     'xueqiu'      => ['label' => '雪球',     'icon' => '❄️', 'editor' => 'https://xueqiu.com/', 'tip' => '手机号即可发。当长帖发；带 $股票$ 现金标签进个股讨论页（新号先养几天再放链接）。'],
@@ -20,19 +21,21 @@ if (!isset($platforms[$platform])) {
     $platform = 'x';
 }
 
-// Extract a single copy-ready string for a given platform from a package.
-$pkgText = static function (array $packages, string $key): string {
+// Return ALL copy-ready blocks for a platform: [['label'=>.., 'text'=>..], ...].
+// Single-text platforms become one unlabeled block; multi-block ones (雪球/Reddit)
+// return every block so the whole post is copyable here too.
+$pkgBlocks = static function (array $packages, string $key): array {
     $p = $packages[$key] ?? null;
     if (!is_array($p)) {
-        return '';
+        return [];
     }
-    if (!empty($p['text'])) {
-        return (string) $p['text'];
+    if (!empty($p['blocks']) && is_array($p['blocks'])) {
+        return $p['blocks'];
     }
-    if (!empty($p['blocks'][0]['text'])) {
-        return (string) $p['blocks'][0]['text']; // e.g. 雪球 长文
+    if (isset($p['text']) && trim((string) $p['text']) !== '') {
+        return [['label' => '', 'text' => (string) $p['text']]];
     }
-    return '';
+    return [];
 };
 $total = count($distItems) + ($digestText !== '' ? 1 : 0);
 ?>
@@ -102,11 +105,19 @@ $total = count($distItems) + ($digestText !== '' ? 1 : 0);
                     </header>
                     <h3><a href="<?= e(url('article/' . $item['slug'])) ?>" target="_blank" rel="noopener"><?= e($item['title']) ?></a></h3>
                     <?php foreach ($platforms as $key => $meta): ?>
-                        <?php $txt = $pkgText($item['packages'], $key); ?>
+                        <?php $blocks = $pkgBlocks($item['packages'], $key); ?>
                         <div class="dist-block" data-dist-block="<?= e($key) ?>" <?= $key === $platform ? '' : 'hidden' ?>>
-                            <div class="dist-block-bar"><span class="dist-charcount"><?= (int) mb_strlen($txt, 'UTF-8') ?> 字</span></div>
-                            <textarea class="dist-text" rows="8" readonly data-dist-text><?= e($txt) ?></textarea>
-                            <button class="button button-small dist-copy" type="button" data-dist-copy><span aria-hidden="true">📋</span> 复制</button>
+                            <?php foreach ($blocks as $blk): ?>
+                                <?php $btxt = (string) ($blk['text'] ?? ''); $blabel = (string) ($blk['label'] ?? ''); ?>
+                                <div class="dist-subblock" data-dist-subblock>
+                                    <div class="dist-block-bar">
+                                        <?php if ($blabel !== ''): ?><span class="dist-subblock-label"><?= e($blabel) ?></span><?php endif; ?>
+                                        <span class="dist-charcount"><?= (int) mb_strlen($btxt, 'UTF-8') ?> 字</span>
+                                    </div>
+                                    <textarea class="dist-text" rows="<?= $blabel !== '' && mb_strlen($btxt, 'UTF-8') < 160 ? 4 : 8 ?>" readonly data-dist-text><?= e($btxt) ?></textarea>
+                                    <button class="button button-small dist-copy" type="button" data-dist-copy><span aria-hidden="true">📋</span> 复制</button>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     <?php endforeach; ?>
                 </article>
@@ -190,7 +201,7 @@ $total = count($distItems) + ($digestText !== '' ? 1 : 0);
     }
     grid.querySelectorAll('[data-dist-copy]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var block = btn.closest('[data-dist-block]');
+            var block = btn.closest('[data-dist-subblock]') || btn.closest('[data-dist-block]');
             var ta = block ? block.querySelector('[data-dist-text]') : null;
             var text = ta ? ta.value : '';
             if (!text) return;

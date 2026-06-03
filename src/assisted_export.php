@@ -190,6 +190,30 @@ function assisted_export_packages(array $article): array
     }
     $xText .= "\n" . assisted_export_article_url($article, 'x');
 
+    // ---- Reddit：self-promo-safe. Self-post has NO link; link goes in the first
+    //      comment (the 9:1 rule). Tuned for r/China_irl & Chinese subs. ----
+    $rdPost = '[标题建议] ' . ($dek !== '' ? $dek : $title) . "\n\n";
+    if ($lead !== '') {
+        $rdPost .= $lead . "\n\n";
+    }
+    if ($bullets) {
+        $rdPost .= "要点 / Key points:\n";
+        foreach ($bullets as $b) {
+            $rdPost .= '- ' . $b . "\n";
+        }
+        $rdPost .= "\n";
+    }
+    if ($why !== '') {
+        $rdPost .= '为什么重要：' . $why . "\n\n";
+    }
+    $rdPost .= '大家怎么看？欢迎讨论。';
+    $rdComment = '来源 / 全文：' . assisted_export_article_url($article, 'reddit') . "\n"
+        . '（整理自「钱潮 Money Tide」，每天 5 分钟看懂全球市场）';
+    $rdBlocks = [
+        ['label' => '📝 正文（自帖 · 不要放链接）', 'text' => trim($rdPost)],
+        ['label' => '💬 首条评论（发完帖再贴链接）', 'text' => trim($rdComment)],
+    ];
+
     // ---- 小红书：emoji, hooky, bullets, tags ----
     $xhsTitle = mb_substr('📈 ' . ($dek !== '' ? $dek : $title), 0, 20, 'UTF-8');
     $xhs = $xhsTitle . "\n\n";
@@ -274,6 +298,12 @@ function assisted_export_packages(array $article): array
 
     return [
         'x' => ['label' => 'X / Twitter', 'icon' => '𝕏', 'text' => trim($xText), 'tips' => '手动发推（免费，无需 API）：复制后到 X 发布。中文约 140 字内，配图更佳。把 Telegram 频道链接放简介，引流涨粉。'],
+        'reddit' => [
+            'label' => 'Reddit',
+            'icon' => '👽',
+            'blocks' => $rdBlocks,
+            'tips' => 'Reddit 严禁硬广：正文不要放链接，发完帖后把链接作为「首条评论」贴上（9:1 原则）。最适合 r/China_irl 等中文 sub；英文 sub 请自行精简成英文。先攒够 karma 再发帖，否则会被自动删除。',
+        ],
         'xueqiu' => [
             'label' => '雪球',
             'icon' => '❄️',
