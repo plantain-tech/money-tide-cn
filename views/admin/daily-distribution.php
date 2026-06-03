@@ -6,15 +6,17 @@ $platform = $platform ?? 'toutiao';
 $today = $today ?? date('Y-m-d');
 
 // Platform meta: label, icon, and the publish editor to open in a new tab.
+// Ordered easy→hard for a phone-only (no Chinese ID) account: 知乎 leads, the
+// ID-gated 百家号 is last and flagged.
 $platforms = [
-    'toutiao'     => ['label' => '今日头条', 'icon' => '🟠', 'editor' => 'https://mp.toutiao.com/profile_v4/graphic/publish', 'tip' => '粘贴到头条号图文编辑器，配一张图，发布。'],
-    'baijiahao'   => ['label' => '百家号',   'icon' => '🐾', 'editor' => 'https://baijiahao.baidu.com/builder/rc/edit?type=news', 'tip' => '需先实名认证；正式新闻风，注明来源。'],
-    'zhihu'       => ['label' => '知乎',     'icon' => '🔵', 'editor' => 'https://zhuanlan.zhihu.com/write', 'tip' => '可发为专栏文章，或当作回答贴到热门问题下。'],
-    'xiaohongshu' => ['label' => '小红书',   'icon' => '📕', 'editor' => 'https://creator.xiaohongshu.com/publish/publish', 'tip' => '配 9 宫格图或封面卡；标题短、多 emoji。'],
-    'xueqiu'      => ['label' => '雪球',     'icon' => '❄️', 'editor' => 'https://xueqiu.com/', 'tip' => '当长帖发；带 $股票$ 现金标签进个股讨论页。'],
+    'zhihu'       => ['label' => '知乎',     'icon' => '🔵', 'editor' => 'https://zhuanlan.zhihu.com/write', 'tip' => '手机号即可发，无需实名。可发为专栏文章，更要去热门财经问题下贴「回答」——借现成流量最快涨粉。'],
+    'xiaohongshu' => ['label' => '小红书',   'icon' => '📕', 'editor' => 'https://creator.xiaohongshu.com/publish/publish', 'tip' => '手机号即可发。配 9 宫格图或封面卡；标题短、多 emoji。'],
+    'xueqiu'      => ['label' => '雪球',     'icon' => '❄️', 'editor' => 'https://xueqiu.com/', 'tip' => '手机号即可发。当长帖发；带 $股票$ 现金标签进个股讨论页（新号先养几天再放链接）。'],
+    'toutiao'     => ['label' => '今日头条', 'icon' => '🟠', 'editor' => 'https://mp.toutiao.com/profile_v4/graphic/publish', 'tip' => '无实名时先发「微头条」（短帖可发）；完整图文文章一般需实名认证。配一张图反响更好。'],
+    'baijiahao'   => ['label' => '百家号',   'icon' => '🐾', 'editor' => 'https://baijiahao.baidu.com/builder/rc/edit?type=news', 'tip' => '⚠️ 需中国身份证实名认证，无 ID 暂时跳过。'],
 ];
 if (!isset($platforms[$platform])) {
-    $platform = 'toutiao';
+    $platform = 'zhihu';
 }
 
 // Extract a single copy-ready string for a given platform from a package.

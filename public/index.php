@@ -540,7 +540,7 @@ if (preg_match('#^admin/articles/(\d+)/wechat-draft$#', $route, $matches) && ($_
 
 if ($route === 'admin/daily-distribution') {
     require_admin();
-    $platform = (string) ($_GET['platform'] ?? 'toutiao');
+    $platform = (string) ($_GET['platform'] ?? 'zhihu');
     $todayArticles = function_exists('todays_distribution_articles') ? todays_distribution_articles() : [];
     $distItems = [];
     foreach ($todayArticles as $a) {
