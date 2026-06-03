@@ -152,6 +152,35 @@ $on = !empty($config['enabled']);
                 <div class="cms-form-actions"><button class="button button-small" type="submit">保存设置</button></div>
             </form>
         </section>
+
+        <?php
+            $newsTtl = function_exists('pipeline_setting') ? (int) pipeline_setting('news_ttl_days', '10') : 10;
+            $clusterTtl = function_exists('pipeline_setting') ? (int) pipeline_setting('cluster_ttl_days', '4') : 4;
+            $draftTtl = function_exists('pipeline_setting') ? (int) pipeline_setting('draft_ttl_days', '7') : 7;
+            $lastCleanAt = function_exists('pipeline_setting') ? (string) pipeline_setting('last_cleanup_at', '') : '';
+            $lastCleanSum = function_exists('pipeline_setting') ? (string) pipeline_setting('last_cleanup_summary', '') : '';
+        ?>
+        <section class="newsletter-block">
+            <h2>🧹 内容保鲜（自动清理）</h2>
+            <p class="news-action-hint">新闻时效性强：过期的「待处理素材 / 待写稿选题 / 待审草稿」会自动清理，避免堆积成垃圾、让站点始终保持新鲜。<strong>每次发布阶段都会自动执行一次</strong>；下面是过期阈值，可按需调整。</p>
+            <form method="post" action="<?= e(url('admin/autopilot')) ?>" class="cms-form">
+                <input type="hidden" name="action" value="save_settings">
+                <div class="cms-form-grid">
+                    <label>素材保留（天）<input type="number" name="news_ttl_days" min="2" max="60" value="<?= (int) $newsTtl ?>"></label>
+                    <label>选题保留（天）<input type="number" name="cluster_ttl_days" min="1" max="30" value="<?= (int) $clusterTtl ?>"></label>
+                    <label>待审草稿保留（天）<input type="number" name="draft_ttl_days" min="1" max="60" value="<?= (int) $draftTtl ?>"></label>
+                </div>
+                <p class="news-action-hint">未在期限内被写稿/审核的内容会被清理（已发布文章与早报<strong>不受影响</strong>）。建议：素材 7–14 天、选题 3–5 天、待审草稿 5–7 天。</p>
+                <div class="cms-form-actions"><button class="button button-small" type="submit">保存阈值</button></div>
+            </form>
+            <form method="post" action="<?= e(url('admin/autopilot')) ?>" class="cms-form" style="margin-top:.6rem">
+                <input type="hidden" name="action" value="cleanup">
+                <div class="cms-form-actions"><button class="button" type="submit">🧹 立即清理过期内容</button></div>
+            </form>
+            <?php if ($lastCleanAt !== ''): ?>
+                <p class="news-action-hint">上次清理：<?= e($lastCleanAt) ?><?= $lastCleanSum !== '' ? '（' . e($lastCleanSum) . '）' : '' ?></p>
+            <?php endif; ?>
+        </section>
     </div>
 
     <!-- ── Day 10·7: per-category pause ───────────────────────────────────── -->

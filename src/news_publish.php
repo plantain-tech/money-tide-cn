@@ -278,7 +278,10 @@ function run_auto_publish_and_assemble(int $publishLimit = 12, ?string $date = n
         } catch (Throwable $exception) {
         }
     }
-    return ['publish' => $publish, 'assemble' => $assemble];
+    // Freshness sweep — runs once per publish cycle on every path (relay, monolithic,
+    // dry-run, manual), so stale backlog never rots into garbage.
+    $cleanup = function_exists('pipeline_cleanup') ? pipeline_cleanup() : ['news' => 0, 'clusters' => 0, 'drafts' => 0];
+    return ['publish' => $publish, 'assemble' => $assemble, 'cleanup' => $cleanup];
 }
 
 function auto_publish_summary(): array

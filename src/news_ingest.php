@@ -606,3 +606,78 @@ function prune_old_news_items(int $days = 30): int
         return 0;
     }
 }
+
+/**
+ * Freshness sweep — keeps the platform from rotting into a stale backlog.
+ * News moves fast, so unprocessed material/topics that age out are dead weight.
+ * TTLs are configurable via pipeline_settings (sane defaults below). Returns a
+ * per-bucket count of what was pruned. Safe to run every pipeline cycle.
+ *
+ *   news_ttl_days     (default 10) — unprocessed/clustered raw items older than this
+ *   cluster_ttl_days  (default 4)  — candidate/selected topics never written in time
+ *   draft_ttl_days    (default 7)  — drafts stuck in human review, auto-retired
+ */
+function pipeline_cleanup(): array
+{
+    $out = ['news' => 0, 'clusters' => 0, 'drafts' => 0];
+    $pdo = function_exists('db') ? db() : null;
+    if (!$pdo instanceof PDO) {
+        return $out;
+    }
+    $ttl = static function (string $key, int $def, int $min, int $max): int {
+        $v = function_exists('pipeline_setting') ? (int) pipeline_setting($key, (string) $def) : $def;
+        return max($min, min($max, $v > 0 ? $v : $def));
+    };
+    $newsTtl = $ttl('news_ttl_days', 10, 2, 60);
+    $clusterTtl = $ttl('cluster_ttl_days', 4, 1, 30);
+    $draftTtl = $ttl('draft_ttl_days', 7, 1, 60);
+
+    try {
+        // 1) Stale raw news: unprocessed 'new'/'clustered' past the news TTL, plus
+        //    consumed 'used'/'ignored' past 30 days. These will never be written → drop.
+        $s = $pdo->prepare("DELETE FROM news_items
+            WHERE (status IN ('new','clustered') AND fetched_at < DATE_SUB(NOW(), INTERVAL :d DAY))
+               OR (status IN ('used','ignored') AND fetched_at < DATE_SUB(NOW(), INTERVAL 30 DAY))");
+        $s->bindValue('d', $newsTtl, PDO::PARAM_INT);
+        $s->execute();
+        $out['news'] = $s->rowCount();
+    } catch (Throwable $exception) {
+    }
+    try {
+        // 2) Stale topics: candidate/selected clusters never synthesized in time, plus
+        //    old used/skipped clusters past 30 days.
+        $s = $pdo->prepare("DELETE FROM story_clusters
+            WHERE (status IN ('candidate','selected') AND created_at < DATE_SUB(NOW(), INTERVAL :d DAY))
+               OR (status IN ('used','skipped') AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY))");
+        $s->bindValue('d', $clusterTtl, PDO::PARAM_INT);
+        $s->execute();
+        $out['clusters'] = $s->rowCount();
+    } catch (Throwable $exception) {
+    }
+    try {
+        // 3) Stale review drafts: auto-retire drafts stuck in the human queue past the
+        //    TTL so they don't pile up as garbage. Mark rejected + close their review row.
+        $ids = $pdo->prepare("SELECT id FROM ai_drafts WHERE status = 'needs_review' AND created_at < DATE_SUB(NOW(), INTERVAL :d DAY)");
+        $ids->bindValue('d', $draftTtl, PDO::PARAM_INT);
+        $ids->execute();
+        $list = array_map('intval', array_column($ids->fetchAll(PDO::FETCH_ASSOC) ?: [], 'id'));
+        if ($list) {
+            $in = implode(',', $list);
+            $pdo->exec("UPDATE ai_drafts SET status = 'rejected' WHERE id IN ({$in})");
+            // Close their pending auto-review rows so they leave the review queue/count.
+            try {
+                $pdo->exec("UPDATE auto_reviews SET decision = 'rejected', decided_by = 'auto_ttl', decided_at = NOW()
+                    WHERE draft_id IN ({$in}) AND decision = 'pending'");
+            } catch (Throwable $inner) {
+            }
+            $out['drafts'] = count($list);
+        }
+    } catch (Throwable $exception) {
+    }
+
+    if (($out['news'] + $out['clusters'] + $out['drafts']) > 0 && function_exists('set_pipeline_setting')) {
+        set_pipeline_setting('last_cleanup_at', date('Y-m-d H:i:s'));
+        set_pipeline_setting('last_cleanup_summary', '素材 ' . $out['news'] . ' · 选题 ' . $out['clusters'] . ' · 草稿 ' . $out['drafts']);
+    }
+    return $out;
+}

@@ -1769,7 +1769,21 @@ if ($route === 'admin/autopilot') {
             set_pipeline_setting('assess_limit', (string) max(1, min(24, (int) ($_POST['assess_limit'] ?? 8))));
             set_pipeline_setting('publish_limit', (string) max(1, min(50, (int) ($_POST['publish_limit'] ?? 12))));
             set_pipeline_setting('stage_pause', (string) max(0, min(60, (int) ($_POST['stage_pause'] ?? 8))));
+            // Freshness TTLs (auto-cleanup of stale backlog).
+            if (isset($_POST['news_ttl_days'])) {
+                set_pipeline_setting('news_ttl_days', (string) max(2, min(60, (int) $_POST['news_ttl_days'])));
+            }
+            if (isset($_POST['cluster_ttl_days'])) {
+                set_pipeline_setting('cluster_ttl_days', (string) max(1, min(30, (int) $_POST['cluster_ttl_days'])));
+            }
+            if (isset($_POST['draft_ttl_days'])) {
+                set_pipeline_setting('draft_ttl_days', (string) max(1, min(60, (int) $_POST['draft_ttl_days'])));
+            }
             $flash = '已保存流水线设置。';
+        } elseif ($action === 'cleanup') {
+            @set_time_limit(120);
+            $cl = function_exists('pipeline_cleanup') ? pipeline_cleanup() : ['news' => 0, 'clusters' => 0, 'drafts' => 0];
+            $flash = '🧹 清理完成：过期素材 ' . (int) $cl['news'] . ' 条 · 过期选题 ' . (int) $cl['clusters'] . ' 个 · 过期草稿 ' . (int) $cl['drafts'] . ' 篇已清理。';
         } elseif ($action === 'save_pauses') {
             // Per-category pause: POST sends the slugs that should KEEP running;
             // anything not checked is paused.
