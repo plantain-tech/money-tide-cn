@@ -72,6 +72,13 @@ function asset(string $path): string
     return '/assets/' . ltrim($path, '/');
 }
 
+/** Public Telegram channel join link (for reader CTAs). Override via config. */
+function telegram_channel_url(): string
+{
+    $u = function_exists('app_config') ? trim((string) app_config('social.telegram_channel_url', '')) : '';
+    return $u !== '' ? $u : 'https://t.me/moneytide_cn';
+}
+
 /**
  * Human, reader-friendly relative time ("刚刚 / 12 分钟前 / 3 小时前 / 2 天前"),
  * falling back to an absolute date for anything older than a week. Reinforces

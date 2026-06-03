@@ -7333,6 +7333,20 @@ input[type="range"][data-threshold-range]::-moz-range-thumb {
 @keyframes dist-pop { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dist-card { animation: none; } .dist-progress-fill { transition: none; } }
 
+/* ===== Telegram channel CTAs (reader funnel) ===== */
+.header-telegram { white-space: nowrap; }
+.slidein-telegram {
+    display: inline-block; margin-top: 0.7rem; font-size: 0.85rem; font-weight: 700;
+    color: #229ED9; text-decoration: none; border-bottom: 1px solid rgba(34,158,217,0.35);
+    transition: border-color 0.15s ease;
+}
+.slidein-telegram:hover { border-bottom-color: #229ED9; }
+.subscribe-telegram {
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap;
+    margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px dashed var(--line, #d9d4c5);
+    font-size: 0.9rem; color: var(--muted);
+}
+
 /* ===== Freshness light (homepage) + relative timestamps ===== */
 .freshness-pill {
     display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.5rem;

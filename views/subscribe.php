@@ -61,6 +61,10 @@ foreach ((function_exists('get_categories') ? get_categories() : ($categories ??
             <p class="referral-note">你正在通过好友邀请订阅：<?= e($referralCode) ?></p>
         <?php endif; ?>
         <p class="privacy-note">我们会保护你的邮箱。财经内容仅供信息参考，不构成投资建议。</p>
+        <div class="subscribe-telegram">
+            <span>更喜欢即时推送？</span>
+            <a class="button button-small button-ghost" href="<?= e(telegram_channel_url()) ?>" target="_blank" rel="noopener">✈️ 加入 Telegram 频道</a>
+        </div>
     </div>
 </section>
 

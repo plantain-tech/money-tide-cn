@@ -117,6 +117,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
                 <a class="ghost-link" href="<?= e(url('latest')) ?>">最新</a>
                 <a class="ghost-link" href="<?= e(url('topics')) ?>">话题</a>
                 <a class="ghost-link" href="<?= e(url('newsletter')) ?>">早报</a>
+                <a class="ghost-link header-telegram" href="<?= e(telegram_channel_url()) ?>" target="_blank" rel="noopener" title="加入 Telegram 频道，第一时间收到早报">✈️ Telegram</a>
                 <?php if (function_exists('reader_session') && reader_session() !== null): ?>
                     <a class="ghost-link" href="<?= e(url('account')) ?>">账号</a>
                 <?php else: ?>
@@ -144,6 +145,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
                 <a href="<?= e(url('privacy')) ?>">隐私政策</a>
                 <a href="<?= e(url('contact')) ?>">联系我们</a>
                 <a href="<?= e(url('subscribe')) ?>">订阅</a>
+                <a href="<?= e(telegram_channel_url()) ?>" target="_blank" rel="noopener">Telegram</a>
                 <a href="<?= e(url('search')) ?>">搜索</a>
                 <a href="<?= e(url('feed/all.xml')) ?>">RSS</a>
             </nav>
@@ -165,6 +167,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
                 </div>
                 <button class="button button-small" type="submit">订阅</button>
             </form>
+            <a class="slidein-telegram" href="<?= e(telegram_channel_url()) ?>" target="_blank" rel="noopener">✈️ 或在 Telegram 第一时间收到 →</a>
         </aside>
     <?php endif; ?>
     <button class="back-to-top" type="button" data-back-to-top aria-label="返回顶部">↑</button>
