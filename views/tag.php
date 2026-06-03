@@ -17,7 +17,7 @@ $canonicalPath = 'tag/' . $tag['slug'];
                     <span class="pill"><?= e($article['category_name']) ?></span>
                     <h3><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= e($article['title']) ?></a></h3>
                     <p><?= e($article['brief'] ?? $article['dek']) ?></p>
-                    <small><?= e($article['read_time']) ?> · <?= e($article['published_at']) ?></small>
+                    <small><?= e($article['read_time']) ?> · <?= time_ago_html($article['published_at']) ?></small>
                 </article>
             <?php endforeach; ?>
         </div>

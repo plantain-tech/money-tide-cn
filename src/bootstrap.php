@@ -72,6 +72,66 @@ function asset(string $path): string
     return '/assets/' . ltrim($path, '/');
 }
 
+/**
+ * Human, reader-friendly relative time ("刚刚 / 12 分钟前 / 3 小时前 / 2 天前"),
+ * falling back to an absolute date for anything older than a week. Reinforces
+ * "always fresh" without changing the underlying data.
+ */
+function relative_time($datetime): string
+{
+    $dt = is_numeric($datetime) ? (int) $datetime : strtotime((string) $datetime);
+    if (!$dt) {
+        return (string) $datetime;
+    }
+    $diff = time() - $dt;
+    if ($diff < 0) {
+        $diff = 0;
+    }
+    if ($diff < 60) {
+        return '刚刚';
+    }
+    if ($diff < 3600) {
+        return (int) floor($diff / 60) . ' 分钟前';
+    }
+    if ($diff < 86400) {
+        return (int) floor($diff / 3600) . ' 小时前';
+    }
+    if ($diff < 86400 * 7) {
+        return (int) floor($diff / 86400) . ' 天前';
+    }
+    return date('Y-m-d', $dt);
+}
+
+/** Relative time wrapped in a <time> tag with the absolute timestamp on hover. */
+function time_ago_html($datetime): string
+{
+    $dt = is_numeric($datetime) ? (int) $datetime : strtotime((string) $datetime);
+    $abs = $dt ? date('Y-m-d H:i', $dt) : (string) $datetime;
+    $iso = $dt ? date('c', $dt) : '';
+    return '<time datetime="' . e($iso) . '" title="' . e($abs) . '">' . e(relative_time($datetime)) . '</time>';
+}
+
+/**
+ * Freshness state for the newest published item — drives the homepage "fresh"
+ * light. fresh = within 24h, warn = 24–48h, stale = older (pipeline likely
+ * stalled). Returns state, a label, and the age in hours.
+ */
+function freshness_state($datetime): array
+{
+    $dt = is_numeric($datetime) ? (int) $datetime : strtotime((string) $datetime);
+    if (!$dt) {
+        return ['state' => 'stale', 'label' => '暂无更新', 'hours' => null];
+    }
+    $hours = (int) floor((time() - $dt) / 3600);
+    if ($hours <= 24) {
+        return ['state' => 'fresh', 'label' => '内容新鲜', 'hours' => $hours];
+    }
+    if ($hours <= 48) {
+        return ['state' => 'warn', 'label' => '近日更新', 'hours' => $hours];
+    }
+    return ['state' => 'stale', 'label' => '可能不是最新', 'hours' => $hours];
+}
+
 function render_page(string $view, array $data = []): void
 {
     extract($data, EXTR_SKIP);

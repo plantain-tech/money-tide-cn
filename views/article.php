@@ -65,7 +65,7 @@ $schema = [
             $utmCopy = function_exists('share_utm_url') ? share_utm_url($canonicalUrl, 'copy') : $canonicalUrl;
         ?>
         <div class="article-meta-row">
-            <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?> · 作者：<?= e($article['author_name'] ?? '钱潮编辑部') ?></small>
+            <small><?= time_ago_html($article['published_at']) ?> · <?= e($article['read_time']) ?> · 作者：<?= e($article['author_name'] ?? '钱潮编辑部') ?></small>
             <div class="share-actions" aria-label="分享文章">
                 <a href="https://twitter.com/intent/tweet?text=<?= e($encodedTitle) ?>&url=<?= e($utmTwitter) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">X</a>
                 <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= e($utmLinkedin) ?>" target="_blank" rel="noopener" data-share-event="<?= e($article['slug']) ?>">in</a>
@@ -269,7 +269,7 @@ $schema = [
                     <span class="pill"><?= e($relatedArticle['category_name']) ?></span>
                     <h3><a href="<?= e(url('article/' . $relatedArticle['slug'])) ?>"><?= e($relatedArticle['title']) ?></a></h3>
                     <p><?= e($relatedArticle['brief']) ?></p>
-                    <small><?= e($relatedArticle['read_time']) ?> · <?= e($relatedArticle['published_at']) ?></small>
+                    <small><?= e($relatedArticle['read_time']) ?> · <?= time_ago_html($relatedArticle['published_at']) ?></small>
                 </article>
             <?php endforeach; ?>
         </div>

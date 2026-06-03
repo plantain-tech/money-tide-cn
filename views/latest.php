@@ -11,7 +11,7 @@
             <span class="pill"><?= e($article['category_name']) ?></span>
             <h2><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= e($article['title']) ?></a></h2>
             <p><?= e($article['dek']) ?></p>
-            <small><?= e($article['read_time']) ?> · <?= e($article['published_at']) ?></small>
+            <small><?= e($article['read_time']) ?> · <?= time_ago_html($article['published_at']) ?></small>
         </article>
     <?php endforeach; ?>
 </section>

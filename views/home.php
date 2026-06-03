@@ -9,10 +9,19 @@ $categoryArticles = [];
 foreach ($focusSlugs as $slug) {
     $categoryArticles[$slug] = array_values(array_filter($articles, static fn (array $article): bool => $article['category'] === $slug));
 }
+// Freshness light: newest published item drives a fresh/warn/stale signal.
+$newestAt = $topStory['published_at'] ?? ($articles[0]['published_at'] ?? '');
+$fresh = function_exists('freshness_state') ? freshness_state($newestAt) : ['state' => 'fresh', 'label' => '', 'hours' => null];
 ?>
 <section class="home-hero reveal-on-scroll">
     <div class="hero-copy">
-        <p class="eyebrow">今日钱潮</p>
+        <p class="eyebrow">今日钱潮
+            <?php if (!empty($newestAt)): ?>
+                <span class="freshness-pill is-<?= e($fresh['state']) ?>" title="最新内容更新于 <?= e((string) relative_time($newestAt)) ?>">
+                    <span class="freshness-dot" aria-hidden="true"></span><?= e($fresh['label']) ?> · 最新 <?= e((string) relative_time($newestAt)) ?>
+                </span>
+            <?php endif; ?>
+        </p>
         <h1>每天5分钟，<br>看懂全球市场。</h1>
         <p class="hero-dek">为中文读者重写全球财经新闻：更快、更清楚，也更适合在手机上读完。</p>
         <div class="hero-actions">
@@ -46,7 +55,7 @@ foreach ($focusSlugs as $slug) {
                 <span class="pill"><?= e($topStory['category_name']) ?></span>
                 <h2><a href="<?= e(url('article/' . $topStory['slug'])) ?>"><?= e($topStory['title']) ?></a></h2>
                 <p><?= e($topStory['dek']) ?></p>
-                <small><?= e($topStory['read_time']) ?> · <?= e($topStory['published_at']) ?></small>
+                <small><?= e($topStory['read_time']) ?> · <?= time_ago_html($topStory['published_at']) ?></small>
             </div>
             <div class="signal-board" aria-hidden="true">
                 <span style="height: 38%"></span><span style="height: 76%"></span><span style="height: 54%"></span><span style="height: 92%"></span><span style="height: 68%"></span><span style="height: 82%"></span>
@@ -73,7 +82,7 @@ foreach ($focusSlugs as $slug) {
                         <span><?= e(str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT)) ?></span>
                         <div>
                             <strong><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= e($article['title']) ?></a></strong>
-                            <small><?= e($article['category_name']) ?> · <?= e($article['published_at']) ?></small>
+                            <small><?= e($article['category_name']) ?> · <?= time_ago_html($article['published_at']) ?></small>
                         </div>
                     </article>
                 <?php endforeach; ?>
@@ -121,7 +130,7 @@ foreach ($focusSlugs as $slug) {
                     <span class="pill"><?= e($article['category_name']) ?></span>
                     <h3><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= e($article['title']) ?></a></h3>
                     <p><?= e($article['brief']) ?></p>
-                    <small><?= e($article['read_time']) ?> · <?= e($article['published_at']) ?></small>
+                    <small><?= e($article['read_time']) ?> · <?= time_ago_html($article['published_at']) ?></small>
                 </article>
             <?php endforeach; ?>
         </div>
@@ -187,7 +196,7 @@ foreach ($focusSlugs as $slug) {
                 <div>
                     <a class="pill" href="<?= e(url('category/' . $row['category'])) ?>"><?= e($row['category_name']) ?></a>
                     <h3><a href="<?= e(url('article/' . $row['slug'])) ?>"><?= e($row['title']) ?></a></h3>
-                    <small><?= e((string) $row['views']) ?> 次阅读 · <?= e($row['published_at']) ?></small>
+                    <small><?= e((string) $row['views']) ?> 次阅读 · <?= time_ago_html($row['published_at']) ?></small>
                 </div>
             </li>
         <?php endforeach; ?>

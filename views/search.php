@@ -29,7 +29,7 @@ $canonicalPath = 'search';
                             <?php if (!empty($article['is_premium'])): ?><span class="premium-pill">Premium</span><?php endif; ?>
                             <h2><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= search_highlight((string) $article['title'], $query) ?></a></h2>
                             <p><?= search_highlight((string) ($article['dek'] ?: $article['brief']), $query) ?></p>
-                            <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?></small>
+                            <small><?= time_ago_html($article['published_at']) ?> · <?= e($article['read_time']) ?></small>
                         </div>
                     </article>
                 <?php endforeach; ?>
@@ -59,7 +59,7 @@ $canonicalPath = 'search';
                         <span class="pill"><?= e($article['category_name']) ?></span>
                         <h3><a href="<?= e(url('article/' . $article['slug'])) ?>"><?= e($article['title']) ?></a></h3>
                         <p><?= e($article['brief']) ?></p>
-                        <small><?= e($article['published_at']) ?> · <?= e($article['read_time']) ?></small>
+                        <small><?= time_ago_html($article['published_at']) ?> · <?= e($article['read_time']) ?></small>
                     </article>
                 <?php endforeach; ?>
             </div>
