@@ -28,6 +28,8 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <meta name="color-scheme" content="light">
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="<?= e($pageDescription) ?>">
+    <link rel="icon" type="image/png" href="<?= e(asset('img/brand-mark.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= e(asset('img/brand-mark.png')) ?>">
     <link rel="canonical" href="<?= e($canonicalUrl) ?>">
     <link rel="alternate" type="application/rss+xml" title="钱潮 Money Tide 最新文章" href="<?= e(canonical_url('feed/all.xml')) ?>">
     <?php if (!empty($category['slug'])): ?>
@@ -76,6 +78,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
         <!-- Admin console bar: no public nav; a clean "view site" guide instead. -->
         <header class="admin-bar">
             <a class="admin-bar-brand" href="<?= e(url('admin')) ?>" aria-label="钱潮 编辑后台">
+                <img class="brand-logo" src="<?= e(asset('img/brand-mark.png')) ?>" alt="钱潮 Money Tide" width="34" height="34">
                 <span class="brand-mark">钱潮</span>
                 <span class="admin-bar-tag">编辑后台</span>
             </a>
@@ -91,6 +94,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <?php else: ?>
         <header class="site-header">
             <a class="brand" href="<?= e(url()) ?>" aria-label="钱潮 Money Tide 首页">
+                <img class="brand-logo" src="<?= e(asset('img/brand-mark.png')) ?>" alt="钱潮 Money Tide" width="40" height="40">
                 <span class="brand-mark">钱潮</span>
                 <span class="brand-name">Money Tide</span>
             </a>
@@ -124,7 +128,7 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <?php if (!$isAdminArea): ?>
         <footer class="site-footer">
             <div>
-                <strong>钱潮 Money Tide</strong>
+                <strong class="footer-brand"><img class="brand-logo" src="<?= e(asset('img/brand-mark.png')) ?>" alt="钱潮 Money Tide" width="30" height="30"> 钱潮 Money Tide</strong>
                 <p>面向中文读者的全球财经、科技与商业简报。</p>
             </div>
             <nav aria-label="页脚导航">

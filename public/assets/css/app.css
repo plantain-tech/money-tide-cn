@@ -87,6 +87,27 @@ span {
     text-transform: uppercase;
 }
 
+/* Brand mark image (logo) — sits left of the 钱潮 Money Tide wordmark everywhere. */
+.brand,
+.admin-bar-brand {
+    align-items: center;
+}
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    display: block;
+    flex: none;
+    object-fit: contain;
+}
+.admin-bar-brand .brand-logo { width: 34px; height: 34px; border-radius: 8px; }
+.footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+}
+.footer-brand .brand-logo { width: 30px; height: 30px; border-radius: 7px; }
+
 .top-nav,
 .header-actions,
 .site-footer nav,
