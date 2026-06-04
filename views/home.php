@@ -32,7 +32,7 @@ $fresh = function_exists('freshness_state') ? freshness_state($newestAt) : ['sta
     <aside class="hero-briefing-panel" aria-label="今日编辑台">
         <span class="panel-label">EDITOR'S DESK</span>
         <strong>市场、商业、科技、加密、政策、全球与理财，一屏掌握。</strong>
-        <p>AI 帮助起草，编辑负责判断。钱潮把复杂信息变成可以快速行动的中文简报。</p>
+        <p>综合运用智能平台，把复杂的全球市场信息，提炼成可以快速读完、即时行动的中文简报。</p>
     </aside>
 </section>
 
