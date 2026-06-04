@@ -37,22 +37,32 @@ $fresh = function_exists('freshness_state') ? freshness_state($newestAt) : ['sta
 </section>
 
 <?php $market = function_exists('market_snapshot') ? market_snapshot(false) : []; ?>
-<section class="market-strip reveal-on-scroll" aria-label="市场快照" data-market-strip>
+<section class="market-ticker reveal-on-scroll" aria-label="实时行情" data-market-strip>
     <span class="market-live" title="实时行情（每分钟刷新）"><span class="market-live-dot" aria-hidden="true"></span>LIVE</span>
-    <?php foreach (['nasdaq', 'hsi', 'btc', 'usdcnh', 'gold'] as $k): ?>
-        <?php
-            $m = $market[$k] ?? null;
-            $label = (string) ($m['label'] ?? strtoupper($k));
-            $display = (string) ($m['display'] ?? '—');
-            $dir = (int) ($m['dir'] ?? 0);
-            $cls = $dir > 0 ? 'is-up' : ($dir < 0 ? 'is-down' : '');
-            $arrow = $dir > 0 ? '▲' : ($dir < 0 ? '▼' : '');
-        ?>
-        <div data-market-item="<?= e($k) ?>">
-            <span><?= e($label) ?></span>
-            <strong class="market-value <?= $cls ?>" data-market-value><?php if ($arrow !== ''): ?><span class="market-arrow" aria-hidden="true"><?= $arrow ?></span><?php endif; ?><?= e($display) ?></strong>
-        </div>
-    <?php endforeach; ?>
+    <div class="ticker-track">
+        <?php foreach (['sp500', 'nasdaq', 'dow', 'hsi', 'gold', 'btc', 'brent', 'vix'] as $k): ?>
+            <?php
+                $m = $market[$k] ?? null;
+                $label = (string) ($m['label'] ?? strtoupper($k));
+                $price = (string) ($m['price'] ?? '—');
+                $change = (string) ($m['change'] ?? '');
+                $pct = (string) ($m['pct'] ?? '');
+                $dir = (int) ($m['dir'] ?? 0);
+                $spark = is_array($m['spark'] ?? null) ? $m['spark'] : [];
+                $cls = $dir > 0 ? 'is-up' : ($dir < 0 ? 'is-down' : '');
+                $arrow = $dir > 0 ? '▲' : ($dir < 0 ? '▼' : '');
+                $changeText = trim($change . ' ' . $pct);
+            ?>
+            <div class="ticker-item" data-market-item="<?= e($k) ?>">
+                <div class="ticker-text">
+                    <span class="ticker-label"><?= e($label) ?></span>
+                    <span class="ticker-price" data-market-price><?= e($price) ?></span>
+                    <span class="ticker-change <?= $cls ?>" data-market-change><?php if ($arrow !== ''): ?><span class="ticker-arrow" aria-hidden="true"><?= $arrow ?></span><?php endif; ?><?= e($changeText) ?></span>
+                </div>
+                <svg class="ticker-spark <?= $cls ?>" viewBox="0 0 64 22" preserveAspectRatio="none" aria-hidden="true" data-market-spark><?= function_exists('market_spark_svg') ? market_spark_svg($spark, $dir) : '' ?></svg>
+            </div>
+        <?php endforeach; ?>
+    </div>
 </section>
 
 <section class="top-story-section reveal-on-scroll">

@@ -1214,31 +1214,61 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
     });
 })();
 
-// Live market strip: poll the snapshot endpoint and animate value changes
-// (green/red + arrow + a brief flash). Cached server-side, so polling is cheap.
+// Live market ticker: poll the snapshot endpoint; update price + change, redraw
+// the sparkline, and flash on change. Cached server-side, so polling is cheap.
 (function () {
     var strip = document.querySelector('[data-market-strip]');
     if (!strip) return;
+
+    function sparkPoints(arr) {
+        if (!arr || arr.length < 2) return '';
+        var w = 64, h = 22, pad = 2, min = Math.min.apply(null, arr), max = Math.max.apply(null, arr);
+        var range = (max - min) || 1, n = arr.length, out = [];
+        for (var i = 0; i < n; i++) {
+            var x = pad + i * (w - 2 * pad) / (n - 1);
+            var y = h - pad - ((arr[i] - min) / range) * (h - 2 * pad);
+            out.push(x.toFixed(1) + ',' + y.toFixed(1));
+        }
+        return out.join(' ');
+    }
+
+    function setDir(el, dir) {
+        el.classList.remove('is-up', 'is-down');
+        if (dir > 0) el.classList.add('is-up'); else if (dir < 0) el.classList.add('is-down');
+    }
 
     function render(data) {
         if (!data) return;
         Object.keys(data).forEach(function (k) {
             var item = strip.querySelector('[data-market-item="' + k + '"]');
             if (!item) return;
-            var el = item.querySelector('[data-market-value]');
-            if (!el) return;
             var m = data[k] || {};
-            var display = m.display || '—';
             var dir = m.dir || 0;
-            if (el.getAttribute('data-last') === display) return; // no change → no flash
+            var priceEl = item.querySelector('[data-market-price]');
+            var changeEl = item.querySelector('[data-market-change]');
+            var sparkEl = item.querySelector('[data-market-spark]');
+            var price = m.price || '—';
+            var changeText = ((m.change || '') + ' ' + (m.pct || '')).trim();
             var arrow = dir > 0 ? '▲' : (dir < 0 ? '▼' : '');
-            el.innerHTML = (arrow ? '<span class="market-arrow" aria-hidden="true">' + arrow + '</span>' : '') + display;
-            el.classList.remove('is-up', 'is-down');
-            if (dir > 0) el.classList.add('is-up'); else if (dir < 0) el.classList.add('is-down');
-            el.classList.remove('market-flash');
-            void el.offsetWidth; // restart the flash animation
-            el.classList.add('market-flash');
-            el.setAttribute('data-last', display);
+
+            // Sparkline (always redraw with current direction color)
+            if (sparkEl && m.spark && m.spark.length > 1) {
+                var color = dir > 0 ? '#3fb950' : (dir < 0 ? '#ff5c5c' : '#9aa0a6');
+                sparkEl.innerHTML = '<polyline fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" points="' + sparkPoints(m.spark) + '"/>';
+                setDir(sparkEl, dir);
+            }
+            if (changeEl) {
+                changeEl.innerHTML = (arrow ? '<span class="ticker-arrow" aria-hidden="true">' + arrow + '</span>' : '') + changeText;
+                setDir(changeEl, dir);
+            }
+            // Flash + update price only when it actually changed
+            if (priceEl && priceEl.getAttribute('data-last') !== price) {
+                priceEl.textContent = price;
+                priceEl.setAttribute('data-last', price);
+                priceEl.classList.remove('market-flash');
+                void priceEl.offsetWidth;
+                priceEl.classList.add('market-flash');
+            }
         });
     }
 
