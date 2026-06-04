@@ -53,13 +53,34 @@ function build_daily_digest_text(array $articles, string $platform = 'toutiao'):
         $text .= ($i + 1) . '. ' . trim((string) ($a['title'] ?? '')) . "\n";
         $brief = trim((string) (($a['brief'] ?? '') ?: ($a['dek'] ?? '')));
         if ($brief !== '') {
-            $text .= '   ' . mb_substr($brief, 0, 60, 'UTF-8') . "\n";
+            $text .= '   ' . assisted_clean_sentence($brief, 60) . "\n";
         }
     }
     $url = function_exists('canonical_url') ? canonical_url('newsletter') : '/newsletter';
     $text .= "\n📬 完整早报：" . $url . '?utm_source=' . $platform . '&utm_medium=social&utm_campaign=daily';
     $text .= "\n关注「钱潮 Money Tide」，每天 5 分钟看懂全球市场。";
     return $text;
+}
+
+/**
+ * Trim text to <= $max chars WITHOUT cutting mid-sentence. Prefer ending on the
+ * last 。！？ within range; else the last comma (+…); else a hard cut (+…). Fixes
+ * the ugly "…是否被市" fragments from blind mb_substr().
+ */
+function assisted_clean_sentence(string $s, int $max): string
+{
+    $s = trim(preg_replace('/\s+/u', ' ', $s));
+    if ($s === '' || mb_strlen($s, 'UTF-8') <= $max) {
+        return $s;
+    }
+    $cut = mb_substr($s, 0, $max, 'UTF-8');
+    if (preg_match('/^(.*[。！？!?])[^。！？!?]*$/u', $cut, $m) && mb_strlen($m[1], 'UTF-8') >= (int) ($max * 0.5)) {
+        return $m[1];
+    }
+    if (preg_match('/^(.*[，、,；;])[^，、,；;]*$/u', $cut, $m) && mb_strlen($m[1], 'UTF-8') >= (int) ($max * 0.5)) {
+        return rtrim($m[1], '，、,；; ') . '…';
+    }
+    return rtrim($cut) . '…';
 }
 
 function assisted_export_article_url(array $a, string $platform): string
@@ -168,11 +189,13 @@ function assisted_export_packages(array $article): array
         }
     }
 
-    // ---- X / Twitter：punchy tweet (manual, free). CJK counts double on X, so keep tight. ----
-    $xHook = mb_substr($dek !== '' ? $dek : $title, 0, 100, 'UTF-8');
-    $xText = $xHook;
-    if ($brief !== '' && $brief !== $xHook) {
-        $xText .= "\n" . mb_substr($brief, 0, 60, 'UTF-8');
+    // ---- X / Twitter：one clean, COMPLETE hook (never cut mid-sentence) + tags + link.
+    //      CJK counts double on X, so one tight, whole sentence reads best. ----
+    $xLead = $dek !== '' ? $dek : ($brief !== '' ? $brief : $title);
+    $xText = assisted_clean_sentence($xLead, 110);
+    // Add a second complete sentence from brief only if it's distinct and there's room.
+    if ($brief !== '' && $brief !== $dek && mb_strlen($xText, 'UTF-8') < 70) {
+        $xText .= "\n" . assisted_clean_sentence($brief, 60);
     }
     $xTags = '';
     $xn = 0;
@@ -228,7 +251,7 @@ function assisted_export_packages(array $article): array
         $xhs .= "\n";
     }
     if ($why !== '') {
-        $xhs .= '💡 为什么重要：' . mb_substr($why, 0, 80, 'UTF-8') . "\n\n";
+        $xhs .= '💡 为什么重要：' . assisted_clean_sentence($why, 80) . "\n\n";
     }
     $xhs .= '全文更香👉 ' . assisted_export_article_url($article, 'xiaohongshu') . "\n\n";
     $xhs .= assisted_export_hashtags($tags, ['财经', '投资笔记', '搞钱', '钱潮']);
@@ -283,7 +306,7 @@ function assisted_export_packages(array $article): array
         $xqShort1 .= '· ' . $bullets[0] . "\n";
     }
     if ($why !== '') {
-        $xqShort1 .= '一句话：' . mb_substr($why, 0, 60, 'UTF-8') . "\n";
+        $xqShort1 .= '一句话：' . assisted_clean_sentence($why, 60) . "\n";
     }
     $xqShort1 .= $cashStr . assisted_export_hashtags($tags, ['财经'], 3);
 
