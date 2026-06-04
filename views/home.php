@@ -36,12 +36,23 @@ $fresh = function_exists('freshness_state') ? freshness_state($newestAt) : ['sta
     </aside>
 </section>
 
-<section class="market-strip reveal-on-scroll" aria-label="市场快照">
-    <div><span>NASDAQ</span><strong>+0.84%</strong></div>
-    <div><span>HSI</span><strong>-0.31%</strong></div>
-    <div><span>BTC</span><strong>+1.42%</strong></div>
-    <div><span>USD/CNH</span><strong>7.24</strong></div>
-    <div><span>GOLD</span><strong>+0.18%</strong></div>
+<?php $market = function_exists('market_snapshot') ? market_snapshot(false) : []; ?>
+<section class="market-strip reveal-on-scroll" aria-label="市场快照" data-market-strip>
+    <span class="market-live" title="实时行情（每分钟刷新）"><span class="market-live-dot" aria-hidden="true"></span>LIVE</span>
+    <?php foreach (['nasdaq', 'hsi', 'btc', 'usdcnh', 'gold'] as $k): ?>
+        <?php
+            $m = $market[$k] ?? null;
+            $label = (string) ($m['label'] ?? strtoupper($k));
+            $display = (string) ($m['display'] ?? '—');
+            $dir = (int) ($m['dir'] ?? 0);
+            $cls = $dir > 0 ? 'is-up' : ($dir < 0 ? 'is-down' : '');
+            $arrow = $dir > 0 ? '▲' : ($dir < 0 ? '▼' : '');
+        ?>
+        <div data-market-item="<?= e($k) ?>">
+            <span><?= e($label) ?></span>
+            <strong class="market-value <?= $cls ?>" data-market-value><?php if ($arrow !== ''): ?><span class="market-arrow" aria-hidden="true"><?= $arrow ?></span><?php endif; ?><?= e($display) ?></strong>
+        </div>
+    <?php endforeach; ?>
 </section>
 
 <section class="top-story-section reveal-on-scroll">

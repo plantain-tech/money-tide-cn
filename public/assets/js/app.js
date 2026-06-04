@@ -1214,6 +1214,45 @@ document.querySelectorAll('[data-autopilot-toggle]').forEach(function(btn) {
     });
 })();
 
+// Live market strip: poll the snapshot endpoint and animate value changes
+// (green/red + arrow + a brief flash). Cached server-side, so polling is cheap.
+(function () {
+    var strip = document.querySelector('[data-market-strip]');
+    if (!strip) return;
+
+    function render(data) {
+        if (!data) return;
+        Object.keys(data).forEach(function (k) {
+            var item = strip.querySelector('[data-market-item="' + k + '"]');
+            if (!item) return;
+            var el = item.querySelector('[data-market-value]');
+            if (!el) return;
+            var m = data[k] || {};
+            var display = m.display || '—';
+            var dir = m.dir || 0;
+            if (el.getAttribute('data-last') === display) return; // no change → no flash
+            var arrow = dir > 0 ? '▲' : (dir < 0 ? '▼' : '');
+            el.innerHTML = (arrow ? '<span class="market-arrow" aria-hidden="true">' + arrow + '</span>' : '') + display;
+            el.classList.remove('is-up', 'is-down');
+            if (dir > 0) el.classList.add('is-up'); else if (dir < 0) el.classList.add('is-down');
+            el.classList.remove('market-flash');
+            void el.offsetWidth; // restart the flash animation
+            el.classList.add('market-flash');
+            el.setAttribute('data-last', display);
+        });
+    }
+
+    function poll() {
+        fetch('/api/market-snapshot', { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) { if (j && j.data) render(j.data); })
+            .catch(function () { /* keep last values on failure */ });
+    }
+
+    poll();
+    setInterval(poll, 60000); // refresh every 60s (matches server cache TTL)
+})();
+
 // Interstitial (house/sponsor) modal: blocking on open, close unlocks after a
 // countdown (Android-app style), with a frequency cap.
 (function () {

@@ -55,6 +55,7 @@ require_once __DIR__ . '/milestone.php';
 require_once __DIR__ . '/diagnostics.php';
 require_once __DIR__ . '/launch_cleanup.php';
 require_once __DIR__ . '/content.php';
+require_once __DIR__ . '/market_data.php';
 
 function e(string $value): string
 {

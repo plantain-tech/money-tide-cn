@@ -29,6 +29,15 @@ if ($route === 'api/newsletter/subscribe' && ($_SERVER['REQUEST_METHOD'] ?? 'GET
     exit;
 }
 
+if ($route === 'api/market-snapshot') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: public, max-age=30');
+    @set_time_limit(20);
+    $data = function_exists('market_snapshot') ? market_snapshot(true) : [];
+    echo json_encode(['ok' => true, 'data' => $data], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 if ($route === 'api/article/react' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
     $result = record_reaction((int) ($_POST['article_id'] ?? 0), (string) ($_POST['reaction'] ?? ''));
