@@ -1,4 +1,10 @@
-name: Deploy to Hostinger
+name: CI — PHP lint (+ OPcache flush)
+
+# Deployment is now handled by Hostinger's Git auto-deploy (the server PULLS
+# from this repo on push), so this workflow no longer pushes over SSH — that
+# removes the fail2ban/SSH-throttle pain entirely. It now just:
+#   1. lints every PHP file (so a syntax error never reaches production), and
+#   2. best-effort flushes the production OPcache after Hostinger pulls.
 
 on:
   push:
@@ -6,202 +12,34 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: hostinger-production
-  cancel-in-progress: true
-
 jobs:
-  deploy:
-    name: Lint and deploy production
+  ci:
+    name: Lint PHP + flush OPcache
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: PHP syntax check
+      - name: PHP syntax check (php -l on all files)
         run: |
           php --version
           find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
-      - name: Build production config
-        env:
-          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
-          HOSTINGER_DB_HOST: ${{ secrets.HOSTINGER_DB_HOST }}
-          HOSTINGER_DB_NAME: ${{ secrets.HOSTINGER_DB_NAME }}
-          HOSTINGER_DB_USER: ${{ secrets.HOSTINGER_DB_USER }}
-          HOSTINGER_DB_PASSWORD: ${{ secrets.HOSTINGER_DB_PASSWORD }}
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
-          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
-          AI_DAILY_LIMIT: ${{ secrets.AI_DAILY_LIMIT }}
-          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
-          OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL }}
-          GA_MEASUREMENT_ID: ${{ secrets.GA_MEASUREMENT_ID }}
-          PLAUSIBLE_DOMAIN: ${{ secrets.PLAUSIBLE_DOMAIN }}
-          EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
-          EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
-          EMAIL_FROM_ADDRESS: ${{ secrets.EMAIL_FROM_ADDRESS }}
-          EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME }}
-          MAILGUN_DOMAIN: ${{ secrets.MAILGUN_DOMAIN }}
-          OAUTH_GOOGLE_CLIENT_ID: ${{ secrets.OAUTH_GOOGLE_CLIENT_ID }}
-          OAUTH_GOOGLE_CLIENT_SECRET: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
-          UNSUBSCRIBE_SECRET: ${{ secrets.UNSUBSCRIBE_SECRET }}
-        run: |
-          if [ -n "$HOSTINGER_DB_NAME" ]; then
-            php -r '
-            $adminPasswordHash = getenv("ADMIN_PASSWORD_HASH");
-            if (!$adminPasswordHash && getenv("ADMIN_PASSWORD")) {
-                $adminPasswordHash = password_hash(getenv("ADMIN_PASSWORD"), PASSWORD_DEFAULT);
-            }
-            $config = [
-                "app_env" => "production",
-                "app_url" => getenv("PRODUCTION_URL") ?: "https://moneytidecn.avanturadeals.com",
-                "db" => [
-                    "host" => getenv("HOSTINGER_DB_HOST") ?: "localhost",
-                    "name" => getenv("HOSTINGER_DB_NAME"),
-                    "user" => getenv("HOSTINGER_DB_USER"),
-                    "pass" => getenv("HOSTINGER_DB_PASSWORD"),
-                    "charset" => "utf8mb4",
-                ],
-                "admin" => [
-                    "email" => getenv("ADMIN_EMAIL"),
-                    "password_hash" => $adminPasswordHash,
-                ],
-                "ai" => [
-                    "provider" => getenv("AI_PROVIDER") ?: "ollama_cloud",
-                    "api_key" => getenv("OPENAI_API_KEY"),
-                    "ollama_api_key" => getenv("OLLAMA_API_KEY"),
-                    "model" => getenv("OLLAMA_MODEL") ?: getenv("OPENAI_MODEL") ?: "gemma4:31b-cloud",
-                    "daily_limit" => getenv("AI_DAILY_LIMIT") ?: 10,
-                ],
-                "analytics" => [
-                    "ga_measurement_id" => getenv("GA_MEASUREMENT_ID"),
-                    "plausible_domain" => getenv("PLAUSIBLE_DOMAIN"),
-                ],
-                "email" => [
-                    "provider" => getenv("EMAIL_PROVIDER") ?: "log",
-                    "api_key" => getenv("EMAIL_API_KEY") ?: "",
-                    "from_address" => getenv("EMAIL_FROM_ADDRESS") ?: "",
-                    "from_name" => getenv("EMAIL_FROM_NAME") ?: "钱潮 Money Tide",
-                    "mailgun_domain" => getenv("MAILGUN_DOMAIN") ?: "",
-                ],
-                "oauth" => [
-                    "google" => [
-                        "client_id" => getenv("OAUTH_GOOGLE_CLIENT_ID") ?: "",
-                        "client_secret" => getenv("OAUTH_GOOGLE_CLIENT_SECRET") ?: "",
-                    ],
-                ],
-                "security" => [
-                    "unsubscribe_secret" => getenv("UNSUBSCRIBE_SECRET") ?: "",
-                ],
-            ];
-            file_put_contents("public/config.php", "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($config, true) . ";\n");
-            '
-          else
-            echo "Database secrets are not set; deploying without generated config.php."
-          fi
-
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-
-      - name: Deploy via SFTP over SSH (key auth)
-        env:
-          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
-          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          # Optional override; defaults to the verified MoneyTide doc root below.
-          REMOTE_BASE: ${{ secrets.HOSTINGER_SSH_BASE }}
-        run: |
-          set -e
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_PORT" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ]; then
-            echo "SSH secrets are missing; cannot deploy."
-            exit 1
-          fi
-          # Key-based SFTP over SSH. No password / no sshpass — Hostinger refuses
-          # non-interactive password auth, so we authenticate with a deploy key.
-          # lftp drives the SFTP subsystem (no remote rsync needed); mirror is
-          # incremental so progress accumulates across attempts.
-          #
-          # Path note: over SSH we land in the real home dir (/home/u284368723),
-          # NOT the FTP chroot. The MoneyTide subdomain doc root is several levels
-          # down, and src/views/cli all live INSIDE it (index.php loads src/ from
-          # its own __DIR__). Paths are relative to the SSH home dir.
-          REMOTE_BASE="${REMOTE_BASE:-domains/avanturadeals.com/public_html/moneytidecn}"
-          REMOTE_BASE="${REMOTE_BASE#/}"        # ensure relative to SSH home
-          REMOTE_BASE="${REMOTE_BASE%/}"        # no trailing slash
-          PUBLIC_DIR="$REMOTE_BASE"
-          APP_DIR="$REMOTE_BASE/"
-          echo "Deploy target: ~/$REMOTE_BASE"
-          mkdir -p "$HOME/.ssh"
-          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
-          chmod 600 "$HOME/.ssh/deploy_key"
-          cat > /tmp/deploy.lftp <<EOF
-          set cmd:fail-exit yes
-          set sftp:auto-confirm yes
-          set sftp:connect-program "ssh -a -x -i $HOME/.ssh/deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ControlMaster=auto -o ControlPath=$HOME/.ssh/cm-%C -o ControlPersist=180"
-          set net:max-retries 1
-          set net:timeout 60
-          set net:connection-limit 1
-          set mirror:parallel-transfer-count 1
-          set mirror:use-pget-n 1
-          put -O "$PUBLIC_DIR" public/config.php
-          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./public/ "$PUBLIC_DIR"
-          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./src/ "${APP_DIR}src/"
-          mirror -R --no-perms --parallel=1 --exclude-glob .git* --exclude-glob .DS_Store ./views/ "${APP_DIR}views/"
-          bye
-          EOF
-          # Escalating backoff sized to OUTLAST Hostinger's fail2ban-style SSH ban
-          # (often ~10 min). Each lftp run = a single login (SSH ControlMaster
-          # multiplexes + persists, so retries within the window reuse it instead
-          # of re-logging-in and re-tripping the throttle). ~22 min total span.
-          backoffs="20 60 120 240 300 300 300"
-          attempt=1
-          max_attempts=8
-          until lftp -u "$SSH_USER," "sftp://$SSH_HOST" < /tmp/deploy.lftp; do
-            if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Deploy failed after $attempt attempts (SSH unreachable / login throttled)."
-              exit 1
-            fi
-            wait_sec=$(echo "$backoffs" | cut -d' ' -f"$attempt")
-            [ -z "$wait_sec" ] && wait_sec=240
-            echo "Deploy attempt $attempt failed; waiting ${wait_sec}s to let any SSH login throttle cool down..."
-            attempt=$((attempt + 1))
-            sleep "$wait_sec"
-          done
-          echo "Deploy succeeded on attempt $attempt."
-
-      - name: Flush OPcache and verify release marker is live
+      - name: Flush production OPcache after Hostinger auto-deploy
         env:
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
         run: |
-          if [ -z "$PRODUCTION_URL" ]; then
-            echo "PRODUCTION_URL secret is not set; skipping health check."
-            exit 0
-          fi
-          # The marker we just deployed (parsed from the committed health.php).
-          EXPECTED=$(grep -oE "'release' => '[^']+'" public/health.php | head -1 | sed "s/.*=> '//; s/'.*//")
-          echo "Expected release marker: $EXPECTED"
-          # Flush server OPcache so the freshly mirrored PHP takes effect, then poll
-          # the live marker until it matches (Hostinger may serve stale bytecode for
-          # a few seconds). Fail loudly if it never catches up — no more silent
-          # "success" while the old code is still live.
-          for i in $(seq 1 12); do
-            curl --silent --max-time 20 "$PRODUCTION_URL/health.php?oc=1&nc=$RANDOM$i" > /tmp/health.json || true
-            LIVE=$(grep -oE '"release":"[^"]+"' /tmp/health.json | sed 's/.*:"//; s/"//')
-            echo "Attempt $i — live marker: ${LIVE:-<none>}"
-            if [ "$LIVE" = "$EXPECTED" ]; then
-              echo "✅ Live marker matches the deployed release ($EXPECTED)."
-              cat /tmp/health.json
-              exit 0
-            fi
-            sleep 10
+          URL="${PRODUCTION_URL:-https://moneytidecn.avanturadeals.com}"
+          # Give Hostinger's Git webhook a moment to pull the new commit, then ask
+          # health.php to flush OPcache so fresh PHP takes effect immediately.
+          # Best-effort only — never fail the build if the site is briefly busy.
+          echo "Waiting ~40s for Hostinger Git auto-deploy to pull…"
+          sleep 40
+          for i in 1 2 3; do
+            curl --silent --max-time 20 "$URL/health.php?oc=1&nc=$RANDOM$i" || true
+            echo ""
+            sleep 8
           done
-          echo "❌ Live marker never reached '$EXPECTED' (last saw '${LIVE:-<none>}'). Files may not have mirrored or OPcache did not flush."
-          cat /tmp/health.json || true
-          exit 1
+          echo "OPcache flush requested (best-effort). Hostinger Git performs the deploy."
