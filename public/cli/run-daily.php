@@ -17,7 +17,7 @@ declare(strict_types=1);
  * Respects the autopilot kill-switch. CLI-only.
  *
  * Hostinger cron (once daily, 07:00 — recommend NOT more often than every 15m):
- *   0 7 * * *  /usr/bin/php /home/uXXXX/domains/.../moneytidecn/cli/run-daily.php
+ *   0 7 * * *  /usr/bin/php /home/uXXXX/domains/.../moneytidecn-app/public/cli/run-daily.php
  */
 
 if (PHP_SAPI !== 'cli') {

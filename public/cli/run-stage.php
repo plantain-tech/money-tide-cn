@@ -18,9 +18,9 @@ declare(strict_types=1);
  * and per-category pause. CLI-only.
  *
  * Example Hostinger crons (every 30 min, staggered by 10 min):
- *   0,30  * * *  /usr/bin/php /home/uXXXX/.../moneytidecn/cli/run-stage.php ingest
- *   10,40 * * *  /usr/bin/php /home/uXXXX/.../moneytidecn/cli/run-stage.php synthesize
- *   20,50 * * *  /usr/bin/php /home/uXXXX/.../moneytidecn/cli/run-stage.php publish
+ *   0,30  * * *  /usr/bin/php /home/uXXXX/.../moneytidecn-app/public/cli/run-stage.php ingest
+ *   10,40 * * *  /usr/bin/php /home/uXXXX/.../moneytidecn-app/public/cli/run-stage.php synthesize
+ *   20,50 * * *  /usr/bin/php /home/uXXXX/.../moneytidecn-app/public/cli/run-stage.php publish
  */
 
 if (PHP_SAPI !== 'cli') {

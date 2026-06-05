@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Sprint 1 · Day 9·1 — News ingestion CLI entrypoint (for cron).
  *
  * Hostinger cron example (runs every 2 hours):
- *   0 *\/2 * * *  /usr/bin/php /home/uXXXX/domains/.../moneytidecn/cli/fetch-news.php
+ *   0 *\/2 * * *  /usr/bin/php /home/uXXXX/domains/.../moneytidecn-app/public/cli/fetch-news.php
  *
  * Web-triggering is blocked; this only runs under the CLI SAPI.
  */
