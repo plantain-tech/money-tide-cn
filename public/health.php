@@ -13,7 +13,7 @@ if (isset($_GET['oc']) && function_exists('opcache_reset')) {
 echo json_encode([
     'status' => 'ok',
     'app' => 'money-tide',
-    'release' => 'git-pull-deploy-live',
+    'release' => 'fix-base-path-autodetect',
     'opcache_flushed' => $flushed,
     'checked_at' => gmdate('c'),
 ], JSON_UNESCAPED_SLASHES);

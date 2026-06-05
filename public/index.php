@@ -1446,7 +1446,7 @@ if ($route === 'admin/news-sources') {
         'form' => $form,
         'fetchSummary' => $fetchSummary,
         'credibilityOptions' => news_credibility_options(),
-        'cliPath' => rtrim((string) (getenv('APP_BASE_PATH') ?: APP_BASE_PATH), '/') . '/cli/fetch-news.php',
+        'cliPath' => __DIR__ . '/cli/fetch-news.php',
     ]);
     exit;
 }
@@ -1897,7 +1897,7 @@ if ($route === 'admin/autopilot') {
         'flash' => $flash,
         'aiReady' => ai_provider_status(),
         'diag' => pipeline_logging_diag(),
-        'cliPath' => rtrim((string) (getenv('APP_BASE_PATH') ?: APP_BASE_PATH), '/') . '/cli/run-daily.php',
+        'cliPath' => __DIR__ . '/cli/run-daily.php',
     ]);
     exit;
 }

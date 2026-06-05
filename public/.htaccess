@@ -1,4 +1,6 @@
-SetEnv APP_BASE_PATH /home/u284368723/domains/avanturadeals.com/public_html/moneytidecn
+# APP_BASE_PATH is auto-detected by index.php (the parent of /public), so no
+# hardcoded server path is needed — the app works in whatever folder it's deployed
+# to (e.g. moneytidecn-app via Hostinger Git pull).
 
 # ── Security headers ──────────────────────────────────────────────────────────
 Header always set X-Content-Type-Options "nosniff"
