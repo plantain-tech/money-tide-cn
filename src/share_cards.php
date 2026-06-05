@@ -215,10 +215,11 @@ function article_social_image_url(array $article): string
     if ($hero !== '') {
         return function_exists('article_media_url') ? article_media_url($article) : $hero;
     }
-    // Fall back to the generated headline card.
-    $slug = (string) ($article['slug'] ?? '');
-    if ($slug !== '' && function_exists('canonical_url')) {
-        return canonical_url('share-card/' . $slug . '/headline.svg');
-    }
+    // Fall back to the branded raster OG banner. NOTE: the generated headline
+    // card is SVG, which X/Facebook/WeChat/知乎 all REJECT for link-preview
+    // images (they only render PNG/JPG/WEBP/GIF). So an article with no hero
+    // image must use the PNG here, or its social card shows no banner at all.
+    // The SVG /share-card/{slug}/headline.svg route still exists for the admin
+    // preview + manual download — it's just never used as og:image.
     return function_exists('default_og_image') ? default_og_image() : '';
 }
