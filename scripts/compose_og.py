@@ -63,7 +63,7 @@ def main():
     # Tagline
     draw.text((tx, 300), "每天 5 分钟，看懂全球市场", font=f_tag, fill=WHITE)
     # Description
-    draw.text((tx, 372), "AI 驱动的全球财经 · 科技 · 商业简报", font=f_desc, fill=GREY)
+    draw.text((tx, 372), "智能综合体 驱动的全球财经 · 科技 · 商业简报", font=f_desc, fill=GREY)
     # URL near bottom
     draw.text((tx, 500), "moneytidecn.avanturadeals.com", font=f_url, fill=GREY)
 

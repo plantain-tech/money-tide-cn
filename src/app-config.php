@@ -36,11 +36,38 @@ function app_config(?string $key = null, $default = null)
             ],
         ];
 
-        $configFile = APP_BASE_PATH . '/config.php';
-        if (is_file($configFile)) {
-            $loaded = require $configFile;
-            if (is_array($loaded)) {
-                $config = array_replace_recursive($config, $loaded);
+        // Resolve config.php from several locations, first match wins. The point
+        // is that config.php holds secrets, is gitignored, and is placed on the
+        // server by hand — so if it lives INSIDE the git-deployed app folder, a
+        // "clean" style deploy (git reset/clean, or a fresh re-clone) can wipe
+        // it. Allowing it to live OUTSIDE that folder (one or two levels up, in
+        // a non-web-served, non-git directory) makes it survive every deploy.
+        //
+        //   1. $MONEYTIDE_CONFIG env var (explicit override, if ever set)
+        //   2. <app>/config.php                  (in-repo — convenient)
+        //   3. <parent>/moneytide-config.php     (above the app folder)
+        //   4. <grandparent>/moneytide-config.php (domain root — safest)
+        $candidates = [];
+        $envCfg = getenv('MONEYTIDE_CONFIG');
+        if (is_string($envCfg) && $envCfg !== '') {
+            $candidates[] = $envCfg;
+        }
+        $candidates[] = APP_BASE_PATH . '/config.php';
+        $parent = dirname(APP_BASE_PATH);
+        if ($parent !== '' && $parent !== APP_BASE_PATH) {
+            $candidates[] = $parent . '/moneytide-config.php';
+            $grand = dirname($parent);
+            if ($grand !== '' && $grand !== $parent) {
+                $candidates[] = $grand . '/moneytide-config.php';
+            }
+        }
+        foreach ($candidates as $configFile) {
+            if (is_file($configFile)) {
+                $loaded = require $configFile;
+                if (is_array($loaded)) {
+                    $config = array_replace_recursive($config, $loaded);
+                }
+                break;
             }
         }
     }
