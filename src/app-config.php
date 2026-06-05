@@ -63,6 +63,21 @@ function app_config(?string $key = null, $default = null)
 function app_url(string $path = ''): string
 {
     $baseUrl = rtrim((string) app_config('app_url', ''), '/');
+
+    // If app_url isn't configured, derive an absolute base from the current
+    // request. Crawlers (X/Facebook/WeChat/知乎) REQUIRE an absolute og:image
+    // URL, and canonical/og:url should be absolute too — so we must never emit
+    // a relative URL here just because config.php happens to omit app_url.
+    if ($baseUrl === '') {
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($host !== '') {
+            $https = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+                || ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443');
+            $baseUrl = ($https ? 'https://' : 'http://') . $host;
+        }
+    }
+
     $path = '/' . ltrim($path, '/');
 
     return $baseUrl === '' ? $path : $baseUrl . $path;
