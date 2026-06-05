@@ -10,7 +10,10 @@ function canonical_url(string $path = ''): string
 function default_og_image(): string
 {
     // PNG, not SVG — social platforms (知乎/Telegram/X/WeChat) ignore SVG og:image.
-    return app_url('assets/img/og-money-tide.png');
+    // The ?v= is a cache-buster: X/WeChat/Facebook cache the card image by URL,
+    // so when the banner CONTENTS change we must change the URL too (bump the
+    // version) or they keep serving the stale cached copy. Bump on each redesign.
+    return app_url('assets/img/og-money-tide.png?v=2');
 }
 
 /**
