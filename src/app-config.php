@@ -55,10 +55,14 @@ function app_config(?string $key = null, $default = null)
         $candidates[] = APP_BASE_PATH . '/config.php';
         $parent = dirname(APP_BASE_PATH);
         if ($parent !== '' && $parent !== APP_BASE_PATH) {
+            // Accept either filename at the outside locations, so the file is
+            // found whether it's named config.php or moneytide-config.php.
             $candidates[] = $parent . '/moneytide-config.php';
+            $candidates[] = $parent . '/config.php';
             $grand = dirname($parent);
             if ($grand !== '' && $grand !== $parent) {
                 $candidates[] = $grand . '/moneytide-config.php';
+                $candidates[] = $grand . '/config.php';
             }
         }
         foreach ($candidates as $configFile) {
