@@ -100,7 +100,6 @@ $jsVersion  = @filemtime(APP_BASE_PATH . '/public/assets/js/app.js')  ?: '1';
     <?php else: ?>
         <header class="site-header">
             <a class="brand" href="<?= e(url()) ?>" aria-label="钱潮 Money Tide 首页">
-                <img class="brand-logo" src="<?= e(asset('img/brand-mark.png')) ?>" alt="钱潮 Money Tide" width="40" height="40">
                 <span class="brand-mark">钱潮</span>
                 <span class="brand-name">Money Tide</span>
             </a>
