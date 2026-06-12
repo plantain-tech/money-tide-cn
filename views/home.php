@@ -5,6 +5,7 @@ $latestArticles = array_slice($articles, 0, 6);
 $secondaryStories = array_slice($articles, 1, 4);
 $editorPicks = array_slice(array_merge(array_slice($articles, 2), $articles), 0, 5);
 $focusSlugs = ['markets', 'business', 'tech', 'crypto', 'policy', 'world', 'wealth'];
+$categoryStats = function_exists('category_article_stats') ? category_article_stats() : [];
 $categoryArticles = [];
 foreach ($focusSlugs as $slug) {
     $categoryArticles[$slug] = array_values(array_filter($articles, static fn (array $article): bool => $article['category'] === $slug));
@@ -189,13 +190,21 @@ $fresh = function_exists('freshness_state') ? freshness_state($newestAt) : ['sta
             <?php if (!in_array($category['slug'], $focusSlugs, true)) {
                 continue;
             } ?>
-            <?php $items = $categoryArticles[$category['slug']] ?? []; ?>
+            <?php
+            $items = $categoryArticles[$category['slug']] ?? [];
+            $stat = $categoryStats[$category['slug']] ?? null;
+            // True total from DB; the recent-50 window count is only a fallback.
+            $tileCount = $stat['total'] ?? count($items);
+            // Teaser: the channel's newest article regardless of age, so an
+            // active-but-quiet channel never looks broken/empty.
+            $tileTeaser = ($stat['latest_title'] ?? '') !== '' ? $stat['latest_title'] : ($items[0]['title'] ?? '');
+            ?>
             <a class="category-tile interactive-card" href="<?= e(url('category/' . $category['slug'])) ?>">
-                <span class="category-count"><?= e((string) count($items)) ?> 篇</span>
+                <span class="category-count">共 <?= e((string) $tileCount) ?> 篇</span>
                 <strong><?= e($category['name']) ?></strong>
                 <span><?= e($category['summary']) ?></span>
-                <?php if ($items): ?>
-                    <em><?= e($items[0]['title']) ?></em>
+                <?php if ($tileTeaser !== ''): ?>
+                    <em><?= e($tileTeaser) ?></em>
                 <?php else: ?>
                     <em>暂无文章，发布后自动补齐。</em>
                 <?php endif; ?>

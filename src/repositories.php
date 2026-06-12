@@ -300,6 +300,66 @@ function db_articles(?string $categorySlug = null): ?array
     }
 }
 
+/**
+ * Per-category stats for the homepage channel band: TRUE total published count
+ * plus each category's newest article as a teaser. db_articles() is capped at
+ * the latest 50 site-wide, so counting within that window under-reports busy
+ * days and shows 0 for quieter categories that do have (older) content.
+ */
+function category_article_stats(): array
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $cache = [];
+    $pdo = db();
+    if (!$pdo instanceof PDO) {
+        return $cache;
+    }
+
+    try {
+        $rows = $pdo->query(
+            "SELECT c.slug, COUNT(*) AS total
+             FROM articles a
+             INNER JOIN categories c ON c.id = a.category_id
+             WHERE a.status = 'published'
+             GROUP BY c.slug"
+        )->fetchAll();
+        foreach ($rows as $row) {
+            $cache[(string) $row['slug']] = [
+                'total' => (int) $row['total'],
+                'latest_title' => '',
+                'latest_slug' => '',
+            ];
+        }
+
+        $latest = $pdo->query(
+            "SELECT c.slug AS cat, a.title, a.slug
+             FROM articles a
+             INNER JOIN categories c ON c.id = a.category_id
+             INNER JOIN (
+                 SELECT category_id, MAX(published_at) AS max_published
+                 FROM articles
+                 WHERE status = 'published'
+                 GROUP BY category_id
+             ) m ON m.category_id = a.category_id AND a.published_at = m.max_published
+             WHERE a.status = 'published'"
+        )->fetchAll();
+        foreach ($latest as $row) {
+            $slug = (string) $row['cat'];
+            if (isset($cache[$slug]) && $cache[$slug]['latest_title'] === '') {
+                $cache[$slug]['latest_title'] = (string) $row['title'];
+                $cache[$slug]['latest_slug'] = (string) $row['slug'];
+            }
+        }
+    } catch (Throwable $exception) {
+        // Stats are decorative — fall back silently; the view degrades gracefully.
+    }
+
+    return $cache;
+}
+
 function db_article(string $slug): ?array
 {
     ensure_editorial_schema();
