@@ -71,17 +71,44 @@ function publish_one_approved_draft(int $draftId): array
         $body = [(string) $body];
     }
     $bodyText = implode("\n\n", array_map('strval', $body));
-    $title = (string) ($payload['title'] ?? 'AI 草稿');
+    $title = trim((string) ($payload['title'] ?? '')) !== '' ? trim((string) $payload['title']) : 'AI 草稿';
     $slug = unique_article_slug(slugify($title) ?: ('ai-' . $draftId));
+
+    // The publish checklist requires dek / brief / why_it_matters to be non-empty.
+    // The model occasionally omits one, which silently blocked an otherwise
+    // AI-approved article from publishing (and the failed draft then stayed
+    // status='approved', clogging the ASC publish queue). Backfill any missing
+    // field from a sibling field the model did return — and finally from the
+    // opening paragraph — so a single gap never stalls auto-publish.
+    $firstPara = '';
+    foreach ($body as $p) {
+        $p = trim((string) $p);
+        if ($p !== '') {
+            $firstPara = $p;
+            break;
+        }
+    }
+    $pick = static function (...$vals): string {
+        foreach ($vals as $v) {
+            $v = trim((string) $v);
+            if ($v !== '') {
+                return $v;
+            }
+        }
+        return '';
+    };
+    $dek = $pick($payload['dek'] ?? '', $payload['social_headline'] ?? '', $payload['brief'] ?? '', mb_substr($firstPara, 0, 60, 'UTF-8'));
+    $brief = $pick($payload['brief'] ?? '', $payload['newsletter_blurb'] ?? '', $payload['dek'] ?? '', mb_substr($firstPara, 0, 80, 'UTF-8'));
+    $why = $pick($payload['why_it_matters'] ?? '', $payload['newsletter_blurb'] ?? '', $payload['brief'] ?? '', $dek, mb_substr($firstPara, 0, 80, 'UTF-8'));
 
     $result = save_article([
         'category_id' => $categoryId,
         'status' => 'published',
         'title' => $title,
         'slug' => $slug,
-        'dek' => (string) ($payload['dek'] ?? ''),
-        'brief' => (string) ($payload['brief'] ?? ''),
-        'why_it_matters' => (string) ($payload['why_it_matters'] ?? ''),
+        'dek' => $dek,
+        'brief' => $brief,
+        'why_it_matters' => $why,
         'body' => $bodyText,
         // Prefer the AI-generated descriptive alt text from the draft; fall back
         // to the title only if the model didn't return one.
@@ -155,6 +182,14 @@ function publish_approved_drafts(int $limit = 12): array
             }
         } else {
             $summary['failed']++;
+            // A draft that can't be auto-published must not sit at status
+            // 'approved' forever — with ORDER BY id ASC LIMIT it would be retried
+            // every cycle and block newer approved drafts behind it. Route it to
+            // human review (unless the draft row is simply gone) so the queue
+            // keeps flowing and a person can see/fix the problem one.
+            if (($r['code'] ?? '') !== 'missing' && function_exists('update_ai_draft_status')) {
+                update_ai_draft_status((int) $row['id'], 'needs_review');
+            }
         }
         $summary['details'][] = ['draft_id' => (int) $row['id'], 'ok' => $r['ok'], 'message' => $r['message']];
     }

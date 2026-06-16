@@ -143,6 +143,13 @@ try {
             $stages['publish']['articles'] = (int) ($r['publish']['ok'] ?? 0);
             $stages['assemble']['issues'] = (int) ($r['assemble']['issues'] ?? 0);
             stage_out('publish: ' . $stages['publish']['articles'] . ' articles / ' . $stages['assemble']['issues'] . ' issues (+dispatch)');
+            // Surface why any approved draft failed to publish (was hidden before,
+            // so "发布 0" gave no clue). Failed drafts are auto-routed to 人工审核.
+            foreach ((array) ($r['publish']['details'] ?? []) as $d) {
+                if (empty($d['ok'])) {
+                    stage_out('  ⚠ draft #' . ($d['draft_id'] ?? '?') . ' 未发布 → 转人工：' . ($d['message'] ?? ''));
+                }
+            }
             // Freshness sweep runs inside run_auto_publish_and_assemble; just report it.
             $cl = $r['cleanup'] ?? ['news' => 0, 'clusters' => 0, 'drafts' => 0];
             stage_out('cleanup: 素材 ' . $cl['news'] . ' · 选题 ' . $cl['clusters'] . ' · 草稿 ' . $cl['drafts']);
